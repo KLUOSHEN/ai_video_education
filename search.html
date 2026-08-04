@@ -1,0 +1,3445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>栈知映 · 以AI光影，筑程序学习之路</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="mdrender.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #4a8eff;
+            --primary-light: #7c9bff;
+            --primary-dark: #3a7fff;
+            --sidebar-w: 260px;
+            --sidebar-collapsed: 0px;
+            --border: #eef3fc;
+            --text: #1a2744;
+            --text-dim: #506280;
+            --text-muted: #7a8eb0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f5f9ff;
+            color: #1a2744;
+        }
+
+        /* ── 页面布局 ── */
+        .app-layout {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── 左侧历史面板 ── */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-width: var(--sidebar-w);
+            height: 100vh;
+            background: #fafcff;
+            border-right: 1px solid #eef3fc;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s, min-width 0.3s, opacity 0.3s;
+            overflow: hidden;
+            z-index: 10;
+            position: relative;
+        }
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            border-right: none;
+            opacity: 0;
+        }
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px 12px;
+            flex-shrink: 0;
+        }
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .sidebar-logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            color: white;
+        }
+        .sidebar-logo-text {
+            font-size: 15px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .sidebar-collapse-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid #eef3fc;
+            background: #fff;
+            color: #6f87b0;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .sidebar-collapse-btn:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: #f0f6ff;
+        }
+        .sidebar-new-search {
+            margin: 4px 14px 14px;
+            padding: 10px 0;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(74,142,255,0.06), rgba(124,155,255,0.04));
+            border: 1px dashed #c8dfff;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            color: var(--primary);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .sidebar-new-search:hover {
+            background: linear-gradient(135deg, rgba(74,142,255,0.12), rgba(124,155,255,0.08));
+            border-color: var(--primary);
+        }
+
+        /* 历史列表 */
+        .sidebar-history-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 8px 12px;
+        }
+        .sidebar-history-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #a0b4d0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 10px 6px;
+        }
+        .sidebar-history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .sidebar-history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            font-size: 13px;
+            color: #2c3e65;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-history-item:hover {
+            background: #f0f6ff;
+            color: var(--primary);
+        }
+        .sidebar-history-item.active {
+            background: #e8f2ff;
+            color: var(--primary);
+            font-weight: 500;
+        }
+        .sidebar-history-item i {
+            font-size: 12px;
+            color: #bcc8dc;
+            flex-shrink: 0;
+        }
+        .sidebar-history-item:hover i { color: var(--primary); }
+        .sidebar-history-item-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-history-del {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: transparent;
+            cursor: pointer;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .sidebar-history-item:hover .sidebar-history-del {
+            color: #c0cfde;
+        }
+        .sidebar-history-item:hover .sidebar-history-del:hover {
+            color: #e0555a;
+            background: rgba(224, 85, 90, 0.08);
+        }
+
+        .sidebar-footer {
+            padding: 10px 14px;
+            border-top: 1px solid #eef3fc;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sidebar-clear-all {
+            font-size: 11px;
+            color: #a0b4d0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: inherit;
+            transition: color 0.2s;
+        }
+        .sidebar-clear-all:hover { color: #e0555a; }
+        .sidebar-count {
+            font-size: 11px;
+            color: #c0cfde;
+        }
+        .sidebar-feature-entry {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 6px 14px 14px;
+            padding: 14px 14px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(74,142,255,0.1), rgba(99,102,241,0.06));
+            border: 1px solid rgba(74,142,255,0.22);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.25s;
+            flex-shrink: 0;
+            box-shadow: 0 2px 12px rgba(74,142,255,0.1), 0 1px 3px rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
+        }
+        .sidebar-feature-entry::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(74,142,255,0.06), transparent 60%);
+            pointer-events: none;
+        }
+        .sidebar-feature-entry:hover {
+            background: linear-gradient(135deg, rgba(74,142,255,0.16), rgba(99,102,241,0.1));
+            border-color: rgba(74,142,255,0.45);
+            box-shadow: 0 4px 20px rgba(74,142,255,0.18), 0 2px 6px rgba(0,0,0,0.06);
+            transform: translateY(-1px);
+        }
+        .sfe-icon {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(74,142,255,0.3);
+        }
+        .sfe-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .sfe-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a2744;
+            letter-spacing: 0.3px;
+        }
+        .sfe-desc {
+            font-size: 11px;
+            color: #7a8eb0;
+            font-weight: 400;
+        }
+        .sfe-arrow {
+            font-size: 12px;
+            color: var(--primary);
+            opacity: 0.5;
+            transition: all 0.25s;
+        }
+        .sidebar-feature-entry:hover .sfe-arrow {
+            opacity: 1;
+            transform: translateX(2px);
+        }
+
+        /* ── 右侧主区域 ── */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-width: 0;
+            padding: 0 28px;
+            overflow-y: auto;
+        }
+
+        /* 装饰性网格 */
+        .main-area::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(74, 142, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74, 142, 255, 0.03) 1px, transparent 1px);
+            background-size: 28px 28px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 展开侧栏按钮（侧栏收起时显示） */
+        .expand-sidebar-btn {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid #eef3fc;
+            color: #6f87b0;
+            cursor: pointer;
+            font-size: 15px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            transition: all 0.2s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .expand-sidebar-btn.visible { display: flex; }
+        .expand-sidebar-btn:hover { color: var(--primary); border-color: var(--primary); }
+
+        /* ── 搜索容器 ── */
+        .search-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 720px;
+            animation: fadeUp 0.6s ease-out;
+        }
+
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 36px;
+        }
+        .brand-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 8px 24px rgba(74, 142, 255, 0.25);
+        }
+        .brand-name {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(145deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .brand-slogan {
+            font-size: 12.5px;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            color: #7a8eb0;
+            white-space: nowrap;
+        }
+        /* 乱码解锁标题：每个字符等宽容器，宽度永不抖动 */
+        .scramble-title .ch {
+            display: inline-block;
+            width: 1em;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            white-space: pre;
+        }
+        .scramble-title.done { letter-spacing: -0.3px; }
+
+        /* ── 搜索框区域 ── */
+        .search-wrapper {
+            width: 100%;
+            position: relative;
+            background: #ffffff;
+            border: 2px solid #e6edf4;
+            border-radius: 22px;
+            box-shadow: 0 4px 20px rgba(0, 20, 40, 0.04);
+            transition: all 0.25s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .search-wrapper:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 6px rgba(74, 142, 255, 0.08), 0 8px 30px rgba(74, 142, 255, 0.06);
+        }
+        .search-box {
+            width: 100%;
+            min-height: 44px;
+            max-height: 120px;
+            padding: 10px 14px;
+            background: #f5f9ff;
+            border: 1.5px solid #e6edf4;
+            border-radius: 14px;
+            font-size: 15px;
+            color: #1a2744;
+            outline: none;
+            font-family: inherit;
+            resize: none;
+            line-height: 1.6;
+            transition: all 0.2s;
+        }
+        .search-box:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(74, 142, 255, 0.08);
+        }
+        .search-box::placeholder { color: #8fa0b8; }
+
+        /* ── 聊天式搜索卡片：顶部双入口 ── */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px 10px;
+        }
+        .chat-header-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 6px 12px 6px 6px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: #2c3e65;
+            border: 1px solid #eef3fc;
+            background: #f8faff;
+            transition: all 0.2s;
+        }
+        .chat-header-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f0f6ff;
+        }
+        .chat-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .chat-avatar--student { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+        .chat-avatar--teacher { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+        .chat-chip-caret { font-size: 10px; color: #a0b4d0; transition: transform .2s; }
+        .chat-header-chip:hover .chat-chip-caret { transform: translateY(2px); }
+
+        /* ── 聊天流气泡 ── */
+        .chat-stream {
+            min-height: 120px;
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 6px 16px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-bubble {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            max-width: 92%;
+            animation: chatIn .3s ease-out;
+        }
+        @keyframes chatIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .chat-bubble--ai { align-self: flex-start; }
+        .chat-bubble--user { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-bubble-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .chat-bubble--ai .chat-bubble-avatar { background: linear-gradient(135deg, #4a8eff, #7c9bff); }
+        .chat-bubble--user .chat-bubble-avatar { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+        .chat-bubble-body {
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 13.5px;
+            line-height: 1.7;
+            color: #2c3e65;
+            background: #f5f9ff;
+            border: 1px solid #eef3fc;
+            word-break: break-word;
+        }
+        .chat-bubble--ai .chat-bubble-body { border-bottom-left-radius: 4px; }
+        .chat-bubble--user .chat-bubble-body {
+            background: linear-gradient(135deg, #4a8eff, #6366f1);
+            color: #fff;
+            border: none;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* ── 底部工具栏 ── */
+        .chat-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px 14px;
+            border-top: 1px solid #eef3fc;
+            background: #fff;
+        }
+        .chat-icon-btn {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            border-radius: 12px;
+            border: 1px solid #eef3fc;
+            background: #f8faff;
+            color: #6f87b0;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .chat-icon-btn:hover { color: var(--primary); border-color: var(--primary); background: #f0f6ff; }
+        .chat-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .chat-deep-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 13px;
+            border-radius: 12px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--primary);
+            background: #fff;
+            border: 1.5px solid #c8dfff;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .chat-deep-btn:hover { background: #f0f6ff; border-color: var(--primary); box-shadow: 0 2px 10px rgba(74,142,255,.15); }
+        .search-submit-btn {
+            height: 42px;
+            padding: 0 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: all 0.25s;
+            box-shadow: 0 3px 12px rgba(74, 142, 255, 0.30);
+            flex-shrink: 0;
+            font-family: inherit;
+        }
+        .search-submit-btn:hover {
+            box-shadow: 0 5px 20px rgba(74, 142, 255, 0.45);
+            transform: translateY(-1px);
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        }
+
+        /* ── AI 生成中浮层（方案 A：轻量 loading） ── */
+        .ai-loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(245, 249, 255, 0.72);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        .ai-loading-overlay.active { display: flex; opacity: 1; }
+        .ai-loading-card {
+            width: min(420px, 90vw);
+            padding: 44px 32px 36px;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 24px 70px rgba(74, 142, 255, 0.14), 0 8px 28px rgba(0, 20, 60, 0.08);
+            text-align: center;
+            animation: aiLoadingFloat 3.2s ease-in-out infinite;
+        }
+        @keyframes aiLoadingFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .ai-loading-skeleton {
+            width: 132px;
+            height: 168px;
+            margin: 0 auto 28px;
+            border-radius: 16px;
+            border: 1.5px solid #dbeafe;
+            background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+            box-shadow: 0 6px 20px rgba(74, 142, 255, 0.10);
+            position: relative;
+            overflow: hidden;
+            animation: aiSkeletonPulse 2.4s ease-in-out infinite;
+        }
+        @keyframes aiSkeletonPulse {
+            0%, 100% { opacity: 0.85; transform: perspective(600px) rotateY(-6deg) rotateX(4deg) scale(0.98); box-shadow: 0 6px 20px rgba(74, 142, 255, 0.10); }
+            50% { opacity: 1; transform: perspective(600px) rotateY(-6deg) rotateX(4deg) scale(1.02); box-shadow: 0 12px 34px rgba(74, 142, 255, 0.22); }
+        }
+        .ai-loading-skeleton::before {
+            content: '';
+            position: absolute;
+            top: 12px; left: 12px; right: 12px;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #e8f1ff, #c8dfff, #e8f1ff);
+            background-size: 200% 100%;
+            animation: aiShimmer 1.8s linear infinite;
+        }
+        .ai-loading-skeleton::after {
+            content: '';
+            position: absolute;
+            top: 32px; left: 14px; right: 14px; bottom: 54px;
+            background-image:
+                linear-gradient(#e8f1ff 4px, transparent 4px),
+                linear-gradient(#e8f1ff 4px, transparent 4px),
+                linear-gradient(#e8f1ff 4px, transparent 4px);
+            background-size: 70% 4px, 55% 4px, 80% 4px;
+            background-repeat: no-repeat;
+            background-position: 0 0, 0 18px, 0 36px;
+            border-radius: 2px;
+        }
+        /* 骨架内文字（生成视频中的文本）：随骨架保持几何形状 */
+        .ai-loading-skeleton-text {
+            position: absolute;
+            left: 12px; right: 12px;
+            bottom: 38px;
+            text-align: center;
+            font-size: 9px;
+            color: #7a8eb0;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        /* spinner：等待没有有意义内容形状时使用 */
+        .ai-loading-spinner {
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 28px;
+            border-radius: 50%;
+            border: 5px solid #dbeafe;
+            border-top-color: var(--primary);
+            box-shadow: 0 6px 20px rgba(74, 142, 255, 0.10);
+            animation: aiSpin 1s linear infinite;
+        }
+        @keyframes aiSpin {
+            to { transform: rotate(360deg); }
+        }
+        .ai-loading-skeleton-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 62px;
+            height: 14px;
+            border-radius: 7px;
+            background: linear-gradient(90deg, #4a8eff, #7c9bff);
+            box-shadow: 0 2px 8px rgba(74, 142, 255, 0.35);
+        }
+        @keyframes aiShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .ai-loading-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a2744;
+            margin-bottom: 10px;
+            letter-spacing: -0.2px;
+        }
+        .ai-loading-subtitle {
+            font-size: 14px;
+            color: #7a8eb0;
+            margin-bottom: 32px;
+        }
+        .ai-loading-footer {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #9ab0d8;
+            animation: aiTextBlink 2s ease-in-out infinite;
+            user-select: none;
+        }
+        @keyframes aiTextBlink {
+            0%, 100% { opacity: 0.55; }
+            50% { opacity: 1; }
+        }
+        .ai-loading-footer i { color: var(--primary); }
+        .ai-loading-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        .ai-loading-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #c8dfff;
+            animation: aiDot 1.2s ease-in-out infinite;
+        }
+        .ai-loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .ai-loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes aiDot {
+            0%, 100% { transform: scale(0.7); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; background: var(--primary); }
+        }
+
+        /* 上传文件提示 */
+        .upload-preview {
+            display: none;
+            padding: 0 14px 10px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .upload-preview-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 14px;
+            background: #f0f6ff;
+            border: 1px solid #c8dfff;
+            font-size: 12px;
+            color: var(--primary);
+        }
+        .upload-preview-item button {
+            background: none;
+            border: none;
+            color: #8fa0b8;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 2px;
+        }
+        .upload-preview-item button:hover { color: #e0555a; }
+
+        /* ── 滚动例题区 ── */
+        .scroll-examples {
+            width: 100%;
+            margin-top: 12px;
+            animation: fadeUp 0.6s ease-out 0.12s both;
+        }
+        .scroll-stage {
+            position: relative;
+            width: 100%;
+            height: 138px;
+            overflow: hidden;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.45);
+            border: 1px solid #eef3fc;
+            perspective: 600px;
+            user-select: none;
+        }
+
+        /* 左右渐变遮罩 */
+        .scroll-stage::before,
+        .scroll-stage::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 72px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .scroll-stage::before {
+            left: 0;
+            background: linear-gradient(to right, rgba(245,249,255,0.92), rgba(245,249,255,0));
+            border-radius: 18px 0 0 18px;
+        }
+        .scroll-stage::after {
+            right: 0;
+            background: linear-gradient(to left, rgba(245,249,255,0.92), rgba(245,249,255,0));
+            border-radius: 0 18px 18px 0;
+        }
+
+        /* ── 滚动速度配置：通过 --marquee-base 控制基准速度（秒），三排自动应用 0.85× / 1.0× / 1.15× ── */
+        :root {
+            --marquee-base: 75s;
+        }
+
+        /* 每行的滚动轨道 */
+        .scroll-row {
+            display: flex;
+            height: 46px;
+            align-items: center;
+            position: relative;
+            will-change: transform;
+        }
+        .scroll-row-track {
+            display: flex;
+            gap: 20px;
+            white-space: nowrap;
+            animation-name: marquee;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+            animation-play-state: running;
+            padding: 0 12px;
+        }
+
+        /* 三行速度差异：基准 × 倍数，范围控制在 15% 以内 */
+        .scroll-row-1 .scroll-row-track { animation-duration: calc(var(--marquee-base) * 0.85); }
+        .scroll-row-2 .scroll-row-track { animation-duration: calc(var(--marquee-base) * 1.00); }
+        .scroll-row-3 .scroll-row-track { animation-duration: calc(var(--marquee-base) * 1.15); }
+
+        /* 统一 keyframe：向左平移 50%（内容已双份，-50% 实现无缝循环） */
+        @keyframes marquee {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* 每条例题卡片 —— 三行统一 */
+        .scroll-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 18px;
+            border-radius: 22px;
+            background: #ffffff;
+            border: 1px solid #eef3fc;
+            font-size: 13px;
+            color: #506280;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            white-space: nowrap;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        }
+        .scroll-chip:hover {
+            color: var(--primary);
+            border-color: #c8dfff;
+            background: #f0f6ff;
+            box-shadow: 0 2px 12px rgba(74,142,255,0.10);
+            transform: translateY(-2px);
+        }
+        .scroll-chip i {
+            font-size: 12px;
+            color: var(--primary);
+            opacity: 0.55;
+        }
+        .scroll-chip-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--primary);
+            opacity: 0.35;
+            flex-shrink: 0;
+        }
+
+        /* 内容分区：题目(bold) + 分隔符 + 知识点(截断) */
+        .scroll-chip-q {
+            font-weight: 600;
+            color: #1a2744;
+            flex-shrink: 0;
+        }
+        .scroll-chip-sep {
+            color: #bcc8dc;
+            margin: 0 2px;
+            flex-shrink: 0;
+        }
+        .scroll-chip-k {
+            color: #7a8eb0;
+            max-width: 11em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* hover 暂停 */
+        .scroll-stage:hover .scroll-row-track {
+            animation-play-state: paused;
+        }
+
+        /* prefers-reduced-motion：停止滚动，展示静态内容（无障碍回退） */
+        @media (prefers-reduced-motion: reduce) {
+            .scroll-row-track {
+                animation: none !important;
+                animation-play-state: paused !important;
+            }
+            .scroll-stage { perspective: none; }
+        }
+
+        /* ── 快捷标签 ── */
+        .quick-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 14px;
+            animation: fadeUp 0.6s ease-out 0.15s both;
+        }
+        .quick-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 20px;
+            border-radius: 60px;
+            font-size: 13px;
+            font-weight: 450;
+            color: #2c3e65;
+            background: #ffffff;
+            border: 1.5px solid #e6edf4;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .quick-tag i { font-size: 13px; color: var(--primary); }
+        .quick-tag:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: #f0f6ff;
+            box-shadow: 0 2px 16px rgba(74, 142, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        /* ── 快捷知识点 Dialog（原生 <dialog> + ::backdrop 幕布） ── */
+        .quick-dialog {
+            border: none;
+            padding: 0;
+            background: transparent;
+            max-width: 420px;
+            width: calc(100vw - 40px);
+            overflow: visible;
+            color: #1a2744;
+        }
+        /* 打开/关闭：dialog 本体可逆淡入淡出 */
+        .quick-dialog[open] { animation: quickDlgIn .28s cubic-bezier(.22,.61,.36,1); }
+        .quick-dialog.closing { animation: quickDlgOut .22s ease forwards; }
+        /* ::backdrop 幕布：覆盖视口、调暗并模糊页面、拦截指针输入，随 dialog 淡入淡出 */
+        .quick-dialog::backdrop {
+            background: rgba(15, 23, 42, 0);
+            backdrop-filter: blur(0);
+        }
+        .quick-dialog[open]::backdrop { animation: quickScrimIn .28s ease forwards; }
+        .quick-dialog.closing::backdrop { animation: quickScrimOut .22s ease forwards; }
+        @keyframes quickScrimIn {
+            from { background: rgba(15,23,42,0);    backdrop-filter: blur(0); }
+            to   { background: rgba(15,23,42,.45); backdrop-filter: blur(5px); }
+        }
+        @keyframes quickScrimOut {
+            from { background: rgba(15,23,42,.45); backdrop-filter: blur(5px); }
+            to   { background: rgba(15,23,42,0);   backdrop-filter: blur(0); }
+        }
+        @keyframes quickDlgIn {
+            from { opacity: 0; transform: translateY(16px) scale(.97); }
+            to   { opacity: 1; transform: none; }
+        }
+        @keyframes quickDlgOut {
+            from { opacity: 1; transform: none; }
+            to   { opacity: 0; transform: translateY(10px) scale(.98); }
+        }
+        /* 弹窗卡片 */
+        .quick-dlg-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(15,23,42,.18);
+            overflow: hidden;
+        }
+        .quick-dlg-head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 20px 22px 16px;
+            border-bottom: 1px solid #eef3fc;
+            background: linear-gradient(135deg, #f7fbff, #eef4ff);
+        }
+        .quick-dlg-icon {
+            width: 46px; height: 46px;
+            border-radius: 13px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            box-shadow: 0 6px 18px rgba(74,142,255,.3);
+            flex-shrink: 0;
+        }
+        .quick-dlg-eyebrow {
+            font-size: 10px; font-weight: 600; color: var(--primary);
+            letter-spacing: .12em; text-transform: uppercase;
+        }
+        .quick-dlg-title { font-size: 18px; font-weight: 700; margin: 2px 0 0; color: #1a2744; }
+        .quick-dlg-close {
+            margin-left: auto;
+            width: 30px; height: 30px;
+            border: none; border-radius: 9px;
+            background: transparent; color: #7a8eb0;
+            cursor: pointer; font-size: 14px;
+            transition: all .15s;
+        }
+        .quick-dlg-close:hover { background: rgba(74,142,255,.08); color: var(--primary); }
+        .quick-dlg-desc { padding: 16px 22px 4px; font-size: 13.5px; line-height: 1.8; color: #506280; margin: 0; }
+        .quick-dlg-label {
+            padding: 14px 22px 8px;
+            font-size: 11px; font-weight: 600;
+            color: #a0b4d0; letter-spacing: .06em;
+        }
+        .quick-dlg-points { margin: 0; padding: 0 22px 6px; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .quick-dlg-points li { display: flex; gap: 10px; font-size: 13px; color: #334155; line-height: 1.6; }
+        .quick-dlg-points li i { color: var(--primary); margin-top: 3px; font-size: 12px; flex-shrink: 0; }
+        .quick-dlg-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 22px 20px; }
+        .quick-dlg-btn {
+            padding: 9px 18px; border-radius: 10px;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+            transition: all .2s; border: 1px solid transparent;
+        }
+        .quick-dlg-btn--ghost { background: #f5f9ff; color: #506280; border-color: #e6edf4; }
+        .quick-dlg-btn--ghost:hover { color: var(--primary); border-color: var(--primary); }
+        .quick-dlg-btn--primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; box-shadow: 0 4px 14px rgba(74,142,255,.3);
+        }
+        .quick-dlg-btn--primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(74,142,255,.4);
+        }
+
+        /* ── 双侧抽屉面板（自我介绍 / 课堂角色配置） ── */
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(3px);
+            z-index: 190;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .drawer-overlay.active { opacity: 1; pointer-events: auto; }
+        .drawer {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: min(380px, 92vw);
+            background: #fff;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 60px rgba(15, 23, 42, 0.2);
+            transition: transform 0.32s cubic-bezier(.22,.61,.36,1);
+        }
+        .drawer--left { left: 0; transform: translateX(-105%); }
+        .drawer--left.active { transform: translateX(0); }
+        .drawer--right { right: 0; transform: translateX(105%); }
+        .drawer--right.active { transform: translateX(0); }
+        .drawer-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px 12px;
+            border-bottom: 1px solid #eef3fc;
+        }
+        .drawer-title { font-size: 17px; font-weight: 700; color: #1a2744; }
+        .drawer-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 10px;
+            background: #f5f9ff;
+            color: #6f87b0;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all .2s;
+        }
+        .drawer-close:hover { color: #e0555a; background: rgba(224,85,90,.08); }
+        .drawer-desc { padding: 12px 20px 4px; font-size: 12.5px; color: #7a8eb0; line-height: 1.7; }
+        .drawer-body { flex: 1; overflow-y: auto; padding: 12px 20px 16px; }
+        .drawer-body > label { display: block; margin-bottom: 14px; }
+        .drawer-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #506280;
+        }
+        .drawer-body input[type="text"], .drawer-body select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #e6edf4;
+            border-radius: 10px;
+            font-size: 13px;
+            font-family: inherit;
+            color: #1a2744;
+            background: #f8faff;
+            outline: none;
+            transition: all .2s;
+        }
+        .drawer-body input[type="text"]:focus, .drawer-body select:focus { border-color: var(--primary); background: #fff; }
+        .pf-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pf-tag {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            color: #506280;
+            border: 1.5px solid #e6edf4;
+            background: #f8faff;
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .pf-tag.active {
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-color: transparent;
+        }
+        .cf-option-list { display: flex; flex-direction: column; gap: 8px; }
+        .cf-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1.5px solid #e6edf4;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #2c3e65;
+            transition: all .2s;
+            position: relative;
+        }
+        .cf-option input { position: absolute; opacity: 0; pointer-events: none; }
+        .cf-option.checked { border-color: var(--primary); background: #f0f6ff; box-shadow: 0 2px 10px rgba(74,142,255,.12); }
+        .cf-option-icon { font-size: 18px; }
+        .cf-check {
+            display: flex !important;
+            align-items: center;
+            gap: 9px;
+            font-size: 13px;
+            color: #2c3e65;
+            cursor: pointer;
+        }
+        .cf-check input { width: 16px; height: 16px; accent-color: var(--primary); }
+        .drawer-foot { padding: 14px 20px 18px; border-top: 1px solid #eef3fc; }
+        .drawer-btn {
+            width: 100%;
+            padding: 11px 0;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            transition: all .2s;
+        }
+        .drawer-btn--primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(74,142,255,.3);
+        }
+        .drawer-btn--primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(74,142,255,.4); }
+
+        /* ── 搜索结果提示 ── */
+        .search-status {
+            margin-top: 14px;
+            font-size: 13px;
+            color: #7a8eb0;
+            text-align: center;
+            min-height: 20px;
+            animation: fadeUp 0.4s ease-out 0.2s both;
+        }
+
+        /* ── 参赛增强：背景光晕 + 扫描光带 ── */
+        body {
+            background:
+                radial-gradient(1100px 560px at 12% -10%, rgba(74,142,255,.10), transparent 60%),
+                radial-gradient(800px 480px at 90% -5%, rgba(124,155,255,.08), transparent 55%),
+                #f5f9ff;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            left: -10%;
+            width: 120%;
+            height: 26vh;
+            top: -36vh;
+            background: linear-gradient(180deg, transparent, rgba(124,155,255,.06), transparent);
+            pointer-events: none;
+            z-index: 0;
+            animation: scanLine 16s linear infinite;
+        }
+        @keyframes scanLine { 0% { transform: translateY(0); } 100% { transform: translateY(175vh); } }
+
+        /* 网格增强：双层经纬线（粗线 + 细线） */
+        .main-area::before {
+            background-image:
+                linear-gradient(rgba(74,142,255,.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74,142,255,.045) 1px, transparent 1px),
+                linear-gradient(rgba(74,142,255,.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74,142,255,.02) 1px, transparent 1px);
+            background-size: 140px 140px, 140px 140px, 28px 28px, 28px 28px;
+        }
+
+        /* ── 参赛增强：滚动条 ── */
+        *::-webkit-scrollbar { width: 8px; height: 8px; }
+        *::-webkit-scrollbar-thumb { background: #c8daff; border-radius: 8px; }
+        *::-webkit-scrollbar-thumb:hover { background: #9dbdf5; }
+        *::-webkit-scrollbar-track { background: transparent; }
+
+        /* ── 参赛增强：logo 呼吸 ── */
+        .sidebar-logo-icon, .brand-icon { animation: iconGlow 3.4s ease-in-out infinite; }
+        @keyframes iconGlow {
+            0%, 100% { box-shadow: 0 0 0 rgba(74,142,255,0); }
+            50% { box-shadow: 0 0 18px rgba(74,142,255,.4); }
+        }
+
+        /* ── 参赛增强：按钮扫光 ── */
+        .sidebar-new-search, .search-submit-btn { position: relative; overflow: hidden; }
+        .sidebar-new-search::after, .search-submit-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            left: -80%;
+            width: 50%;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,.5), transparent);
+            transform: skewX(-20deg);
+            transition: left .5s;
+            pointer-events: none;
+        }
+        .sidebar-new-search:hover::after, .search-submit-btn:hover::after { left: 130%; }
+
+        /* ── 参赛增强：历史项左侧光条 ── */
+        .sidebar-history-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 22%; bottom: 22%;
+            width: 3px;
+            border-radius: 2px;
+            background: linear-gradient(180deg, var(--primary), var(--primary-light));
+            opacity: 0;
+            transition: opacity .2s;
+        }
+        .sidebar-history-item:hover::before { opacity: 1; }
+
+        /* ── 参赛增强：字母漩涡背景（移植 swr.txt · Midjourney Medical ASCII） ── */
+        #vortexCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .app-layout { position: relative; z-index: 1; }
+
+        /* ── 响应式 ── */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                z-index: 30;
+                box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+            }
+            .sidebar.collapsed { box-shadow: none; }
+            .expand-sidebar-btn.visible { display: flex; }
+            .main-area { padding: 0 16px; }
+            .brand-name { font-size: 22px; }
+            .brand-slogan { font-size: 11px; letter-spacing: 0.1em; }
+            .brand-icon { width: 40px; height: 40px; font-size: 20px; }
+            .search-box { min-height: 44px; font-size: 15px; }
+            .quick-tag { padding: 7px 14px; font-size: 12px; }
+            .chat-deep-btn { padding: 8px 10px; font-size: 0; gap: 0; }
+            .chat-deep-btn i { font-size: 14px; }
+            .chat-header-chip span { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        }
+        /* ── 错题本弹层 ── */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 30, 60, 0.45);
+            backdrop-filter: blur(4px);
+            z-index: 400;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .overlay[hidden] { display: none; }
+        .overlay-panel {
+            width: min(720px, 100%);
+            max-height: 85vh;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 24px 80px rgba(10, 30, 70, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .overlay-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .overlay-title { font-size: 16px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+        .overlay-count { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+        .overlay-actions { display: flex; align-items: center; gap: 8px; }
+        .overlay-close {
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 1px solid var(--border); background: #fff; color: var(--text-dim);
+            cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .overlay-close:hover { color: #e0555a; border-color: #e0555a; background: #fff5f5; }
+        .overlay-body { padding: 18px 20px 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .overlay-empty { padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 14px; line-height: 1.8; }
+        .chip {
+            padding: 6px 14px; border-radius: 16px;
+            border: 1px solid var(--border); background: #fff; color: var(--text-dim);
+            cursor: pointer; font-size: 12.5px; font-family: inherit; transition: 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .chip:hover { border-color: var(--primary); color: var(--primary); background: #f0f6ff; }
+
+        /* 错题卡片 */
+        .mistake-card {
+            border: 1px solid var(--border); border-radius: 12px;
+            padding: 14px 16px; background: #fff;
+            box-shadow: 0 2px 10px rgba(20, 50, 110, 0.05);
+        }
+        .mistake-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+        .mistake-head-right { display: flex; align-items: center; gap: 8px; }
+        .mistake-date { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+        .mistake-topic { font-size: 12px; font-weight: 600; color: var(--primary); background: #eef4ff; padding: 3px 10px; border-radius: 12px; }
+        .mistake-cause { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 12px; }
+        .cause-concept { background: #fff3e6; color: #d97b1a; }
+        .cause-careless { background: #eaf6ff; color: #1a7fd9; }
+        .cause-method { background: #f0ecff; color: #6f4fd8; }
+        .cause-misread { background: #eafff3; color: #1a9c5c; }
+        .cause-unknown { background: #f2f4f8; color: #7a8eb0; }
+        .cause-pending { background: #fff8e1; color: #c99a13; }
+        .cause-confusion { background: #fdf1ff; color: #a44fd8; }
+        .cause-calc { background: #fff4e0; color: #cf8a12; }
+        .mistake-cause-label { font-weight: 600; color: #3a4a6e; }
+        .mistake-q { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.7; margin-bottom: 8px; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; }
+        .mistake-opts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+        .mistake-opt { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); line-height: 1.5; }
+        .mistake-opt.ok { border-color: #b5e3c4; background: #f0fbf4; }
+        .mistake-opt.wrong { border-color: #f0b8b8; background: #fff2f2; }
+        .mistake-opt-key { width: 20px; height: 20px; min-width: 20px; border-radius: 50%; background: #eef2f8; color: var(--text-dim); font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+        .mistake-opt.ok .mistake-opt-key { background: #1a9c5c; color: #fff; }
+        .mistake-opt.wrong .mistake-opt-key { background: #d94a4a; color: #fff; }
+        .mistake-opt-tag { font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-left: auto; flex-shrink: 0; font-weight: 500; }
+        .mistake-opt-tag.ok { background: #e8f8ee; color: #1a9c5c; }
+        .mistake-opt-tag.wrong { background: #ffecec; color: #d94a4a; }
+        .mistake-ans { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+        .mistake-badge { font-size: 12px; padding: 3px 10px; border-radius: 8px; }
+        .mistake-badge.bad { background: #ffecec; color: #d94a4a; }
+        .mistake-badge.good { background: #e8f8ee; color: #1a9c5c; }
+        .mistake-pending { font-size: 12.5px; color: var(--text-muted); padding: 6px 0; }
+        .mistake-cause-text { font-size: 13px; color: #5a6a8c; line-height: 1.6; margin-bottom: 6px; }
+        .mistake-suggestion {
+            font-size: 13px; color: var(--text);
+            background: #f7faff; border-left: 3px solid var(--primary);
+            padding: 8px 12px; border-radius: 0 8px 8px 0; line-height: 1.6;
+        }
+        .mistake-actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .mistake-reviewed { font-size: 12px; color: #1a9c5c; }
+        .rework-box { display: flex; gap: 8px; margin-top: 10px; }
+        .rework-input {
+            flex: 1; padding: 8px 12px;
+            border: 1px solid var(--border); border-radius: 10px;
+            font-size: 13px; outline: none; font-family: inherit;
+        }
+        .rework-input:focus { border-color: var(--primary); }
+
+        /* 错题本底部：学情诊断入口 */
+        .mistake-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: center; flex-shrink: 0; }
+        .chip-primary { background: linear-gradient(135deg, var(--primary), #6366f1); color: #fff; border: none; }
+        .chip-primary:hover { opacity: 0.9; background: linear-gradient(135deg, var(--primary), #6366f1); color: #fff; }
+
+        /* 学情诊断 */
+        .overlay-panel--wide { width: min(880px, 100%); }
+        .diag-overview { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .diag-stat { text-align: center; background: #f8fafd; border: 1px solid var(--border); border-radius: 12px; padding: 14px 6px; }
+        .diag-stat-num { font-size: 22px; font-weight: 800; color: var(--text); }
+        .diag-stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+        .diag-section-title { font-size: 13px; font-weight: 700; color: var(--text); margin: 14px 0 10px; display: flex; align-items: center; gap: 6px; }
+        .diag-topic { margin-bottom: 10px; }
+        .diag-topic-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; color: var(--text); }
+        .diag-bar { height: 8px; background: #eef2f8; border-radius: 4px; overflow: hidden; }
+        .diag-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+        .diag-weak { background: #fff8f6; border: 1px solid #ffddd2; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+        .diag-weak-head { font-size: 13.5px; font-weight: 600; color: #c05a2b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .diag-weak-sub { font-size: 12px; font-weight: 400; color: #a06a50; }
+        .diag-weak-sugg { font-size: 13px; color: var(--text); margin-top: 6px; line-height: 1.6; }
+        .diag-none { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
+        .diag-trend { display: flex; align-items: flex-end; gap: 10px; padding: 12px 4px 0; overflow-x: auto; }
+        .diag-trend-day { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+        .diag-trend-bar { width: 22px; background: linear-gradient(180deg, var(--primary), var(--primary-light)); border-radius: 4px 4px 0 0; min-height: 4px; }
+
+        /* ── AI 解题助手（右下角悬浮聊天面板，与 watch 页共用） ── */
+        .chat-fab {
+            position: fixed;
+            right: 26px;
+            bottom: 26px;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff;
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 26px rgba(74,142,255,.4);
+            transition: transform .25s, box-shadow .25s;
+            z-index: 300;
+        }
+        .chat-fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 12px 34px rgba(74,142,255,.5); }
+        .chat-fab .chat-fab-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ef4444;
+            border: 2px solid #fff;
+        }
+        .chat-panel {
+            position: fixed;
+            right: 26px;
+            bottom: 26px;
+            width: 392px;
+            max-width: min(1200px, calc(100vw - 32px));
+            height: min(560px, calc(100vh - 140px));
+            min-width: 320px;
+            min-height: 320px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 18px 60px rgba(20,50,110,.22);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            resize: both;               /* 右下角可拖拽调整大小 */
+            z-index: 310;
+            transform: translateY(24px) scale(.96);
+            opacity: 0;
+            visibility: hidden;
+            transition: transform .28s ease, opacity .28s ease, visibility .28s;
+        }
+        .chat-panel.open { transform: none; opacity: 1; visibility: visible; }
+        /* 顶部"虚幻"拖拽横杠：半透明渐变 + 流动高光 */
+        .chat-panel-dragbar {
+            height: 18px;
+            flex-shrink: 0;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(90deg, rgba(74,142,255,.03), rgba(74,142,255,.14) 50%, rgba(74,142,255,.03));
+            border-bottom: 1px solid rgba(74,142,255,.10);
+        }
+        .chat-panel-dragbar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(100deg, transparent 25%, rgba(255,255,255,.6) 50%, transparent 75%);
+            background-size: 240% 100%;
+            background-position: 120% 0;
+            animation: dragbar-sheen 3.6s linear infinite;
+            pointer-events: none;
+        }
+        .chat-panel-dragbar:hover { background: linear-gradient(90deg, rgba(74,142,255,.06), rgba(74,142,255,.22) 50%, rgba(74,142,255,.06)); }
+        .chat-panel-dragbar:active { cursor: grabbing; }
+        @keyframes dragbar-sheen {
+            0% { background-position: 120% 0; }
+            100% { background-position: -120% 0; }
+        }
+        .chat-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .chat-panel-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .chat-panel-title i { font-size: 17px; }
+        .chat-panel-actions { display: flex; gap: 4px; }
+        .chat-panel-actions button {
+            width: 30px; height: 30px;
+            border: none; border-radius: 8px;
+            background: rgba(255,255,255,.16);
+            color: #fff; cursor: pointer;
+            font-size: 13px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background .2s;
+        }
+        .chat-panel-actions button:hover { background: rgba(255,255,255,.3); }
+        .chat-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 14px;
+            display: flex;
+            align-items: flex-start;
+            background: #f7faff;
+        }
+        .chat-msgs {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-msg {
+            display: flex;
+            gap: 10px;
+            max-width: 92%;
+            animation: chatIn .28s ease-out;
+        }
+        .chat-msg--user { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-msg-avatar {
+            width: 30px; height: 30px;
+            min-width: 30px;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: #fff;
+        }
+        .chat-msg--ai .chat-msg-avatar { background: linear-gradient(135deg, var(--primary), #7c9bff); }
+        .chat-msg--user .chat-msg-avatar { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+        .chat-msg-content {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.55;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .chat-msg--ai .chat-msg-content {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-top-left-radius: 4px;
+            color: var(--text);
+        }
+        .chat-msg--user .chat-msg-content {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border-top-right-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .chat-msg-content .md-paragraph:first-child { margin-top: 0; }
+        .chat-msg-content .md-paragraph:last-child { margin-bottom: 0; }
+        .chat-msg--ai .chat-msg-content .md-heading { scroll-margin-top: 40px; }
+        /* ── On this page 滚动导航（scrollspy） ── */
+        .chat-rail {
+            width: 132px;
+            flex-shrink: 0;
+            order: 2;
+            position: sticky;
+            top: 12px;
+            margin-left: 12px;
+            max-height: calc(100% - 24px);
+            overflow-y: auto;
+            border-left: 1px solid #e2eaf6;
+            padding: 2px 0 4px 10px;
+        }
+        .chat-rail-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            color: #9db0cd;
+            margin-bottom: 8px;
+            white-space: nowrap;
+        }
+        .chat-rail-links { display: flex; flex-direction: column; }
+        .chat-rail-link {
+            display: block;
+            position: relative;
+            padding: 5px 6px;
+            margin: 2px 0;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.45;
+            color: #7a8eb0;
+            text-decoration: none;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color .2s, background .2s;
+        }
+        .chat-rail-link:hover { color: var(--primary); background: #f0f6ff; }
+        .chat-rail-link::before {
+            content: '';
+            position: absolute;
+            left: -11px;
+            top: 5px;
+            bottom: 5px;
+            width: 3px;
+            border-radius: 2px;
+            background: transparent;
+            transition: background .2s, box-shadow .2s;
+        }
+        .chat-rail-link.active {
+            color: var(--primary);
+            background: #e8f2ff;
+            font-weight: 700;
+        }
+        .chat-rail-link.active::before {
+            background: linear-gradient(180deg, var(--primary), #6366f1);
+            box-shadow: 0 0 8px rgba(74,142,255,.6);
+        }
+        .chat-panel-input {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            padding: 12px 14px;
+            border-top: 1px solid var(--border);
+            background: #fff;
+            flex-shrink: 0;
+        }
+        .chat-panel-input textarea {
+            flex: 1;
+            border: 1.5px solid #e6edf4;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 13.5px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            color: var(--text);
+            max-height: 110px;
+            line-height: 1.5;
+            background: #fafcff;
+            transition: border-color .2s;
+        }
+        .chat-panel-input textarea:focus { border-color: var(--primary); background: #fff; }
+        .chat-send-btn {
+            width: 42px; height: 42px;
+            min-width: 42px;
+            border: none; border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; font-size: 15px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .chat-send-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(74,142,255,.35); }
+        .chat-send-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+        .chat-suggest {
+            display: flex;
+            gap: 8px;
+            padding: 0 14px 10px;
+            flex-wrap: wrap;
+            background: #fff;
+            flex-shrink: 0;
+        }
+        .chat-suggest button {
+            padding: 5px 12px;
+            border-radius: 14px;
+            border: 1px solid #d8e6ff;
+            background: #f0f6ff;
+            color: var(--primary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all .2s;
+            font-family: inherit;
+        }
+        .chat-suggest button:hover { background: #e2efff; border-color: var(--primary); }
+        @media (max-width: 540px) {
+            .chat-panel { right: 16px; bottom: 16px; left: 16px; width: auto; height: calc(100vh - 140px); resize: none; min-width: 0; min-height: 0; }
+            .chat-panel-dragbar { display: none; }
+            .chat-fab { right: 18px; bottom: 18px; }
+        }
+    </style>
+    <script src="vortex.js"></script>
+</head>
+<body>
+
+    <!-- 字母漩涡背景画布（Midjourney Medical ASCII 移植） -->
+    <canvas id="vortexCanvas" aria-hidden="true"></canvas>
+
+    <div class="app-layout">
+
+        <!-- ====== 左侧历史面板 ====== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo" onclick="location.href='1.html'">
+                    <div class="sidebar-logo-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                    <span class="sidebar-logo-text">栈知映</span>
+                </div>
+                <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="收起侧栏">
+                    <i class="fas fa-panel-ews"></i>
+                </button>
+            </div>
+
+            <div class="sidebar-new-search" onclick="startNewSearch()">
+                <i class="fas fa-plus"></i> 新建搜索
+            </div>
+
+            <a href="skill/index.html" class="sidebar-feature-entry">
+                <div class="sfe-icon"><i class="fas fa-diagram-project"></i></div>
+                <div class="sfe-body">
+                    <span class="sfe-title">职业加点图</span>
+                    <span class="sfe-desc">技能树 · 职业匹配</span>
+                </div>
+                <div class="sfe-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+
+            <div class="sidebar-feature-entry" onclick="openMistakes()" title="查看错题本" style="cursor:pointer;">
+                <div class="sfe-icon"><i class="fas fa-book-medical"></i></div>
+                <div class="sfe-body">
+                    <span class="sfe-title">错题本</span>
+                    <span class="sfe-desc">错题归因 · 复习巩固</span>
+                </div>
+                <div class="sfe-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+
+            <div class="sidebar-history-wrap">
+                <div class="sidebar-history-title">搜索历史</div>
+                <div class="sidebar-history-list" id="sidebarHistoryList"></div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="sidebar-clear-all" onclick="clearAllHistory()"><i class="fas fa-trash-can"></i> 清除全部历史</button>
+                <span class="sidebar-count" id="historyCount">0 条历史</span>
+            </div>
+        </aside>
+
+        <!-- ====== 右侧主内容 ====== -->
+        <main class="main-area">
+            <!-- 展开侧栏按钮 -->
+            <button class="expand-sidebar-btn" id="expandBtn" onclick="toggleSidebar()" title="展开侧栏">
+                <i class="fas fa-panel-ews"></i>
+            </button>
+
+            <!-- 搜索容器 -->
+            <div class="search-container">
+                <div class="brand">
+                    <div class="brand-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                    <div class="brand-text">
+                        <span class="brand-name scramble-title" id="brandTitle" aria-label="栈知映">栈知映</span>
+                        <span class="brand-slogan">以AI光影，筑程序学习之路</span>
+                    </div>
+                </div>
+
+                <!-- 聊天式搜索卡片 -->
+                <div class="search-wrapper chat-card" id="searchWrapper">
+                    <!-- 顶部双入口：左侧自我介绍 / 右侧课堂角色配置 -->
+                    <div class="chat-header">
+                        <div class="chat-header-chip chat-header-chip--left" onclick="openSelfIntro()" title="介绍一下自己">
+                            <div class="chat-avatar chat-avatar--student"><i class="fas fa-user-graduate"></i></div>
+                            <span>嗨，同学</span>
+                            <i class="fas fa-chevron-down chat-chip-caret"></i>
+                        </div>
+                        <div class="chat-header-chip chat-header-chip--right" onclick="openClassConfig()" title="选择课堂配置">
+                            <span>准备好一起学习了吗？</span>
+                            <i class="fas fa-chevron-down chat-chip-caret"></i>
+                            <div class="chat-avatar chat-avatar--teacher"><i class="fas fa-robot"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- 中间聊天显示区 -->
+                    <div class="chat-stream" id="chatStream">
+                        <div class="chat-bubble chat-bubble--ai">
+                            <div class="chat-bubble-avatar"><i class="fas fa-robot"></i></div>
+                            <div class="chat-bubble-body">
+                                你好，我是栈知映老师，输入你想学的知识点，点击「进入课堂」即可生成专属教学视频。
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 上传预览 -->
+                    <div class="upload-preview" id="uploadPreview"></div>
+
+                    <!-- 底部工具栏 -->
+                    <div class="chat-toolbar">
+                        <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.md,.c,.cpp,.py,.java" hidden onchange="handleFileUpload(event)">
+                        <button class="chat-icon-btn" onclick="document.getElementById('fileInput').click()" title="上传文件">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <input type="file" id="imageInput" accept="image/*" capture="environment" hidden onchange="handleImageUpload(event)">
+                        <button class="chat-icon-btn" onclick="document.getElementById('imageInput').click()" title="上传图片">
+                            <i class="fas fa-image"></i>
+                        </button>
+                        <textarea
+                            class="search-box chat-input"
+                            id="searchInput"
+                            placeholder="输入你想学的任何内容，例如：数据结构算法…"
+                            rows="1"
+                            onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();doVideoGenerate();}"
+                            oninput="autoResize(this)"
+                        ></textarea>
+                        <div class="chat-actions">
+                            <button class="chat-deep-btn" onclick="openClassConfig()" title="深度交互">
+                                <i class="fas fa-crosshairs"></i> 深度交互
+                            </button>
+                            <button class="search-submit-btn chat-enter-btn" onclick="doVideoGenerate()" title="生成视频">
+                                <i class="fas fa-arrow-up"></i><span>进入课堂</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 搜索状态 -->
+                <div class="search-status" id="searchStatus"></div>
+
+                <!-- 快捷标签 -->
+                <div class="quick-tags">
+                    <div class="quick-tag" onclick="openQuickDialog('快速排序算法详解与复杂度分析')">
+                        <i class="fas fa-sort-amount-down"></i> 排序算法
+                    </div>
+                    <div class="quick-tag" onclick="openQuickDialog('TCP 三次握手与四次挥手过程')">
+                        <i class="fas fa-network-wired"></i> 计算机网络
+                    </div>
+                    <div class="quick-tag" onclick="openQuickDialog('进程与线程的区别及调度算法')">
+                        <i class="fas fa-microchip"></i> 操作系统
+                    </div>
+                    <div class="quick-tag" onclick="openQuickDialog('二叉树的遍历：前序中序后序层序')">
+                        <i class="fas fa-code-branch"></i> 数据结构
+                    </div>
+                </div>
+
+                <!-- 滚动例题 -->
+                <div class="scroll-examples">
+                    <div class="scroll-stage" id="scrollStage">
+                        <div class="scroll-row scroll-row-1">
+                            <div class="scroll-row-track" id="track1"></div>
+                        </div>
+                        <div class="scroll-row scroll-row-2">
+                            <div class="scroll-row-track" id="track2"></div>
+                        </div>
+                        <div class="scroll-row scroll-row-3">
+                            <div class="scroll-row-track" id="track3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- AI 生成中浮层（方案 A：轻量 loading） -->
+    <div class="ai-loading-overlay" id="aiLoadingOverlay" aria-live="polite">
+        <div class="ai-loading-card" role="status">
+            <div class="ai-loading-region" id="aiLoadingRegion" aria-busy="true">
+                <!-- 骨架：最终卡片布局已知，保持几何形状等待数据 -->
+                <div class="ai-loading-skeleton" id="aiLoadingSkeleton">
+                    <div class="ai-loading-skeleton-btn"></div>
+                    <div class="ai-loading-skeleton-text" id="aiLoadingSkeletonText"></div>
+                </div>
+                <!-- spinner：等待没有有意义的内容形状时使用 -->
+                <div class="ai-loading-spinner" id="aiLoadingSpinner" hidden></div>
+                <div class="ai-loading-title" id="aiLoadingTitle">生成课程大纲</div>
+                <div class="ai-loading-subtitle" id="aiLoadingSubtitle">正在构建学习路径…</div>
+            </div>
+            <div class="ai-loading-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <div class="ai-loading-footer">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                <span>AI 智能体工作中…</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快捷知识点 Dialog（原生 <dialog> + ::backdrop 幕布） -->
+    <dialog id="quickDialog" class="quick-dialog" aria-labelledby="quickDlgTitle">
+        <div class="quick-dlg-card">
+            <div class="quick-dlg-head">
+                <div class="quick-dlg-icon" id="quickDlgIcon"><i class="fas fa-sort-amount-down"></i></div>
+                <div>
+                    <div class="quick-dlg-eyebrow">快捷知识点</div>
+                    <h3 class="quick-dlg-title" id="quickDlgTitle">排序算法</h3>
+                </div>
+                <button class="quick-dlg-close" onclick="closeQuickDialog()" aria-label="关闭">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <p class="quick-dlg-desc" id="quickDlgDesc"></p>
+            <div class="quick-dlg-label">本知识点将带你掌握</div>
+            <ul class="quick-dlg-points" id="quickDlgPoints"></ul>
+            <div class="quick-dlg-foot">
+                <button class="quick-dlg-btn quick-dlg-btn--ghost" onclick="closeQuickDialog()">取消</button>
+                <button class="quick-dlg-btn quick-dlg-btn--primary" onclick="quickDialogGo()">
+                    <i class="fas fa-play"></i> 生成教学视频
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- 抽屉幕布 -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawers()"></div>
+
+    <!-- 左侧抽屉：介绍一下自己 -->
+    <aside class="drawer drawer--left" id="profileDrawer" aria-label="自我介绍">
+        <div class="drawer-head">
+            <div class="drawer-title">介绍一下自己</div>
+            <button class="drawer-close" onclick="closeDrawers()" aria-label="关闭"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="drawer-desc">AI 老师会根据你的背景与性格，个性化地讲解与互动。</div>
+        <div class="drawer-body">
+            <label>
+                <span class="drawer-label">你的昵称</span>
+                <input type="text" id="pfName" placeholder="如：小蓝" maxlength="12">
+            </label>
+            <label>
+                <span class="drawer-label">年级 / 职业</span>
+                <select id="pfGrade">
+                    <option value="">请选择…</option>
+                    <option>初中生</option>
+                    <option>高中生</option>
+                    <option>大学生</option>
+                    <option>研究生</option>
+                    <option>程序员</option>
+                    <option>其他职业</option>
+                </select>
+            </label>
+            <label>
+                <span class="drawer-label">已掌握的基础</span>
+                <input type="text" id="pfBase" placeholder="如：学过 C 语言基础">
+            </label>
+            <label>
+                <span class="drawer-label">学习目标</span>
+                <input type="text" id="pfGoal" placeholder="如：掌握数据结构与算法">
+            </label>
+            <span class="drawer-label">你的性格标签（可多选）</span>
+            <div class="pf-tags" id="pfTags">
+                <span class="pf-tag" data-v="活泼好动" onclick="togglePfTag(this)">活泼好动</span>
+                <span class="pf-tag" data-v="安静专注" onclick="togglePfTag(this)">安静专注</span>
+                <span class="pf-tag" data-v="喜欢提问" onclick="togglePfTag(this)">喜欢提问</span>
+                <span class="pf-tag" data-v="动手实践" onclick="togglePfTag(this)">动手实践</span>
+                <span class="pf-tag" data-v="需要鼓励" onclick="togglePfTag(this)">需要鼓励</span>
+                <span class="pf-tag" data-v="循序渐进" onclick="togglePfTag(this)">循序渐进</span>
+            </div>
+        </div>
+        <div class="drawer-foot">
+            <button class="drawer-btn drawer-btn--primary" onclick="saveProfile()">保存自我介绍</button>
+        </div>
+    </aside>
+
+    <!-- 右侧抽屉：课堂角色配置 -->
+    <aside class="drawer drawer--right" id="classDrawer" aria-label="课堂角色配置">
+        <div class="drawer-head">
+            <div class="drawer-title">课堂角色配置</div>
+            <button class="drawer-close" onclick="closeDrawers()" aria-label="关闭"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="drawer-desc">选择你的 AI 老师音色，以及课堂里陪你学习的同学们。</div>
+        <div class="drawer-body">
+            <span class="drawer-label">AI 老师音色</span>
+            <div class="cf-option-list">
+                <label class="cf-option">
+                    <input type="radio" name="voice" value="longanyang" checked>
+                    <span class="cf-option-icon">🎤</span> 龙小羊（温和耐心）
+                </label>
+                <label class="cf-option">
+                    <input type="radio" name="voice" value="luoxin">
+                    <span class="cf-option-icon">🎧</span> 洛心（沉稳专业）
+                </label>
+                <label class="cf-option">
+                    <input type="radio" name="voice" value="haiyang">
+                    <span class="cf-option-icon">🎙️</span> 海洋（活力热情）
+                </label>
+            </div>
+            <span class="drawer-label" style="display:block;margin:18px 0 8px;">课堂学生角色</span>
+            <div class="cf-option-list">
+                <label class="cf-option">
+                    <input type="radio" name="role" value="显眼包">
+                    <span class="cf-option-icon">🤹</span> 显眼包（活跃气氛）
+                </label>
+                <label class="cf-option">
+                    <input type="radio" name="role" value="好奇宝宝" checked>
+                    <span class="cf-option-icon">🧐</span> 好奇宝宝（追问到底）
+                </label>
+                <label class="cf-option">
+                    <input type="radio" name="role" value="笔记员">
+                    <span class="cf-option-icon">📝</span> 笔记员（整理要点）
+                </label>
+                <label class="cf-option">
+                    <input type="radio" name="role" value="思考者">
+                    <span class="cf-option-icon">💭</span> 思考者（深度思考）
+                </label>
+            </div>
+            <label class="cf-check" style="margin-top:16px;">
+                <input type="checkbox" id="cfInteractive"> 深度交互模式（生成视频后自动提问）
+            </label>
+        </div>
+        <div class="drawer-foot">
+            <button class="drawer-btn drawer-btn--primary" onclick="saveClassConfig()">保存课堂配置</button>
+        </div>
+    </aside>
+
+    <script>
+        // ===== 常量 =====
+        const STORAGE_KEY = 'search_history_v2';
+        const MAX_HISTORY = 30;
+
+        // ===== 侧边栏 =====
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const expandBtn = document.getElementById('expandBtn');
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                expandBtn.classList.add('visible');
+            } else {
+                expandBtn.classList.remove('visible');
+            }
+            // 保存状态
+            localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        // ===== 搜索框自适应高度 =====
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+        }
+
+        // ===== 快键设值 =====
+        function setSearch(text) {
+            const input = document.getElementById('searchInput');
+            input.value = text;
+            input.focus();
+            autoResize(input);
+        }
+
+        // ===== 快捷知识点 Dialog（原生 <dialog> + ::backdrop 幕布） =====
+        const QUICK_KNOWLEDGE = {
+            '快速排序算法详解与复杂度分析': {
+                icon: 'fa-sort-amount-down',
+                name: '排序算法',
+                desc: '快速排序基于分治思想，通过选取基准值将序列划分为左右两部分并递归排序，是平均性能最优的通用排序算法之一。',
+                points: [
+                    '分治思想与基准值（pivot）选取策略',
+                    '挖坑法 / 双指针交换的划分过程',
+                    '平均 O(n log n) 与最坏 O(n²) 的复杂度',
+                    '优化：三数取中、随机基准、尾递归优化'
+                ]
+            },
+            'TCP 三次握手与四次挥手过程': {
+                icon: 'fa-network-wired',
+                name: '计算机网络',
+                desc: 'TCP 通过三次握手建立可靠连接、四次挥手有序释放连接，是传输层可靠传输机制的核心体现。',
+                points: [
+                    '三次握手：SYN → SYN+ACK → ACK',
+                    '序列号与确认号的协同确认机制',
+                    '四次挥手：FIN 与 TIME_WAIT 状态机',
+                    '为什么握手要 3 次、挥手要 4 次'
+                ]
+            },
+            '进程与线程的区别及调度算法': {
+                icon: 'fa-microchip',
+                name: '操作系统',
+                desc: '进程是资源分配的最小单位，线程是 CPU 调度的最小单位；调度算法决定进程如何高效占用 CPU。',
+                points: [
+                    '进程与线程的四大核心区别',
+                    'PCB / TCB 中的关键字段',
+                    '先来先服务、短作业优先、时间片轮转',
+                    '多级反馈队列与实时调度策略'
+                ]
+            },
+            '二叉树的遍历：前序中序后序层序': {
+                icon: 'fa-code-branch',
+                name: '数据结构',
+                desc: '二叉树遍历是树结构的基础操作：前中后序对应深度优先 DFS，层序对应广度优先 BFS。',
+                points: [
+                    '递归与迭代两种实现方式',
+                    '前序：根→左→右；中序：左→根→右',
+                    '后序：左→右→根；层序：按层 BFS',
+                    '由两种遍历序列还原二叉树'
+                ]
+            }
+        };
+
+        function openQuickDialog(key) {
+            const d = QUICK_KNOWLEDGE[key];
+            const dlg = document.getElementById('quickDialog');
+            if (!d || !dlg) return setSearch(key);
+            document.getElementById('quickDlgIcon').innerHTML = `<i class="fas ${d.icon}"></i>`;
+            document.getElementById('quickDlgTitle').textContent = d.name;
+            document.getElementById('quickDlgDesc').textContent = d.desc;
+            document.getElementById('quickDlgPoints').innerHTML = d.points
+                .map(p => `<li><i class="fas fa-check-circle"></i><span>${p}</span></li>`).join('');
+            dlg.dataset.query = key;
+            dlg.classList.remove('closing');
+            dlg.showModal(); // 幕布 ::backdrop 随 dialog 淡入
+        }
+        function closeQuickDialog() {
+            const dlg = document.getElementById('quickDialog');
+            if (!dlg || !dlg.open || dlg.classList.contains('closing')) return;
+            dlg.classList.add('closing'); // 先播退出动画，动画结束后再真正关闭
+            dlg.addEventListener('animationend', () => {
+                dlg.classList.remove('closing');
+                dlg.close();
+            }, { once: true });
+        }
+        function quickDialogGo() {
+            const dlg = document.getElementById('quickDialog');
+            const key = dlg.dataset.query || '';
+            closeQuickDialog();
+            // 待幕布淡出后填入搜索框并立即生成视频
+            setTimeout(() => {
+                setSearch(key);
+                doVideoGenerate();
+            }, 240);
+        }
+        // ESC 关闭也走可逆淡出
+        document.getElementById('quickDialog').addEventListener('cancel', (e) => {
+            e.preventDefault();
+            closeQuickDialog();
+        });
+        // 点击幕布区域关闭
+        document.getElementById('quickDialog').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('quickDialog')) closeQuickDialog();
+        });
+
+        // ===== 双侧抽屉面板：自我介绍 + 课堂角色配置 =====
+        const PROFILE_KEY = 'ai_profile';
+        const CLASS_KEY = 'ai_class_config';
+
+        function togglePfTag(el) {
+            el.classList.toggle('active');
+        }
+
+        function openSelfIntro() {
+            closeDrawers();
+            const p = loadProfile();
+            if (p) {
+                if (p.name) document.getElementById('pfName').value = p.name;
+                if (p.grade) document.getElementById('pfGrade').value = p.grade;
+                if (p.base) document.getElementById('pfBase').value = p.base;
+                if (p.goal) document.getElementById('pfGoal').value = p.goal;
+                document.querySelectorAll('#pfTags .pf-tag').forEach(t => {
+                    t.classList.toggle('active', (p.traits || []).includes(t.dataset.v));
+                });
+            }
+            document.getElementById('profileDrawer').classList.add('active');
+            document.getElementById('drawerOverlay').classList.add('active');
+        }
+
+        function loadProfile() {
+            try { return JSON.parse(localStorage.getItem(PROFILE_KEY)) || null; } catch (e) { return null; }
+        }
+
+        function saveProfile() {
+            const profile = {
+                name: document.getElementById('pfName').value.trim(),
+                grade: document.getElementById('pfGrade').value,
+                base: document.getElementById('pfBase').value.trim(),
+                goal: document.getElementById('pfGoal').value.trim(),
+                traits: Array.from(document.querySelectorAll('#pfTags .pf-tag.active')).map(t => t.dataset.v)
+            };
+            localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+            closeDrawers();
+            const status = document.getElementById('searchStatus');
+            if (status) status.textContent = '已保存自我介绍，AI 老师将按你的背景个性讲解';
+        }
+
+        function openClassConfig() {
+            closeDrawers();
+            const c = loadClassConfig();
+            if (c) {
+                document.querySelectorAll('input[name="voice"]').forEach(r => { r.checked = r.value === c.voice; });
+                document.querySelectorAll('input[name="role"]').forEach(r => { r.checked = r.value === c.role; });
+                const cb = document.getElementById('cfInteractive');
+                if (cb) cb.checked = !!c.interactive;
+            }
+            syncCfOptions();
+            document.getElementById('classDrawer').classList.add('active');
+            document.getElementById('drawerOverlay').classList.add('active');
+        }
+
+        function syncCfOptions() {
+            // 根据 radio 选中状态高亮对应的选项卡片
+            document.querySelectorAll('#classDrawer .cf-option').forEach(opt => {
+                const input = opt.querySelector('input');
+                opt.classList.toggle('checked', !!(input && input.checked));
+            });
+        }
+        // 点击 cf-option 卡片时同步选中
+        document.querySelectorAll('#classDrawer .cf-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const input = opt.querySelector('input');
+                if (input) input.checked = true;
+                syncCfOptions();
+            });
+        });
+
+        function loadClassConfig() {
+            try { return JSON.parse(localStorage.getItem(CLASS_KEY)) || null; } catch (e) { return null; }
+        }
+
+        function saveClassConfig() {
+            const voice = (document.querySelector('input[name="voice"]:checked') || {}).value || 'longanyang';
+            const role = (document.querySelector('input[name="role"]:checked') || {}).value || '好奇宝宝';
+            const cb = document.getElementById('cfInteractive');
+            const interactive = !!(cb && cb.checked);
+            localStorage.setItem(CLASS_KEY, JSON.stringify({ voice, role, interactive }));
+            closeDrawers();
+            const status = document.getElementById('searchStatus');
+            if (status) status.textContent = '已保存课堂配置：' + role + ' · ' + voice + (interactive ? ' · 深度交互' : '');
+        }
+
+        function closeDrawers() {
+            document.getElementById('profileDrawer').classList.remove('active');
+            document.getElementById('classDrawer').classList.remove('active');
+            document.getElementById('drawerOverlay').classList.remove('active');
+        }
+
+        // 生成视频时附带个性化上下文
+        function buildPersonaContext() {
+            const p = loadProfile();
+            const c = loadClassConfig();
+            const parts = [];
+            if (p) {
+                const bits = [];
+                if (p.name) bits.push('学生昵称「' + p.name + '」');
+                if (p.grade) bits.push('年级/职业：' + p.grade);
+                if (p.base) bits.push('已掌握：' + p.base);
+                if (p.goal) bits.push('目标：' + p.goal);
+                if (p.traits && p.traits.length) bits.push('性格：' + p.traits.join('、'));
+                if (bits.length) parts.push('学员背景与性格：' + bits.join('；'));
+            }
+            if (c) {
+                parts.push('讲解音色：' + c.voice + '；课堂学生角色：' + c.role + (c.interactive ? '（开启深度交互提问）' : ''));
+            }
+            return parts.join('。');
+        }
+
+        // 把用户输入追加到聊天流（支持公式/代码渲染）
+        function addUserBubble(text) {
+            const stream = document.getElementById('chatStream');
+            if (!stream) return;
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble chat-bubble--user';
+            bubble.innerHTML = '<div class="chat-bubble-avatar"><i class="fas fa-user-graduate"></i></div><div class="chat-bubble-body"></div>';
+            const body = bubble.querySelector('.chat-bubble-body');
+            body.innerHTML = (window.renderMarkdown ? renderMarkdown(text) : text);
+            stream.appendChild(bubble);
+            stream.scrollTop = stream.scrollHeight;
+        }
+
+        // ===== 新建搜索 =====
+        function startNewSearch() {
+            const input = document.getElementById('searchInput');
+            input.value = '';
+            input.focus();
+            autoResize(input);
+            document.getElementById('uploadPreview').style.display = 'none';
+            document.getElementById('uploadPreview').innerHTML = '';
+            document.getElementById('searchStatus').textContent = '';
+        }
+
+        // ===== 搜索 =====
+        async function doSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            const hasFile = uploadedFiles.length > 0;
+            if (!q && !hasFile) return;
+
+            let query = q;
+            if (hasFile) {
+                const fileNames = uploadedFiles.map(f => f.name).join('、');
+                query = q ? q + ' [附件: ' + fileNames + ']' : '[附件搜索: ' + fileNames + ']';
+            }
+            if (!query.trim()) return;
+
+            const status = document.getElementById('searchStatus');
+            status.textContent = '正在提交学习主题…';
+            try {
+                // 后端会完成 Unicode、空白符和危险内容的规范化校验。
+                const response = await fetch('/api/v1/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, source: 'search-page' })
+                });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error?.message || '搜索请求失败');
+                const normalized = payload.data.query;
+                saveHistory(normalized);
+                status.textContent = '已接收，正在进入课程生成页…';
+                location.href = 'watch.html?q=' + encodeURIComponent(normalized);
+            } catch (error) {
+                status.textContent = '提交失败：' + error.message + '。请确认后端服务已启动。';
+            }
+        }
+
+        // ===== AI 生成中浮层控制 =====
+        // opts.mode: 'skeleton'（内容形状已知 → 骨架屏）| 'spinner'（无内容形状 → 转圈）
+        // opts.busyText: 骨架内文字（生成视频中的文本）
+        function showAILoading(title = '生成课程大纲', subtitle = '正在构建学习路径…', opts = {}) {
+            const cycle = opts.cycle !== false;
+            const mode = opts.mode || 'skeleton';
+            document.getElementById('aiLoadingTitle').textContent = title;
+            document.getElementById('aiLoadingSubtitle').textContent = subtitle;
+            const overlay = document.getElementById('aiLoadingOverlay');
+            // 加载区域保持 aria-busy="true"（指示数据仍在加载）
+            document.getElementById('aiLoadingRegion').setAttribute('aria-busy', 'true');
+            // 骨架 / spinner 切换，加载完成后替换指示器
+            const skeleton = document.getElementById('aiLoadingSkeleton');
+            const spinner = document.getElementById('aiLoadingSpinner');
+            skeleton.hidden = mode !== 'skeleton';
+            spinner.hidden = mode !== 'spinner';
+            if (mode === 'skeleton' && opts.busyText) {
+                document.getElementById('aiLoadingSkeletonText').textContent = opts.busyText;
+            }
+            overlay.classList.add('active');
+            // cycle=true 时循环变化副标题；轮询阶段传 false 以显示实时进度
+            if (!cycle) { stopAILoadingCycle(); return; }
+            if (!window.__aiLoadingInterval) {
+                const subtitles = ['正在构建学习路径…', '正在拆解核心知识点…', '正在设计幻灯片结构…', '正在编排讲解顺序…'];
+                let idx = 0;
+                window.__aiLoadingInterval = setInterval(() => {
+                    if (!document.getElementById('aiLoadingOverlay').classList.contains('active')) return;
+                    idx = (idx + 1) % subtitles.length;
+                    document.getElementById('aiLoadingSubtitle').textContent = subtitles[idx];
+                }, 2200);
+            }
+        }
+        function stopAILoadingCycle() {
+            if (window.__aiLoadingInterval) {
+                clearInterval(window.__aiLoadingInterval);
+                window.__aiLoadingInterval = null;
+            }
+        }
+        function hideAILoading() {
+            document.getElementById('aiLoadingOverlay').classList.remove('active');
+            stopAILoadingCycle();
+            // 加载完成：移除 busy 标记（指示器已被替换/隐藏）
+            document.getElementById('aiLoadingRegion').setAttribute('aria-busy', 'false');
+        }
+
+        // ===== AI 视频生成 =====
+        async function doVideoGenerate() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q) {
+                document.getElementById('searchStatus').textContent = '请先输入要生成视频的知识点内容';
+                return;
+            }
+
+            const status = document.getElementById('searchStatus');
+            const btn = document.querySelector('.search-submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            status.textContent = 'AI 正在生成课程大纲…';
+
+            // 把用户输入加入聊天流
+            addUserBubble(q);
+            // 展示骨架屏：最终卡片布局已知，骨架内文字 = 生成视频中的文本
+            showAILoading('生成教学视频', '正在构建「' + q + '」的学习路径…', { busyText: '视频生成中 · ' + q });
+
+            try {
+                const response = await fetch('/api/v1/video/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: q, source: 'search-page', persona: buildPersonaContext() })
+                });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error?.message || '视频生成请求失败');
+
+                const taskId = payload.data.task_id;
+                saveHistory(q);
+
+                // 提交完成：切换标题，轮询阶段显示实时进度（不再循环副标题）
+                showAILoading('生成教学视频', '任务已提交，正在排队…', { cycle: false });
+
+                // 轮询任务状态，动画持续到生成完成再跳转播放页
+                const maxAttempts = 110; // 约 220 秒上限
+                let done = false;
+                for (let i = 0; i < maxAttempts; i++) {
+                    let sr, sp;
+                    try {
+                        sr = await fetch(`/api/v1/video/status?task_id=${encodeURIComponent(taskId)}`);
+                        sp = await sr.json();
+                    } catch (e) {
+                        // 偶发网络错误：短暂等待后重试，不中断
+                        await new Promise(r => setTimeout(r, 2000));
+                        continue;
+                    }
+                    if (!sr.ok) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        continue;
+                    }
+                    const st = sp.data.status;
+                    if (st === 'failed') {
+                        throw new Error(sp.data.error?.message || '视频生成失败');
+                    }
+                    if (st === 'slides_ready') { done = true; break; }
+                    // 更新副标题为实时进度
+                    const sub = document.getElementById('aiLoadingSubtitle');
+                    if (st === 'queued') {
+                        sub.textContent = '任务已提交，正在排队…';
+                    } else if (st === 'generating') {
+                        sub.textContent = 'Qwen-Max 正在生成教学讲稿… (' + (sp.data.progress || 20) + '%)';
+                        document.getElementById('aiLoadingSkeletonText').textContent = '正在生成讲稿文本…';
+                    } else if (st === 'generating_tts') {
+                        // 语音合成阶段无有意义的内容形状：切换为 role=status 的 spinner
+                        showAILoading('生成教学视频', 'Qwen CosyVoice 正在合成语音配音… (' + (sp.data.progress || 50) + '%)', { cycle: false, mode: 'spinner' });
+                    }
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+
+                if (!done) {
+                    // 超时未完成：仍跳转，播放页会继续等待
+                    status.textContent = '生成耗时较长，正在进入播放页继续等待…';
+                } else {
+                    status.textContent = '生成完成，正在进入播放页…';
+                }
+                location.href = 'watch.html?task_id=' + encodeURIComponent(taskId) + '&q=' + encodeURIComponent(q);
+            } catch (error) {
+                hideAILoading();
+                status.textContent = '生成失败：' + error.message + '。请重试。';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-arrow-up"></i><span>进入课堂</span>';
+            }
+        }
+
+        // ===== 文件/图片上传 =====
+        let uploadedFiles = [];
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedFiles.push(file);
+            renderUploadPreview();
+            document.getElementById('searchStatus').textContent = '已选择文件: ' + file.name;
+            event.target.value = '';
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedFiles.push(file);
+            renderUploadPreview();
+            document.getElementById('searchStatus').textContent = '已选择图片: ' + file.name;
+            event.target.value = '';
+        }
+
+        function renderUploadPreview() {
+            const preview = document.getElementById('uploadPreview');
+            preview.style.display = 'flex';
+            preview.innerHTML = uploadedFiles.map((f, i) => `
+                <span class="upload-preview-item">
+                <i class="fas ${f.type.startsWith('image/') ? 'fa-image' : 'fa-file-lines'}"></i>
+                    ${f.name}
+                    <button onclick="removeUpload(${i})"><i class="fas fa-xmark"></i></button>
+                </span>
+            `).join('');
+        }
+
+        function removeUpload(index) {
+            uploadedFiles.splice(index, 1);
+            if (uploadedFiles.length === 0) {
+                document.getElementById('uploadPreview').style.display = 'none';
+                document.getElementById('searchStatus').textContent = '';
+            }
+            renderUploadPreview();
+        }
+
+        // ===== 历史记录 =====
+        function getHistory() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveHistory(query) {
+            let list = getHistory();
+            if (list.length > 0 && list[0].query === query) return;
+            list = list.filter(item => item.query !== query);
+            list.unshift({ query: query, time: Date.now() });
+            if (list.length > MAX_HISTORY) list = list.slice(0, MAX_HISTORY);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            renderSidebarHistory();
+        }
+
+        function deleteHistoryItem(index) {
+            let list = getHistory();
+            list.splice(index, 1);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            renderSidebarHistory();
+        }
+
+        function clearAllHistory() {
+            localStorage.removeItem(STORAGE_KEY);
+            renderSidebarHistory();
+        }
+
+        function formatTime(ts) {
+            const now = new Date();
+            const d = new Date(ts);
+            const diffMs = now - d;
+            const diffMin = Math.floor(diffMs / 60000);
+            if (diffMin < 1) return '刚刚';
+            if (diffMin < 60) return diffMin + '分钟前';
+            const diffHour = Math.floor(diffMin / 60);
+            if (diffHour < 24) return diffHour + '小时前';
+            const diffDay = Math.floor(diffHour / 24);
+            if (diffDay < 7) return diffDay + '天前';
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            return m + '/' + day;
+        }
+
+        function renderSidebarHistory() {
+            const list = getHistory();
+            const listEl = document.getElementById('sidebarHistoryList');
+            const countEl = document.getElementById('historyCount');
+            countEl.textContent = list.length + ' 条记录';
+            if (list.length === 0) {
+                listEl.innerHTML = '<div style="padding:16px 10px;font-size:13px;color:#c0cfde;text-align:center;">暂无搜索历史</div>';
+                return;
+            }
+            listEl.innerHTML = list.map((item, i) => `
+                <div class="sidebar-history-item" onclick="historySearch('${escapeAttr(item.query)}', ${i})" title="${escapeHTML(item.query)}">
+                    <i class="fas fa-message"></i>
+                    <span class="sidebar-history-item-text">${escapeHTML(truncate(item.query, 22))}</span>
+                    <button class="sidebar-history-del" onclick="event.stopPropagation();deleteHistoryItem(${i})" title="删除">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function historySearch(query, index) {
+            setSearch(query);
+            // 标记活跃
+            document.querySelectorAll('.sidebar-history-item').forEach(el => el.classList.remove('active'));
+            const items = document.querySelectorAll('.sidebar-history-item');
+            if (items[index]) items[index].classList.add('active');
+            document.getElementById('searchStatus').textContent = '已选择历史记录，按回车或点击发送搜索';
+        }
+
+        function truncate(str, max) {
+            return str.length > max ? str.slice(0, max) + '…' : str;
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function escapeAttr(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // ===== 三行滚动内容：每行独立题目 + 知识点 ──
+        const rowData = {
+            row1: [
+                { icon: 'fa-microchip',     question: '什么是流水线冲突？',     knowledge: '结构/数据/控制三类冲突与解决' },
+                { icon: 'fa-memory',       question: 'Cache 映射方式有哪三种？', knowledge: '直接映射、全相联与组相联地址划分' },
+                { icon: 'fa-hard-drive',        question: '虚拟内存如何工作？',     knowledge: '页表、TLB 与缺页中断处理流程' },
+                { icon: 'fa-server',         question: 'MESI 协议的状态有哪些？', knowledge: 'Modified/Exclusive/Shared/Invalid' },
+                { icon: 'fa-bolt',           question: '中断与异常有何区别？',   knowledge: '同步异常 vs 异步中断的触发与响应' },
+                { icon: 'fa-wave-square',       question: '冯·诺依曼瓶颈是什么？',  knowledge: 'CPU-内存带宽限制，哈佛架构替代' },
+            ],
+            row2: [
+                { icon: 'fa-gears',          question: '进程间通信有哪些方式？', knowledge: '管道、消息队列、共享内存与信号量' },
+                { icon: 'fa-lock',           question: '死锁如何检测与恢复？',   knowledge: '资源分配图化简 + 银行家算法' },
+                { icon: 'fa-folder-tree',    question: 'inode 节点包含哪些信息？', knowledge: '元数据、数据块指针与间接索引' },
+                { icon: 'fa-code-merge',     question: 'Git merge 与 rebase 何时用？', knowledge: '保留分支历史 vs 线性化提交记录' },
+                { icon: 'fa-box',            question: 'Docker 镜像分层原理？',   knowledge: 'UnionFS + 写时复制 + 层缓存复用' },
+                { icon: 'fa-network-wired',  question: 'TCP 拥塞控制如何实现？', knowledge: '慢启动、拥塞避免、快重传与快恢复' },
+            ],
+            row3: [
+                { icon: 'fa-project-diagram',        question: '贪心算法为何能求最小生成树？', knowledge: 'Prim 与 Kruskal 的安全边定理证明' },
+                { icon: 'fa-cubes',           question: '动态规划与分治有何区别？',   knowledge: '重叠子问题 + 最优子结构的记忆化填表' },
+                { icon: 'fa-hashtag',        question: '哈希冲突如何解决？',         knowledge: '链地址法、线性探测与双散列对比' },
+                { icon: 'fa-balance-scale',          question: '红黑树为何优于普通 BST？',   knowledge: '五条红黑性质保证 O(log n) 平衡' },
+                { icon: 'fa-chart-line',     question: 'NP 完全问题是什么？',         knowledge: 'P vs NP / 多项式归约 / Cook-Levin' },
+                { icon: 'fa-shield-halved',         question: 'RSA 加密的数学基础？',       knowledge: '大整数分解 + 欧拉函数 φ(n) 陷门' },
+            ],
+        };
+
+        function buildChip(item) {
+            return `<div class="scroll-chip" onclick="setSearch('${escapeAttr(item.question)}')">
+                <span class="scroll-chip-dot"></span>
+                <i class="fas ${item.icon}"></i>
+                <span class="scroll-chip-q">${item.question}</span>
+                <span class="scroll-chip-sep">——</span>
+                <span class="scroll-chip-k" title="${escapeHTML(item.knowledge)}">${item.knowledge}</span>
+            </div>`;
+        }
+
+        function initScrollExamples() {
+            // 每行独立数据，双份实现无缝循环
+            for (const key of ['row1', 'row2', 'row3']) {
+                const chips = rowData[key].map(buildChip).join('');
+                const dual = chips + chips;
+                const trackId = { row1: 'track1', row2: 'track2', row3: 'track3' }[key];
+                document.getElementById(trackId).innerHTML = dual;
+            }
+
+            // 触摸拖拽支持
+            setupDragScroll();
+        }
+
+        /**
+         * 调整三排滚动基准速度
+         * @param {number} baseSeconds - 中间排完整滚动一圈的秒数，默认 75
+         *   三排速度自动为：baseSeconds × 0.85 / × 1.00 / × 1.15
+         *   例如 setMarqueeSpeed(60) → 51s / 60s / 69s
+         */
+        function setMarqueeSpeed(baseSeconds) {
+            document.documentElement.style.setProperty('--marquee-base', baseSeconds + 's');
+        }
+
+        // 暴露参数接口到全局，方便控制台调用调试
+        window.__marqueeConfig = {
+            getBase: () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--marquee-base')),
+            setSpeed: setMarqueeSpeed,
+            rows: {
+                row1: { multiplier: 0.85, name: '第一排（较快）' },
+                row2: { multiplier: 1.00, name: '第二排（基准）' },
+                row3: { multiplier: 1.15, name: '第三排（较慢）' },
+            },
+        };
+
+        function setupDragScroll() {
+            const stage = document.getElementById('scrollStage');
+            let isDragging = false;
+            let startX = 0;
+            let scrollLefts = [];
+
+            stage.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX;
+                const tracks = stage.querySelectorAll('.scroll-row-track');
+                tracks.forEach(t => t.style.animationPlayState = 'paused');
+                scrollLefts = Array.from(tracks).map(t => {
+                    const matrix = getComputedStyle(t).transform;
+                    if (matrix === 'none') return 0;
+                    const vals = matrix.match(/matrix.*\((.+)\)/);
+                    return vals ? parseFloat(vals[1].split(',')[4]) : 0;
+                });
+                stage.style.cursor = 'grabbing';
+            });
+
+            stage.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const tracks = stage.querySelectorAll('.scroll-row-track');
+                tracks.forEach((t, i) => {
+                    t.style.transform = `translateX(${scrollLefts[i] + dx}px)`;
+                    t.style.animationPlayState = 'paused';
+                });
+            });
+
+            const stopDrag = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                stage.style.cursor = '';
+                // 恢复自动滚动
+                const tracks = stage.querySelectorAll('.scroll-row-track');
+                tracks.forEach(t => {
+                    t.style.transform = '';
+                    t.style.animationPlayState = 'running';
+                });
+            };
+
+            stage.addEventListener('mouseup', stopDrag);
+            stage.addEventListener('mouseleave', stopDrag);
+
+            // 触摸事件
+            stage.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                isDragging = true;
+                startX = e.touches[0].clientX;
+                const tracks = stage.querySelectorAll('.scroll-row-track');
+                tracks.forEach(t => t.style.animationPlayState = 'paused');
+                scrollLefts = Array.from(tracks).map(t => {
+                    const matrix = getComputedStyle(t).transform;
+                    if (matrix === 'none') return 0;
+                    const vals = matrix.match(/matrix.*\((.+)\)/);
+                    return vals ? parseFloat(vals[1].split(',')[4]) : 0;
+                });
+            }, { passive: false });
+
+            stage.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const dx = e.touches[0].clientX - startX;
+                const tracks = stage.querySelectorAll('.scroll-row-track');
+                tracks.forEach((t, i) => {
+                    t.style.transform = `translateX(${scrollLefts[i] + dx}px)`;
+                    t.style.animationPlayState = 'paused';
+                });
+            }, { passive: false });
+
+            stage.addEventListener('touchend', () => {
+                if (!isDragging) return;
+                isDragging = false;
+                const tracks = stage.querySelectorAll('.scroll-row-track');
+                tracks.forEach(t => {
+                    t.style.transform = '';
+                    t.style.animationPlayState = 'running';
+                });
+            });
+        }
+
+        // ===== 初始化 =====
+        (function init() {
+            initVortex();
+            // 恢复侧栏状态
+            if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                document.getElementById('sidebar').classList.add('collapsed');
+                document.getElementById('expandBtn').classList.add('visible');
+            }
+            renderSidebarHistory();
+            initScrollExamples();
+
+            // 从 URL 参数读取预设搜索词（从 skill 页跳转过来）
+            const params = new URLSearchParams(window.location.search);
+            const presetQuery = params.get('q');
+            if (presetQuery) {
+                const input = document.getElementById('searchInput');
+                if (input) input.value = presetQuery;
+            }
+        })();
+    </script>
+
+    <!-- 品牌标题乱码解锁效果（解码式文本动画） -->
+    <script>
+    (function () {
+        const el = document.getElementById('brandTitle');
+        if (!el) return;
+        const finalText = el.getAttribute('aria-label') || el.textContent.trim();
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion) {
+            // 尊重系统"减弱动态"设置：直接渲染最终文本，不做动画
+            el.textContent = finalText;
+            return;
+        }
+
+        // 随机字形池：字母、数字、符号与中日韩字形，增强"乱码"感
+        const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/\\~ぁあかさたなはまやらわ漢字仮名猫電気時間空間';
+        const rand = () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+
+        // 每个字符一个等宽 span：滚动期间宽度恒定，不抖动
+        const chars = [...finalText];
+        const frag = document.createDocumentFragment();
+        const spans = chars.map((ch) => {
+            const s = document.createElement('span');
+            s.className = 'ch';
+            s.setAttribute('aria-hidden', 'true'); // 读屏不读乱码字符
+            s.textContent = ch === ' ' ? '\u00A0' : rand();
+            frag.appendChild(s);
+            return s;
+        });
+        el.textContent = '';
+        el.appendChild(frag);
+
+        const DELAY = 600;            // 纯乱码期（放慢：先让乱码停留更久）
+        const STAGGER = 95;           // 相邻字符锁定间隔（放慢：逐个解锁更从容）
+        const TAIL = 220;             // 收尾缓冲
+        const CYCLE = 6000;           // 一轮完整循环周期 = 6 秒（乱码动画 + 真实文本停留）
+        const lockAt = (i) => DELAY + i * STAGGER;
+        const total = lockAt(chars.length - 1) + TAIL;
+        const PAUSE = Math.max(800, CYCLE - total); // 停留时长 = 总周期 - 动画时长
+        const target = (i) => chars[i] === ' ' ? '\u00A0' : chars[i];
+
+        // 单轮动画：先全部乱码，再从左到右解码；结束后停留片刻再开启下一轮
+        function runCycle() {
+            el.classList.remove('done');
+            spans.forEach((s) => { s.textContent = rand(); }); // 新一轮乱码（每次随机，滚动内容不同）
+            let start = null;
+            let frameCount = 0;
+            function frame(now) {
+                if (!start) start = now;
+                const t = now - start;
+                const churn = frameCount++ % 3 === 0; // 每 3 帧才滚动一次乱码字形，切换更慢
+                let allLocked = true;
+                spans.forEach((s, i) => {
+                    if (t >= lockAt(i)) {
+                        const wanted = target(i);
+                        if (s.textContent !== wanted) s.textContent = wanted;
+                    } else {
+                        // 未到锁定时刻：以放慢的节奏持续滚动随机字形
+                        if (churn) s.textContent = rand();
+                        allLocked = false;
+                    }
+                });
+                if (t >= total) {
+                    el.classList.add('done');
+                    setTimeout(runCycle, PAUSE); // 停留后循环
+                    return;
+                }
+                requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+        }
+        runCycle();
+    })();
+    </script>
+
+    <!-- 错题本弹层 -->
+    <div class="overlay" id="mistakeOverlay" hidden>
+        <div class="overlay-panel" role="dialog" aria-label="错题本">
+            <div class="overlay-header">
+                <div class="overlay-title"><i class="fas fa-book-medical" style="color:var(--primary)"></i> 错题本 <span class="overlay-count" id="mistakeCount"></span></div>
+                <div class="overlay-actions">
+                    <button class="chip" id="mistakeFilterBtn" onclick="toggleMistakeFilter()">未复习</button>
+                    <button class="overlay-close" onclick="closeOverlay('mistakeOverlay')" title="关闭"><i class="fas fa-xmark"></i></button>
+                </div>
+            </div>
+            <div class="overlay-body" id="mistakeList"></div>
+            <div class="mistake-footer">
+                <button class="chip chip-primary" onclick="openDiagnostics()"><i class="fas fa-chart-line"></i> 学情诊断</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学情诊断弹层 -->
+    <div class="overlay" id="diagOverlay" hidden>
+        <div class="overlay-panel overlay-panel--wide" role="dialog" aria-label="学情诊断">
+            <div class="overlay-header">
+                <div class="overlay-title"><i class="fas fa-chart-line" style="color:var(--primary)"></i> 学情诊断</div>
+                <div class="overlay-actions">
+                    <button class="chip" onclick="openDiagnostics()"><i class="fas fa-rotate"></i> 重新诊断</button>
+                    <button class="chip" onclick="exportDiagnostics()"><i class="fas fa-download"></i> 导出报告</button>
+                    <button class="overlay-close" onclick="closeOverlay('diagOverlay')" title="关闭"><i class="fas fa-xmark"></i></button>
+                </div>
+            </div>
+            <div class="overlay-body" id="diagBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== 错题本（与 watch.html 共用后端接口） =====
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        // 错题卡片选项渲染：绿色标记正确答案、红色标记用户选错的选项
+        function renderMistakeOptions(m) {
+            const opts = m.options;
+            if (!Array.isArray(opts) || !opts.length) return '';
+            const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+            const norm = (s) => String(s ?? '').normalize('NFC').trim().toLowerCase();
+            let userIdx = -1;
+            if (typeof m.userAnswer === 'string' && m.userAnswer.trim()) {
+                const ltr = letters.indexOf(m.userAnswer.trim().toUpperCase());
+                if (ltr >= 0 && ltr < opts.length) userIdx = ltr;
+                else userIdx = opts.findIndex((o) => norm(o) === norm(m.userAnswer));
+            }
+            const correctIdx = opts.findIndex((o) => norm(o) === norm(m.correctAnswer));
+            return '<div class="mistake-opts">' + opts.map((o, i) => {
+                const isCorrect = i === correctIdx;
+                const isUser = i === userIdx;
+                let cls = 'mistake-opt';
+                if (isCorrect) cls += ' ok';
+                else if (isUser) cls += ' wrong';
+                const tag = isCorrect ? '<span class="mistake-opt-tag ok">正确答案</span>' : (isUser ? '<span class="mistake-opt-tag wrong">你的答案</span>' : '');
+                return '<div class="' + cls + '"><span class="mistake-opt-key">' + letters[i] + '</span><span class="mistake-opt-text">' + escapeHtml(o) + '</span>' + tag + '</div>';
+            }).join('') + '</div>';
+        }
+        // 错题日期格式化：YYYY-MM-DD HH:mm
+        function formatMistakeDate(ts) {
+            if (!ts) return '';
+            const d = new Date(ts);
+            if (isNaN(d.getTime())) return '';
+            const pad = (n) => String(n).padStart(2, '0');
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        }
+        function getClientId() {
+            let id = localStorage.getItem('zx_client_id');
+            if (!id) {
+                id = 'c-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+                localStorage.setItem('zx_client_id', id);
+            }
+            return id;
+        }
+
+        let mistakeFilter = 'false';
+        let _mistakeCache = [];
+
+        function closeOverlay(id) { document.getElementById(id).hidden = true; }
+        function openMistakes() { document.getElementById('mistakeOverlay').hidden = false; loadMistakes(); }
+        function toggleMistakeFilter() {
+            mistakeFilter = mistakeFilter === 'false' ? 'all' : 'false';
+            document.getElementById('mistakeFilterBtn').textContent = mistakeFilter === 'false' ? '未复习' : '全部';
+            loadMistakes();
+        }
+
+        async function loadMistakes() {
+            const list = document.getElementById('mistakeList');
+            list.innerHTML = '<div class="overlay-empty"><i class="fas fa-spinner fa-spin"></i> 加载中…</div>';
+            try {
+                const res = await fetch('/api/v1/mistakes?reviewed=' + mistakeFilter, { headers: { 'x-client-id': getClientId() } });
+                const payload = await res.json();
+                if (!res.ok) throw new Error(payload.error?.message || '加载失败');
+                const items = payload.data.items;
+                _mistakeCache = items;
+                document.getElementById('mistakeCount').textContent = items.length ? '(' + items.length + ')' : '';
+                if (!items.length) {
+                    list.innerHTML = '<div class="overlay-empty"><i class="fas fa-inbox"></i><br>暂无' + (mistakeFilter === 'false' ? '待复习' : '') + '错题，去"视频播放"页的知识测评中答题，错题会自动收录到这里。</div>';
+                    return;
+                }
+                list.innerHTML = items.map((m) => `
+                    <div class="mistake-card" id="mistake-${m.id}">
+                        <div class="mistake-card-head">
+                            <span class="mistake-topic">${escapeHtml(m.topic?.title || '未分类')}</span>
+                            <span class="mistake-head-right">
+                                <span class="mistake-date">${formatMistakeDate(m.createdAt)}</span>
+                                <span class="mistake-cause ${m.cause ? 'cause-' + m.cause : 'cause-pending'}">${m.causeLabel || '归因中…'}</span>
+                            </span>
+                        </div>
+                        <div class="mistake-q">${escapeHtml(m.question) || '（无题干）'}</div>
+                        ${renderMistakeOptions(m)}
+                        <div class="mistake-ans">
+                            <span class="mistake-badge bad">你的答案：${escapeHtml(m.userAnswer) || '（空）'}</span>
+                            <span class="mistake-badge good">正确答案：${escapeHtml(m.correctAnswer) || '（空）'}</span>
+                        </div>
+                        ${m.pending
+                            ? '<div class="mistake-pending"><i class="fas fa-spinner fa-spin"></i> AI 归因分析中…</div>'
+                            : `
+                        <div class="mistake-cause-text"><span class="mistake-cause-label">错误原因：</span>${escapeHtml(m.causeText || '')}</div>
+                        <div class="mistake-suggestion"><i class="fas fa-lightbulb"></i> ${escapeHtml(m.suggestion || '')}</div>`}
+                        <div class="mistake-actions">
+                            <button class="chip" onclick="reworkMistake('${m.id}')">${m.reviewed ? '再练一次' : '重做本题'}</button>
+                            ${!m.pending ? '<button class="chip" onclick="reAnalyzeMistake(\'' + m.id + '\')" title="用更新的归因模型重新分析"><i class="fas fa-rotate"></i> 重新归因</button>' : ''}
+                            ${m.reviewed ? '<span class="mistake-reviewed"><i class="fas fa-check-circle"></i> ' + (m.reviewCorrect ? '复习通过' : '复习待巩固') + '</span>' : ''}
+                        </div>
+                    </div>`).join('');
+                // 对未归因的错题自动触发 AI 归因，完成后局部刷新
+                for (const m of items.filter((x) => x.pending)) {
+                    analyzeMistake(m.id).then((ok) => { if (ok) refreshMistakeCard(m.id); });
+                }
+            } catch (error) {
+                list.innerHTML = '<div class="overlay-empty">加载失败：' + escapeHtml(error.message) + '</div>';
+            }
+        }
+
+        async function analyzeMistake(id, force) {
+            try {
+                const res = await fetch('/api/v1/mistakes/' + id + '/analyze', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-client-id': getClientId() },
+                    body: JSON.stringify({ force: Boolean(force) })
+                });
+                return res.ok;
+            } catch (e) { return false; }
+        }
+
+        // 用最新的归因模型重新分析（老错题可点击"重新归因"）
+        async function reAnalyzeMistake(id) {
+            const card = document.getElementById('mistake-' + id);
+            if (!card) return;
+            const cause = card.querySelector('.mistake-cause');
+            if (cause) { cause.className = 'mistake-cause cause-pending'; cause.textContent = '归因中…'; }
+            const ok = await analyzeMistake(id, true);
+            if (ok) refreshMistakeCard(id);
+        }
+
+        async function refreshMistakeCard(id) {
+            try {
+                const res = await fetch('/api/v1/mistakes?reviewed=all', { headers: { 'x-client-id': getClientId() } });
+                const payload = await res.json();
+                const item = (payload.data.items || []).find((x) => x.id === id);
+                if (!item) return;
+                const card = document.getElementById('mistake-' + id);
+                if (!card) return;
+                const pending = card.querySelector('.mistake-pending');
+                if (pending) {
+                    pending.outerHTML = `
+                        <div class="mistake-cause-text"><span class="mistake-cause-label">错误原因：</span>${escapeHtml(item.causeText || '')}</div>
+                        <div class="mistake-suggestion"><i class="fas fa-lightbulb"></i> ${escapeHtml(item.suggestion || '')}</div>`;
+                } else {
+                    const ct = card.querySelector('.mistake-cause-text');
+                    if (ct) ct.innerHTML = '<span class="mistake-cause-label">错误原因：</span>' + escapeHtml(item.causeText || '');
+                    const sg = card.querySelector('.mistake-suggestion');
+                    if (sg) sg.innerHTML = '<i class="fas fa-lightbulb"></i> ' + escapeHtml(item.suggestion || '');
+                }
+                const cause = card.querySelector('.mistake-cause');
+                if (cause) { cause.className = 'mistake-cause cause-' + item.cause; cause.textContent = item.causeLabel; }
+            } catch (e) { /* 忽略局部刷新失败 */ }
+        }
+
+        function reworkMistake(id) {
+            const card = document.getElementById('mistake-' + id);
+            if (!card) return;
+            const existing = card.querySelector('.rework-box');
+            if (existing) { existing.remove(); return; }
+            const item = _mistakeCache.find((x) => x.id === id);
+            const box = document.createElement('div');
+            box.className = 'rework-box';
+            box.innerHTML = '<input class="rework-input" placeholder="输入你的答案，重新作答…"><button class="chip" onclick="submitRework(\'' + id + '\', this)">提交</button>';
+            card.querySelector('.mistake-actions').before(box);
+            const input = box.querySelector('input');
+            input.focus();
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitRework(id, box.querySelector('button')); });
+        }
+
+        async function submitRework(id, btn) {
+            const box = btn.closest('.rework-box');
+            const input = box.querySelector('input');
+            const answer = input.value.trim();
+            if (!answer) return;
+            const item = _mistakeCache.find((x) => x.id === id);
+            const reviewCorrect = item
+                ? answer.normalize('NFC').trim().toLowerCase() === String(item.correctAnswer || '').normalize('NFC').trim().toLowerCase()
+                : false;
+            try {
+                await fetch('/api/v1/mistakes/' + id + '/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-client-id': getClientId() },
+                    body: JSON.stringify({ reviewCorrect })
+                });
+            } catch (e) { /* 忽略 */ }
+            loadMistakes();
+        }
+
+        // ===== 学情诊断 =====
+        async function openDiagnostics() {
+            document.getElementById('diagOverlay').hidden = false;
+            const body = document.getElementById('diagBody');
+            body.innerHTML = '<div class="overlay-empty"><i class="fas fa-spinner fa-spin"></i> 正在生成学情诊断…</div>';
+            try {
+                const res = await fetch('/api/v1/diagnostics', { headers: { 'x-client-id': getClientId() } });
+                const payload = await res.json();
+                if (!res.ok) throw new Error(payload.error?.message || '诊断失败');
+                renderDiagnostics(payload.data.summary);
+            } catch (error) {
+                body.innerHTML = '<div class="overlay-empty">诊断失败：' + escapeHtml(error.message) + '</div>';
+            }
+        }
+
+        function renderDiagnostics(s) {
+            const pct = (x) => Math.round((x || 0) * 100) + '%';
+            const acc = s.accuracy;
+            const accColor = acc >= 0.8 ? '#1a9c5c' : (acc >= 0.6 ? '#d99a1a' : '#d94a4a');
+            const topicsHtml = s.topics.length ? s.topics.map((t) => {
+                const width = Math.round((t.correctRate || 0) * 100);
+                const lvColor = t.masteryLevel === '掌握' ? '#1a9c5c' : t.masteryLevel === '一般' ? '#d99a1a' : '#d94a4a';
+                return `<div class="diag-topic">
+                    <div class="diag-topic-row"><span>${escapeHtml(t.topic)}</span><span style="color:${lvColor}">${t.masteryLevel} · ${t.attempts} 题</span></div>
+                    <div class="diag-bar"><div class="diag-bar-fill" style="width:${width}%;background:${lvColor}"></div></div>
+                </div>`;
+            }).join('') : '<div class="diag-none">暂无答题记录</div>';
+            const weakHtml = s.weakTopics.length ? s.weakTopics.map((w) => `
+                <div class="diag-weak">
+                    <div class="diag-weak-head"><i class="fas fa-triangle-exclamation"></i> ${escapeHtml(w.topic)}${w.reason ? '<span class="diag-weak-sub">' + escapeHtml(w.reason) + '</span>' : ''}</div>
+                    ${w.suggestion ? '<div class="diag-weak-sugg"><i class="fas fa-lightbulb"></i> ' + escapeHtml(w.suggestion) + '</div>' : ''}
+                </div>`).join('') : '<div class="diag-none"><i class="fas fa-circle-check" style="color:#1a9c5c"></i> 暂无薄弱知识点，继续保持！</div>';
+            const trendHtml = s.trend.length ? s.trend.map((t) =>
+                `<span class="diag-trend-day" title="${t.date}：${t.attempts} 题，正确率 ${pct(t.accuracy)}"><span class="diag-trend-bar" style="height:${Math.max(8, Math.round((t.accuracy || 0) * 72))}px"></span>${t.date.slice(5)}</span>`
+            ).join('') : '<span class="diag-none">暂无趋势数据</span>';
+            document.getElementById('diagBody').innerHTML = `
+                <div class="diag-overview">
+                    <div class="diag-stat"><div class="diag-stat-num" style="color:${accColor}">${pct(acc)}</div><div class="diag-stat-label">总正确率</div></div>
+                    <div class="diag-stat"><div class="diag-stat-num">${s.totalAttempts}</div><div class="diag-stat-label">答题数</div></div>
+                    <div class="diag-stat"><div class="diag-stat-num">${s.correctCount}</div><div class="diag-stat-label">答对数</div></div>
+                    <div class="diag-stat"><div class="diag-stat-num">${s.mistakeCount}</div><div class="diag-stat-label">错题</div></div>
+                    <div class="diag-stat"><div class="diag-stat-num">${pct(s.reviewRate)}</div><div class="diag-stat-label">复习率</div></div>
+                </div>
+                <div class="diag-section"><div class="diag-section-title"><i class="fas fa-bullseye"></i> 知识点掌握度</div>${topicsHtml}</div>
+                <div class="diag-section"><div class="diag-section-title"><i class="fas fa-triangle-exclamation"></i> 薄弱点分析与建议</div>${weakHtml}</div>
+                <div class="diag-section"><div class="diag-section-title"><i class="fas fa-chart-simple"></i> 每日正确率趋势</div><div class="diag-trend">${trendHtml}</div></div>`;
+        }
+
+        function exportDiagnostics() {
+            const text = document.getElementById('diagBody').innerText;
+            const blob = new Blob(['栈知映 · 学情诊断报告\n生成时间：' + new Date().toLocaleString() + '\n\n' + text], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = '学情诊断报告_' + new Date().toISOString().slice(0, 10) + '.txt';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // 遮罩点击关闭 / ESC 关闭（事件委托，兼容脚本先于弹层 DOM）
+        document.addEventListener('click', function (e) {
+            const ov = e.target.closest('.overlay');
+            if (ov && e.target === ov) ov.hidden = true;
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.overlay:not([hidden])').forEach(function (ov) { ov.hidden = true; });
+            }
+        });
+    </script>
+
+    <script>
+        // ===== AI 解题助手（多轮对话 + 流式输出 + 公式/代码渲染，与 watch 页共用） =====
+        let chatHistory = [];
+
+        function toggleChatPanel() {
+            const panel = document.getElementById('chatPanel');
+            const fab = document.getElementById('chatFab');
+            const open = panel.classList.toggle('open');
+            fab.style.display = open ? 'none' : 'flex';
+            if (open) {
+                document.getElementById('chatInput').focus();
+            } else {
+                fab.querySelector('.chat-fab-badge').style.display = 'none';
+            }
+        }
+
+        function clearChat() {
+            chatHistory = [];
+            document.getElementById('chatMsgs').innerHTML = '<div class="chat-msg chat-msg--ai"><div class="chat-msg-avatar"><i class="fas fa-robot"></i></div><div class="chat-msg-content">你好，我是 AI 解题助手。把不会的题目或知识点发给我，我会给出分步讲解；也可以继续追问"为什么"或"再讲细一点"。</div></div>';
+            resetChatRail();
+        }
+
+        function fillChatInput(text) {
+            const input = document.getElementById('chatInput');
+            input.value = text;
+            input.style.height = 'auto';
+            input.style.height = input.scrollHeight + 'px';
+            input.focus();
+        }
+
+        // "分步讲解当前知识点"：把当前搜索框里的题目作为知识点，直接发起解答
+        function quickExplain() {
+            const topic = (document.getElementById('searchInput')?.value || '').trim();
+            fillChatInput(topic
+                ? '请分步讲解当前知识点：' + topic + '，包含思路和代码'
+                : '请分步讲解当前知识点，包含思路和代码');
+            sendChat();
+        }
+
+        function addChatMsg(role, text) {
+            const container = document.getElementById('chatMsgs');
+            const msg = document.createElement('div');
+            msg.className = 'chat-msg chat-msg--' + (role === 'user' ? 'user' : 'ai');
+            msg.innerHTML = '<div class="chat-msg-avatar"><i class="fas ' + (role === 'user' ? 'fa-user-graduate' : 'fa-robot') + '"></i></div><div class="chat-msg-content"></div>';
+            const content = msg.querySelector('.chat-msg-content');
+            if (role === 'user') {
+                content.textContent = text;
+            } else {
+                content.innerHTML = (window.renderMarkdown ? renderMarkdown(text) : text);
+            }
+            container.appendChild(msg);
+            scrollChatPanel();
+            return content;
+        }
+
+        function scrollChatPanel() {
+            const body = document.getElementById('chatPanelBody');
+            body.scrollTop = body.scrollHeight;
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || input.disabled) return;
+
+            input.value = '';
+            input.style.height = 'auto';
+            addChatMsg('user', text);
+            chatHistory.push({ role: 'user', content: text });
+
+            const sendBtn = document.getElementById('chatSendBtn');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            input.disabled = true;
+
+            const bubble = addChatMsg('ai', '正在思考…');
+            try {
+                const response = await fetch('/api/v1/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: text, history: chatHistory.slice(0, -1) })
+                });
+                if (!response.ok) {
+                    let message = '请求失败，请稍后重试';
+                    try { message = (await response.json()).error?.message || message; } catch (e) {}
+                    throw new Error(message);
+                }
+
+                // 流式读取 SSE
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let full = '';
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    let idx;
+                    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                        const event = buffer.slice(0, idx);
+                        buffer = buffer.slice(idx + 2);
+                        const dataLine = event.split('\n').find(l => l.trim().startsWith('data:'));
+                        if (!dataLine) continue;
+                        const data = dataLine.trim().slice(5).trim();
+                        if (data === '[DONE]') continue;
+                        try {
+                            const evt = JSON.parse(data);
+                            if (evt.type === 'delta') {
+                                full += evt.delta;
+                                bubble.innerHTML = (window.renderMarkdown ? renderMarkdown(full) : full);
+                                scrollChatPanel();
+                            } else if (evt.type === 'done') {
+                                full = evt.content;
+                            }
+                        } catch (e) {}
+                    }
+                }
+                if (!full) full = '（未收到回复，请重试）';
+                bubble.innerHTML = (window.renderMarkdown ? renderMarkdown(full) : full);
+                chatHistory.push({ role: 'assistant', content: full });
+                scrollChatPanel();
+                rebuildChatRail();
+            } catch (e) {
+                bubble.innerHTML = renderMarkdown('**出错了**：' + e.message);
+                chatHistory.push({ role: 'assistant', content: '出错：' + e.message });
+                scrollChatPanel();
+                rebuildChatRail();
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        // ===== On this page 滚动导航（scrollspy） =====
+        const CHAT_RAIL_OFFSET = 34;
+        let chatSectionSeq = 0;
+        let chatSectionEls = [];
+        let chatObserver = null;
+
+        function resetChatRail() {
+            if (chatObserver) { chatObserver.disconnect(); chatObserver = null; }
+            chatSectionEls = [];
+            chatSectionSeq = 0;
+            const rail = document.getElementById('chatRail');
+            if (rail) { rail.hidden = true; document.getElementById('chatRailLinks').innerHTML = ''; }
+        }
+
+        function rebuildChatRail() {
+            const rail = document.getElementById('chatRail');
+            const linksBox = document.getElementById('chatRailLinks');
+            const headings = document.querySelectorAll('#chatMsgs .chat-msg--ai .chat-msg-content h1, #chatMsgs .chat-msg--ai .chat-msg-content h2, #chatMsgs .chat-msg--ai .chat-msg-content h3, #chatMsgs .chat-msg--ai .chat-msg-content h4');
+            if (!headings.length) { resetChatRail(); return; }
+
+            chatSectionEls = [];
+            headings.forEach(function (h) {
+                if (!h.id) h.id = 'chatsec-' + (chatSectionSeq++);
+                const title = (h.textContent || '').trim();
+                if (title) chatSectionEls.push({ id: h.id, title: title, el: h });
+            });
+            if (!chatSectionEls.length) { resetChatRail(); return; }
+
+            linksBox.innerHTML = chatSectionEls.map(function (s) {
+                return '<a class="chat-rail-link" href="#' + s.id + '" onclick="chatRailJump(event, \'' + s.id + '\')">' + escapeHtml(s.title) + '</a>';
+            }).join('');
+            rail.hidden = false;
+
+            if (chatObserver) chatObserver.disconnect();
+            chatObserver = new IntersectionObserver(chatRailOnObserve, {
+                root: document.getElementById('chatPanelBody'),
+                rootMargin: '-' + CHAT_RAIL_OFFSET + 'px 0px -60% 0px',
+                threshold: 0
+            });
+            chatSectionEls.forEach(function (s) { chatObserver.observe(s.el); });
+            setChatRailActive(chatSectionEls[0].id);
+        }
+
+        function chatRailPickCurrent() {
+            const body = document.getElementById('chatPanelBody');
+            const zoneTop = body.getBoundingClientRect().top + CHAT_RAIL_OFFSET + 2;
+            let current = null;
+            for (let i = 0; i < chatSectionEls.length; i++) {
+                if (chatSectionEls[i].el.getBoundingClientRect().top <= zoneTop) current = chatSectionEls[i].id;
+            }
+            return current || (chatSectionEls.length ? chatSectionEls[0].id : null);
+        }
+
+        function chatRailOnObserve() {
+            const id = chatRailPickCurrent();
+            if (id) setChatRailActive(id);
+        }
+
+        function setChatRailActive(id) {
+            document.querySelectorAll('.chat-rail-link').forEach(function (a) {
+                const on = a.getAttribute('href') === '#' + id;
+                a.classList.toggle('active', on);
+                if (on) a.setAttribute('aria-current', 'location');
+                else a.removeAttribute('aria-current');
+            });
+        }
+
+        function chatRailJump(event, id) {
+            event.preventDefault();
+            const el = document.getElementById(id);
+            if (!el) return;
+            const body = document.getElementById('chatPanelBody');
+            const target = body.scrollTop + el.getBoundingClientRect().top - body.getBoundingClientRect().top - CHAT_RAIL_OFFSET;
+            body.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+        }
+
+        // 顶部横杠拖拽移动面板
+        document.addEventListener('DOMContentLoaded', function () {
+            const panel = document.getElementById('chatPanel');
+            const bar = document.getElementById('chatDragBar');
+            if (!panel || !bar) return;
+            let dragging = false, startX = 0, startY = 0, baseLeft = 0, baseTop = 0;
+            bar.addEventListener('pointerdown', function (e) {
+                if (e.button !== 0) return;
+                const r = panel.getBoundingClientRect();
+                panel.style.right = 'auto';
+                panel.style.bottom = 'auto';
+                panel.style.left = r.left + 'px';
+                panel.style.top = r.top + 'px';
+                dragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                baseLeft = r.left;
+                baseTop = r.top;
+                try { bar.setPointerCapture(e.pointerId); } catch (err) {}
+                document.body.style.userSelect = 'none';
+            });
+            bar.addEventListener('pointermove', function (e) {
+                if (!dragging) return;
+                let nx = baseLeft + (e.clientX - startX);
+                let ny = baseTop + (e.clientY - startY);
+                const maxX = Math.max(8, window.innerWidth - panel.offsetWidth - 8);
+                const maxY = Math.max(8, window.innerHeight - panel.offsetHeight - 8);
+                nx = Math.max(8, Math.min(nx, maxX));
+                ny = Math.max(8, Math.min(ny, maxY));
+                panel.style.left = Math.round(nx) + 'px';
+                panel.style.top = Math.round(ny) + 'px';
+            });
+            function endDrag() {
+                if (!dragging) return;
+                dragging = false;
+                document.body.style.userSelect = '';
+            }
+            bar.addEventListener('pointerup', endDrag);
+            bar.addEventListener('pointercancel', endDrag);
+        });
+
+        // 输入框自适应高度
+        document.addEventListener('input', function (e) {
+            if (e.target && e.target.id === 'chatInput') {
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 110) + 'px';
+            }
+        });
+    </script>
+    <!-- AI 解题助手 -->
+    <button class="chat-fab" id="chatFab" onclick="toggleChatPanel()" title="AI 解题助手" aria-label="打开 AI 解题助手">
+        <i class="fas fa-comments"></i>
+        <span class="chat-fab-badge"></span>
+    </button>
+    <div class="chat-panel" id="chatPanel" role="dialog" aria-label="AI 解题助手">
+        <div class="chat-panel-dragbar" id="chatDragBar" title="按住拖动面板"></div>
+        <div class="chat-panel-header">
+            <div class="chat-panel-title"><i class="fas fa-robot"></i> AI 解题助手</div>
+            <div class="chat-panel-actions">
+                <button onclick="clearChat()" title="清空对话"><i class="fas fa-trash-can"></i></button>
+                <button onclick="toggleChatPanel()" title="收起"><i class="fas fa-minus"></i></button>
+            </div>
+        </div>
+        <div class="chat-panel-body" id="chatPanelBody">
+            <nav class="chat-rail" id="chatRail" aria-label="本页导航" hidden>
+                <div class="chat-rail-title">On this page</div>
+                <div class="chat-rail-links" id="chatRailLinks"></div>
+            </nav>
+            <div class="chat-msgs" id="chatMsgs">
+                <div class="chat-msg chat-msg--ai">
+                    <div class="chat-msg-avatar"><i class="fas fa-robot"></i></div>
+                    <div class="chat-msg-content">你好，我是 AI 解题助手。把不会的题目或知识点发给我，我会给出分步讲解；也可以继续追问"为什么"或"再讲细一点"。</div>
+                </div>
+            </div>
+        </div>
+        <div class="chat-suggest" id="chatSuggest">
+            <button onclick="quickExplain()">分步讲解当前知识点</button>
+            <button onclick="fillChatInput('结合这道题给我出一道相似的练习题，并给出解析')">出一道练习题</button>
+            <button onclick="fillChatInput('总结一下这个知识点的核心考点和易错点')">总结考点</button>
+        </div>
+        <div class="chat-panel-input">
+            <textarea id="chatInput" placeholder="输入题目或追问…（Enter 发送，Shift+Enter 换行）" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+</body>
+</html>

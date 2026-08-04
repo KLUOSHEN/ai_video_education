@@ -1,0 +1,6 @@
+.env
+data/store.json
+storage/audio/*
+storage/video/*
+storage/poster/*
+**/desktop.ini
