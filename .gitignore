@@ -1,6 +1,20 @@
+# ── 敏感文件（不提交） ──
 .env
 data/store.json
 storage/audio/*
 storage/video/*
 storage/poster/*
 **/desktop.ini
+
+# ── GitHub 仓库初始化模板（远程提供） ──
+.vscode/
+.alcache/
+.alpackages/
+.snapshots/
+.output/
+*.app
+rad.json
+*.g.xlf
+*.bclicense
+*.flf
+TestResults.xml
