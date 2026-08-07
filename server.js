@@ -105,7 +105,7 @@ function auth(req) {
   if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) throw new ApiError(401, 'UNAUTHORIZED', '缺少或无效的 API 凭证');
 }
 function log(event, fields = {}) { console.log(JSON.stringify({ time: now(), event, ...fields })); }
-function mime(file) { return ({ '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.mp4': 'video/mp4' })[path.extname(file).toLowerCase()] || 'application/octet-stream'; }
+function mime(file) { return ({ '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.ogg': 'audio/ogg', '.webm': 'video/webm', '.mp4': 'video/mp4', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.eot': 'application/vnd.ms-fontobject' })[path.extname(file).toLowerCase()] || 'application/octet-stream'; }
 
 function getTopic(text) {
   const entries = [
@@ -161,7 +161,7 @@ function generateQuestions(text, config = {}) {
   const questions = [];
   for (let index = 0; index < count; index += 1) {
     const type = types[index % types.length]; const key = terms[index % terms.length]; const id = `${idBase}-${index}`;
-    if (type === 'choice') questions.push({ id, type, difficulty, content: `关于“${topic.title}”，下列哪一项最符合本节的核心关键词？`, options: [key, '随机猜测', '与主题无关的结论', '跳过学习'], correctAnswer: 'A', explanation: `“${key}”是“${topic.title}”的重要学习要点。` });
+    if (type === 'choice') questions.push({ id, type, difficulty, content: `关于“${topic.title}”，下列哪一项最符合本节的核心关键词？`, options: [key, '随机猜测', '与主题无关的结论', '跳过学习'], correctAnswer: key, explanation: `“${key}”是“${topic.title}”的重要学习要点。` });
     if (type === 'true_false') questions.push({ id, type, difficulty, content: `判断题：学习“${topic.title}”时，理解“${key}”有助于掌握主题。`, options: ['正确', '错误'], correctAnswer: '正确', explanation: `“${key}”与“${topic.title}”直接相关。` });
     if (type === 'fill_blank') questions.push({ id, type, difficulty, content: `填空题：“${topic.title}”的一个核心关键词是 ______。`, options: [], correctAnswer: key, acceptedAnswers: [key.toLowerCase()], explanation: `参考答案为“${key}”。` });
   }
@@ -169,9 +169,18 @@ function generateQuestions(text, config = {}) {
 }
 function grade(question, answer) {
   const submitted = cleanText(answer, 'answer');
-  const candidates = [question.correctAnswer, ...(question.acceptedAnswers || [])].map((item) => String(item).normalize('NFC').trim().toLowerCase());
-  const choice = submitted.toUpperCase();
-  return candidates.includes(submitted.toLowerCase()) || (question.type === 'choice' && choice === String(question.correctAnswer).toUpperCase());
+  const norm = (value) => String(value).normalize('NFC').trim().toLowerCase();
+  const candidates = [question.correctAnswer, ...(question.acceptedAnswers || [])].map(norm);
+  if (candidates.includes(norm(submitted))) return true;
+  if (question.type === 'choice') {
+    const opts = Array.isArray(question.options) ? question.options : [];
+    const correct = String(question.correctAnswer ?? '').trim();
+    // 提交形式可能是字母 A-D，也可能是选项文本；correctAnswer 也兼容字母或文本两种编码。
+    const letterIdx = ['A', 'B', 'C', 'D'].indexOf(submitted.toUpperCase());
+    if (letterIdx >= 0 && opts[letterIdx] != null && norm(opts[letterIdx]) === norm(correct)) return true;
+    if (/^[A-D]$/i.test(correct) && submitted.toUpperCase() === correct.toUpperCase()) return true;
+  }
+  return false;
 }
 
 // ── 学情采集：客户端标识 / 知识点 / 归因 / 诊断聚合 ──
@@ -346,7 +355,7 @@ async function getDoubaoTaskStatus(taskId) {
 }
 
 // ── 豆包 LLM 生成讲稿幻灯片 ──
-async function generateSlides(query) {
+async function generateSlides(query, persona) {
   const useQwen = !!process.env.QWEN_API_KEY;
   // 先试 Qwen，失败回退豆包
   const tryProvider = async (provider) => {
@@ -421,11 +430,13 @@ async function generateSlides(query) {
 9. 算法/公式、实例演示、复杂度分析页（第 4/5/6 页）必须各包含至少 1 个 formula 类型的 visual 或 diagram；公式用 KaTeX 可渲染的 LaTeX 书写（下标用 _、上标用 ^、分数用 \\frac、根号用 \\sqrt，如 T(n)=2T(n/2)+O(n)、O(n\\log n)、\\frac{n(n-1)}{2}）
 10. 涉及公式的页面，text 讲解中必须把公式完整读一遍（如"由递推式 T(n)=2T(n/2)+O(n) 解得 T(n)=O(n log n)"），并在 visuals 中用公式卡片呈现推导过程
 11. 代码是否生成取决于知识点本身的性质：若知识点与编程实现相关（算法、数据结构、编程语言、代码语法、排序、查找、遍历等），则算法/公式页与实例演示页应包含带注释的 code 代码块（配 lang 字段），并与公式、实例一一对应；若知识点是纯理论或概念类（如 TCP 三次握手、进程与线程、数据库事务、网络协议等），则不强求代码，改用流程图、对比表、状态图表达核心逻辑`;
+    const personaNote = persona ? `\n\n【个性化教学要求】学员背景：${persona}。请据此调整讲解的用词深浅、案例选择与节奏：面向初学者用词通俗、多举生活化例子；已有基础者可适当提升深度、减少铺垫。只调整表达方式，不要改变知识的正确性与结构。` : '';
+    const userPrompt = `${prompt}${personaNote}`;
 
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, messages: [{ role: 'system', content: '你是计算机科学教育专家与专业 PPT 视觉设计师。严格按参考样例输出 HTML 教学幻灯片 JSON，输出必须是合法 JSON，不要任何 Markdown 或解释。' }, { role: 'user', content: prompt }], max_tokens: 8192, temperature: 0.4 }),
+      body: JSON.stringify({ model, messages: [{ role: 'system', content: '你是计算机科学教育专家与专业 PPT 视觉设计师。严格按参考样例输出 HTML 教学幻灯片 JSON，输出必须是合法 JSON，不要任何 Markdown 或解释。' }, { role: 'user', content: userPrompt }], max_tokens: 8192, temperature: 0.4 }),
       signal: AbortSignal.timeout(120_000),
     });
     if (!res.ok) {
@@ -454,8 +465,8 @@ async function generateSlides(query) {
   }
 }
 
-async function generateScript(query) {
-  const slides = await generateSlides(query);
+async function generateScript(query, persona) {
+  const slides = await generateSlides(query, persona);
   return {
     slides,
     fullText: slides.map(s => `${s.title}。${s.text}`).join('')
@@ -809,6 +820,9 @@ async function api(req, res, url, id) {
   // ── 幻灯片视频生成（异步） ──
   if (route === '/video/generate' && req.method === 'POST') {
     const input = await body(req); const text = cleanText(input.query ?? input.text, 'query');
+    // 个性化教学上下文（学生昵称/年级/已掌握/目标/性格 + 音色/角色/交互），用于定制讲稿；
+    // 与 query 一样经 cleanText 防护（含提示注入检测），空值视为未提供
+    const persona = typeof input.persona === 'string' && input.persona.trim() ? cleanText(input.persona, 'persona').slice(0, 500) : '';
     const taskId = requestId();
     await store.add('videoTasks', { id: taskId, query: text, slides: [], audioUrl: null, status: 'queued', progress: 0, createdAt: now(), updatedAt: now() });
     await store.add('searches', { id: requestId(), text, source: String(input.source || 'search-page').slice(0, 32), createdAt: now() });
@@ -819,7 +833,7 @@ async function api(req, res, url, id) {
       let fullText = '';
       try {
         await store.update('videoTasks', taskId, { status: 'generating', progress: 20 });
-        const result = await generateScript(text);
+        const result = await generateScript(text, persona);
         slides = result.slides;
         fullText = result.fullText || '';
         await store.update('videoTasks', taskId, { slides, fullText, progress: 50, status: 'generating_tts' });
@@ -898,7 +912,7 @@ async function api(req, res, url, id) {
         } else {
           const generated = generateQuestions(text, { types: ['choice'], difficulty: 'medium', count: 3 });
           questions = generated.questions.map((item) => {
-            const ansIdx = Math.max(0, ['A', 'B', 'C', 'D'].indexOf(String(item.correctAnswer).toUpperCase()));
+            const ansIdx = Math.max(0, item.options.indexOf(item.correctAnswer));
             return { q: item.content, opts: item.options, ans: ansIdx, exp: item.explanation };
           });
         }
@@ -991,11 +1005,13 @@ async function api(req, res, url, id) {
     const subject = url.searchParams.get('subject');
     const topicFilter = url.searchParams.get('topic');
     const reviewed = url.searchParams.get('reviewed');
+    if (reviewed !== null && !['true', 'false', 'all'].includes(reviewed)) throw new ApiError(400, 'INVALID_INPUT', 'reviewed 必须为 true、false 或 all');
     let list = store.data.mistakes.filter((m) => m.clientId === clientId);
     if (subject) list = list.filter((m) => m.topic?.subject === subject);
     if (topicFilter) list = list.filter((m) => m.topic?.title === topicFilter);
     if (reviewed === 'true') list = list.filter((m) => m.reviewed);
-    if (reviewed === 'false') list = list.filter((m) => !m.reviewed);
+    else if (reviewed === 'false') list = list.filter((m) => !m.reviewed);
+    // 'all' 或未传 → 返回全部
     list = [...list].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const items = list.map((m) => {
       // 兼容历史数据：questionId 能查到题库时自动补全选项
@@ -1012,7 +1028,7 @@ async function api(req, res, url, id) {
   const mistakeAnalyzeMatch = route.match(/^\/mistakes\/([\w-]+)\/analyze$/);
   if (mistakeAnalyzeMatch && req.method === 'POST') {
     const mistake = store.find('mistakes', mistakeAnalyzeMatch[1]);
-    if (!mistake) throw new ApiError(404, 'MISTAKE_NOT_FOUND', '未找到该错题记录');
+    if (!mistake || mistake.clientId !== getClientId(req)) throw new ApiError(404, 'MISTAKE_NOT_FOUND', '未找到该错题记录');
     const input = await body(req).catch(() => ({}));
     let result;
     if (mistake.cause && !input.force) result = { cause: mistake.cause, causeText: mistake.causeText, suggestion: mistake.suggestion };
@@ -1024,7 +1040,7 @@ async function api(req, res, url, id) {
   const mistakeReviewMatch = route.match(/^\/mistakes\/([\w-]+)\/review$/);
   if (mistakeReviewMatch && req.method === 'POST') {
     const mistake = store.find('mistakes', mistakeReviewMatch[1]);
-    if (!mistake) throw new ApiError(404, 'MISTAKE_NOT_FOUND', '未找到该错题记录');
+    if (!mistake || mistake.clientId !== getClientId(req)) throw new ApiError(404, 'MISTAKE_NOT_FOUND', '未找到该错题记录');
     const input = await body(req);
     const reviewCorrect = typeof input.reviewCorrect === 'boolean' ? input.reviewCorrect : null;
     const updated = await store.update('mistakes', mistake.id, { reviewed: true, reviewedAt: now(), reviewCorrect });
@@ -1099,12 +1115,15 @@ async function api(req, res, url, id) {
   throw new ApiError(404, 'NOT_FOUND', '接口不存在');
 }
 async function staticFile(req, res, url, id) {
-  let requestPath = decodeURIComponent(url.pathname); if (requestPath === '/') requestPath = '/search.html';
+  let requestPath;
+  try { requestPath = decodeURIComponent(url.pathname); } catch { throw new ApiError(400, 'INVALID_INPUT', '无效的路径编码'); }
+  if (requestPath === '/') requestPath = '/search.html';
   if (requestPath.includes('..')) throw new ApiError(403, 'FORBIDDEN', '禁止访问该资源');
   const base = requestPath.startsWith('/storage/') ? STORAGE_DIR : ROOT; const relative = requestPath.startsWith('/storage/') ? requestPath.slice('/storage/'.length) : requestPath.slice(1); const target = path.resolve(base, relative);
   if (!target.startsWith(path.resolve(base))) throw new ApiError(403, 'FORBIDDEN', '禁止访问该资源');
   let stat;
   try { stat = await fs.stat(target); } catch (error) { if (error.code === 'ENOENT') throw new ApiError(404, 'NOT_FOUND', '文件不存在'); throw error; }
+  if (stat.isDirectory()) throw new ApiError(404, 'NOT_FOUND', '目录不可访问');
   const headers = { 'content-type': mime(target), 'x-request-id': id, 'x-content-type-options': 'nosniff', 'accept-ranges': 'bytes' };
   const rangeHeader = req.headers.range;
   // 支持 Range 请求（媒体 seek 必需），返回 206 Partial Content
