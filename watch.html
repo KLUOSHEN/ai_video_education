@@ -680,11 +680,11 @@
             position: fixed;
             right: 26px;
             bottom: 26px;
-            width: 392px;
-            max-width: min(1200px, calc(100vw - 32px));
-            height: min(560px, calc(100vh - 140px));
-            min-width: 320px;
-            min-height: 320px;
+            width: 480px;
+            max-width: min(1200px, calc(100vw - 52px));
+            height: min(660px, calc(100vh - 140px));
+            min-width: 360px;
+            min-height: 420px;
             background: #fff;
             border: 1px solid var(--border);
             border-radius: 18px;
@@ -692,7 +692,6 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            resize: both;               /* 右下角可拖拽调整大小 */
             z-index: 310;
             transform: translateY(24px) scale(.96);
             opacity: 0;
@@ -700,6 +699,40 @@
             transition: transform .28s ease, opacity .28s ease, visibility .28s;
         }
         .chat-panel.open { transform: none; opacity: 1; visibility: visible; }
+        /* 整圈边框缩放：四条边 + 四个角都是热区，悬停显示对应方向的光标并高亮边框，按住拖动即缩放。
+           手柄在面板内层（overflow:hidden 不影响），7px 宽热区落在边框内侧，几乎与边框重合。 */
+        .chat-resize {
+            position: absolute;
+            z-index: 6;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .chat-resize--n  { top: 0; left: 0; right: 0; height: 8px; cursor: n-resize; }
+        .chat-resize--s  { bottom: 0; left: 0; right: 0; height: 8px; cursor: s-resize; }
+        .chat-resize--e  { right: 0; top: 0; bottom: 0; width: 8px; cursor: e-resize; }
+        .chat-resize--w  { left: 0; top: 0; bottom: 0; width: 8px; cursor: w-resize; }
+        .chat-resize--nw { top: 0; left: 0; width: 18px; height: 18px; cursor: nwse-resize; }
+        .chat-resize--ne { top: 0; right: 0; width: 18px; height: 18px; cursor: nesw-resize; }
+        .chat-resize--sw { bottom: 0; left: 0; width: 18px; height: 18px; cursor: nesw-resize; }
+        .chat-resize--se { bottom: 0; right: 0; width: 18px; height: 18px; cursor: nwse-resize; }
+        /* 悬停时整条边框亮起蓝环，明确"此处可拖拽缩放" */
+        .chat-resize:hover { background: rgba(74,142,255,.22); box-shadow: inset 0 0 0 1.5px rgba(74,142,255,.55); }
+        /* 右下角图标仅作视觉提示（不拦截鼠标事件），缩到 16x16 角热区内，避免"点了图标却拖不动" */
+        .chat-resize-handle {
+            position: absolute;
+            right: 1px;
+            bottom: 1px;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a6bce0;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 5;
+        }
         /* 顶部"虚幻"拖拽横杠：半透明渐变 + 流动高光 */
         .chat-panel-dragbar {
             height: 18px;
@@ -942,8 +975,9 @@
             .topbar-search { max-width: 200px; }
             .topbar-search input { height: 36px; font-size: 13px; }
             .video-info-section h1 { font-size: 18px; }
-            .chat-panel { right: 16px; bottom: 16px; left: 16px; width: auto; height: calc(100vh - 140px); resize: none; min-width: 0; min-height: 0; }
+            .chat-panel { right: 16px; bottom: 16px; left: 16px; width: auto; height: calc(100vh - 140px); min-width: 0; min-height: 0; }
             .chat-panel-dragbar { display: none; }
+            .chat-resize, .chat-resize-handle { display: none; }
             .chat-fab { right: 18px; bottom: 18px; }
         }
 
@@ -2310,7 +2344,12 @@ img { max-width: 100%; }
             for (let i = 0; i < maxAttempts; i++) {
                 try {
                     const res = await fetch(`/api/v1/video/status?task_id=${encodeURIComponent(taskId)}`);
-                    if (!res.ok) { descEl.textContent = '查询失败，请重试。'; return; }
+                    if (!res.ok) {
+                        // 任务不存在（如服务端数据被清、历史里的 task_id 已失效）→ 提示重新生成，而非误导性的"重试"
+                        if (res.status === 404) { descEl.textContent = '该视频已失效或已被清除，请返回搜索页重新生成。'; }
+                        else { descEl.textContent = '查询失败，请重试。'; }
+                        return;
+                    }
                     const payload = await res.json();
                     const data = payload.data;
                     // 显示进度
@@ -3304,6 +3343,112 @@ img { max-width: 100%; }
             bar.addEventListener('pointercancel', endDrag);
         });
 
+        // 右下角手柄拖拽调整面板大小 + 尺寸/位置记忆（localStorage 持久化，桌面端生效）
+        (function () {
+            const RECT_KEY = 'chat_panel_rect';
+            const MIN_W = 360, MIN_H = 420, MARGIN = 26;
+            function loadRect() {
+                try { const v = JSON.parse(localStorage.getItem(RECT_KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; }
+            }
+            function saveRect() {
+                const panel = document.getElementById('chatPanel');
+                if (!panel) return;
+                const r = panel.getBoundingClientRect();
+                const rect = { w: Math.round(r.width), h: Math.round(r.height) };
+                // 仅当面板被拖拽移动过（内联 left/top 生效）才记忆位置，否则保持 right/bottom 贴角定位
+                if (panel.style.left && panel.style.top) { rect.left = Math.round(r.left); rect.top = Math.round(r.top); }
+                try { localStorage.setItem(RECT_KEY, JSON.stringify(rect)); } catch (e) {}
+            }
+            function isMobile() { return window.innerWidth <= 540; }
+
+            // 恢复记忆的尺寸与位置（DOM 就绪后执行一次）
+            function restoreRect() {
+                const panel = document.getElementById('chatPanel');
+                const rect = loadRect();
+                if (!panel || isMobile() || !rect) return;
+                const vw = window.innerWidth, vh = window.innerHeight;
+                const w = Math.max(MIN_W, Math.min(rect.w, vw - MARGIN * 2));
+                const h = Math.max(MIN_H, Math.min(rect.h, vh - MARGIN * 2));
+                panel.style.width = w + 'px';
+                panel.style.height = h + 'px';
+                if (typeof rect.left === 'number' && typeof rect.top === 'number') {
+                    const maxX = Math.max(8, vw - w - 8);
+                    const maxY = Math.max(8, vh - h - 8);
+                    panel.style.right = 'auto';
+                    panel.style.bottom = 'auto';
+                    panel.style.left = Math.max(8, Math.min(rect.left, maxX)) + 'px';
+                    panel.style.top = Math.max(8, Math.min(rect.top, maxY)) + 'px';
+                }
+            }
+
+            // 整圈缩放：四条边 + 四个角（data-x/data-y 标记拖动方向），按住任意边框/角改变大小
+            function initResizeHandles() {
+                const panel = document.getElementById('chatPanel');
+                if (!panel) return;
+                const handles = document.querySelectorAll('.chat-resize');
+                if (!handles.length) return;
+                let resizing = null; // { x, y, base, sx, sy, moved }
+                function onDown(e) {
+                    if (e.button !== 0 || isMobile()) return;
+                    const handle = e.currentTarget;
+                    const x = handle.getAttribute('data-x'); // 'none' | 'w' | 'e'
+                    const y = handle.getAttribute('data-y'); // 'none' | 'n' | 's'
+                    const r = panel.getBoundingClientRect();
+                    // moved：面板此前已被拖拽移动（内联 left/top 生效）。
+                    // 未移动的面板保持 right/bottom 贴角锚定：只缩放 w/n 侧时才固化为 left/top，
+                    // 纯 e/s/se 缩放保持锚定，浏览器窗口变化时面板仍能自动贴角。
+                    const moved = !!(panel.style.left && panel.style.top);
+                    if (!moved && (x === 'w' || y === 'n')) {
+                        panel.style.right = 'auto';
+                        panel.style.bottom = 'auto';
+                        panel.style.left = r.left + 'px';
+                        panel.style.top = r.top + 'px';
+                    }
+                    resizing = { x, y, base: { left: r.left, top: r.top, right: r.right, bottom: r.bottom }, sx: e.clientX, sy: e.clientY, moved: moved || x === 'w' || y === 'n' };
+                    try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+                    document.body.style.userSelect = 'none';
+                    e.preventDefault();
+                }
+                function onMove(e) {
+                    if (!resizing) return;
+                    const s = resizing, base = s.base, dx = e.clientX - s.sx, dy = e.clientY - s.sy;
+                    const vw = window.innerWidth, vh = window.innerHeight;
+                    // 被拖动的一侧在最小尺寸与视口内夹取；另一侧保持基准位置不动（对角/对边同时夹取）
+                    let L = base.left, R = base.right, T = base.top, B = base.bottom;
+                    if (s.x === 'w') L = Math.max(8, Math.min(base.left + dx, base.right - MIN_W));
+                    else if (s.x === 'e') R = Math.max(base.left + MIN_W, Math.min(base.right + dx, vw - 8));
+                    if (s.y === 'n') T = Math.max(8, Math.min(base.top + dy, base.bottom - MIN_H));
+                    else if (s.y === 's') B = Math.max(base.top + MIN_H, Math.min(base.bottom + dy, vh - 8));
+                    if (s.moved) {
+                        panel.style.left = Math.round(L) + 'px';
+                        panel.style.top = Math.round(T) + 'px';
+                    }
+                    panel.style.width = Math.round(R - L) + 'px';
+                    panel.style.height = Math.round(B - T) + 'px';
+                }
+                function endResize() {
+                    if (!resizing) return;
+                    resizing = null;
+                    document.body.style.userSelect = '';
+                    saveRect();
+                }
+                handles.forEach(function (h) {
+                    h.addEventListener('pointerdown', onDown);
+                    h.addEventListener('pointermove', onMove);
+                    h.addEventListener('pointerup', endResize);
+                    h.addEventListener('pointercancel', endResize);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', restoreRect);
+            document.addEventListener('DOMContentLoaded', initResizeHandles);
+            // 顶栏拖拽移动结束后也记忆位置（saveRect 仅在面板被移动过时记录位置）
+            document.addEventListener('DOMContentLoaded', function () {
+                const bar = document.getElementById('chatDragBar');
+                if (bar) bar.addEventListener('pointerup', saveRect);
+            });
+        })();
+
         // 输入框自适应高度
         document.addEventListener('input', function (e) {
             if (e.target && e.target.id === 'chatInput') {
@@ -3348,6 +3493,16 @@ img { max-width: 100%; }
             <textarea id="chatInput" placeholder="输入题目或追问…（Enter 发送，Shift+Enter 换行）" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
             <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
         </div>
+        <!-- 整圈缩放热区：四条边 + 四个角，data-x/data-y 标记该手柄拖动的方向（none 表示该侧不动） -->
+        <div class="chat-resize chat-resize--n"  data-x="none" data-y="n"></div>
+        <div class="chat-resize chat-resize--s"  data-x="none" data-y="s"></div>
+        <div class="chat-resize chat-resize--e"  data-x="e" data-y="none"></div>
+        <div class="chat-resize chat-resize--w"  data-x="w" data-y="none"></div>
+        <div class="chat-resize chat-resize--nw" data-x="w" data-y="n"></div>
+        <div class="chat-resize chat-resize--ne" data-x="e" data-y="n"></div>
+        <div class="chat-resize chat-resize--sw" data-x="w" data-y="s"></div>
+        <div class="chat-resize chat-resize--se" data-x="e" data-y="s"></div>
+        <div class="chat-resize-handle" id="chatResizeHandle" title="拖拽边框或右下角调整大小" aria-hidden="true"><i class="fas fa-up-right-and-down-left-from-center"></i></div>
     </div>
 
     <!-- 错题本弹层 -->

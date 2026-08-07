@@ -2422,7 +2422,7 @@
                 if (!response.ok) throw new Error(payload.error?.message || '视频生成请求失败');
 
                 const taskId = payload.data.task_id;
-                saveHistory(q);
+                saveHistory(q, { taskId });
 
                 // 提交完成：切换标题，轮询阶段显示实时进度（不再循环副标题）
                 showAILoading('生成教学视频', '任务已提交，正在排队…', { cycle: false });
@@ -2530,11 +2530,24 @@
             }
         }
 
-        function saveHistory(query) {
+        function saveHistory(query, opts) {
+            // task_id：已生成的幻灯片视频任务号，用于点击历史时直接打开已生成视频而非重新生成
+            const taskId = opts && opts.taskId ? String(opts.taskId) : null;
             let list = getHistory();
-            if (list.length > 0 && list[0].query === query) return;
+            if (list.length > 0 && list[0].query === query) {
+                // 同一知识点刚记录过：仅当这次生成了新任务时更新 task_id
+                if (taskId && list[0].task_id !== taskId) {
+                    list[0].task_id = taskId;
+                    list[0].time = Date.now();
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+                    renderSidebarHistory();
+                }
+                return;
+            }
             list = list.filter(item => item.query !== query);
-            list.unshift({ query: query, time: Date.now() });
+            const entry = { query: query, time: Date.now() };
+            if (taskId) entry.task_id = taskId;
+            list.unshift(entry);
             if (list.length > MAX_HISTORY) list = list.slice(0, MAX_HISTORY);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
             renderSidebarHistory();
@@ -2577,24 +2590,59 @@
                 listEl.innerHTML = '<div style="padding:16px 10px;font-size:13px;color:#c0cfde;text-align:center;">暂无搜索历史</div>';
                 return;
             }
-            listEl.innerHTML = list.map((item, i) => `
-                <div class="sidebar-history-item" onclick="historySearch('${escapeAttr(item.query)}', ${i})" title="${escapeHTML(item.query)}">
-                    <i class="fas fa-message"></i>
+            listEl.innerHTML = list.map((item, i) => {
+                const hasVideo = Boolean(item.task_id);
+                // 有已生成视频的历史项：播放图标 + 点击直接打开；否则仍回填输入框
+                const icon = hasVideo ? 'fa-circle-play' : 'fa-message';
+                const title = escapeHTML(item.query) + (hasVideo ? '（点击打开已生成视频）' : '');
+                return `
+                <div class="sidebar-history-item" onclick="historySearch(${i})" title="${title}">
+                    <i class="fas ${icon}"></i>
                     <span class="sidebar-history-item-text">${escapeHTML(truncate(item.query, 22))}</span>
                     <button class="sidebar-history-del" onclick="event.stopPropagation();deleteHistoryItem(${i})" title="删除">
                         <i class="fas fa-xmark"></i>
                     </button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
-        function historySearch(query, index) {
-            setSearch(query);
+        async function historySearch(index) {
+            const list = getHistory();
+            const item = list[index];
+            if (!item) return;
             // 标记活跃
             document.querySelectorAll('.sidebar-history-item').forEach(el => el.classList.remove('active'));
             const items = document.querySelectorAll('.sidebar-history-item');
             if (items[index]) items[index].classList.add('active');
-            document.getElementById('searchStatus').textContent = '已选择历史记录，按回车或点击发送搜索';
+            const statusEl = document.getElementById('searchStatus');
+
+            // 已保存过生成任务 → 直接打开已生成视频（watch.html 的 loadSlideshow 会轮询状态，不会重新生成）
+            let taskId = item.task_id || null;
+            if (!taskId) {
+                statusEl.textContent = '正在查找该知识点的已生成视频…';
+                taskId = await resolveVideoTask(item.query);
+            }
+            if (taskId) {
+                statusEl.textContent = '正在打开已生成的视频…';
+                location.href = 'watch.html?task_id=' + encodeURIComponent(taskId) + '&q=' + encodeURIComponent(item.query);
+                return;
+            }
+            // 找不到已生成视频 → 回填输入框，由用户决定是否重新搜索
+            setSearch(item.query);
+            statusEl.textContent = '未找到该知识点的已生成视频，已回填输入框，按回车或点击发送搜索';
+        }
+
+        // 按知识点在服务端查找最近生成的视频任务（用于旧历史中未存 task_id 的条目）
+        async function resolveVideoTask(query) {
+            try {
+                const res = await fetch('/api/v1/video/tasks?query=' + encodeURIComponent(query));
+                if (!res.ok) return null;
+                const payload = await res.json();
+                return payload.data && payload.data.task_id ? payload.data.task_id : null;
+            } catch (e) {
+                return null;
+            }
         }
 
         function truncate(str, max) {

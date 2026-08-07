@@ -65,6 +65,20 @@ function cleanText(value, name = 'text') {
   if (/(<script\b|javascript:|data:text\/html|ignore\s+(all|previous)\s+instructions)/i.test(normalized)) throw new ApiError(422, 'UNSAFE_CONTENT', '输入包含不支持的可执行或提示注入内容');
   return normalized;
 }
+// 解析 LLM 返回的 JSON：剥离 Markdown 代码围栏；若因裸反斜杠（LaTeX 如 \log、\sqrt、\frac、\Theta）
+// 导致 JSON.parse 抛 "Bad escaped character in JSON"，则把"反斜杠后跟不视为 JSON 转义的字符"的
+// 裸反斜杠加倍后重试。视为合法转义、原样保留的只有：\\、\"、\/、\n、\r、\uXXXX（b/f/t 也当作
+// LaTeX 加倍，因为该场景下几乎不可能是有意的退格/换页/制表转义），已格式良好的 JSON 直接返回。
+const JSON_ESCAPE = /["\\/nru]/;
+function parseLLMJson(raw) {
+  const cleaned = String(raw || '').replace(/```json\n?|\n?```/g, '').trim();
+  try { return JSON.parse(cleaned); } catch (error) { /* 回退：修复裸反斜杠后重试 */ }
+  const repaired = cleaned.replace(/\\+/g, (run, offset, str) => {
+    const next = str[offset + run.length];
+    return next && JSON_ESCAPE.test(next) ? run : (run.length % 2 ? run + '\\' : run);
+  });
+  return JSON.parse(repaired);
+}
 function enumValue(value, allowed, fallback, name) {
   if (value === undefined || value === null) return fallback;
   if (!allowed.includes(value)) throw new ApiError(400, 'INVALID_INPUT', `${name} 必须为 ${allowed.join('、')} 之一`);
@@ -244,7 +258,7 @@ async function analyzeMistakeWithLLM(record) {
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content?.trim() || '';
     let json;
-    try { json = JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim()); } catch (e) { json = null; }
+    try { json = parseLLMJson(raw); } catch (e) { json = null; }
     if (!json) throw new Error('归因返回无法解析');
     const cause = MISTAKE_CAUSES.includes(String(json.cause).toLowerCase()) ? String(json.cause).toLowerCase() : 'unknown';
     const result = {
@@ -446,7 +460,7 @@ async function generateSlides(query, persona) {
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw) throw new Error('LLM 未返回讲稿');
-    const json = JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim());
+    const json = parseLLMJson(raw);
     if (!json.slides?.length) throw new Error('slides empty');
     return json.slides;
   };
@@ -532,7 +546,7 @@ async function generateQuizViaLLM(query, variantsOf) {
   }
   let json;
   try {
-    json = JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim());
+    json = parseLLMJson(raw);
   } catch (e) {
     log('quiz.llm.parse_error', { query, ms: Date.now() - startedAt, message: e.message, contentLength: raw.length, contentPreview: raw.slice(0, 200) });
     throw e;
@@ -867,6 +881,27 @@ async function api(req, res, url, id) {
       ...(videoTask.error ? { error: videoTask.error } : {})
     }, requestId: id }, id);
   }
+  // 按知识点查最近一次生成的视频任务（供搜索历史点击时定位已生成视频，latest wins）
+  const videoTasksMatch = route.match(/^\/video\/tasks$/);
+  if (videoTasksMatch && req.method === 'GET') {
+    const query = url.searchParams.get('query');
+    if (!query || !query.trim()) throw new ApiError(400, 'MISSING_PARAM', '缺少 query 参数');
+    const normalized = cleanText(String(query).slice(0, 4000), 'query');
+    const matches = store.data.videoTasks
+      .filter((t) => t.query === normalized)
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const task = matches.find((t) => t.status === 'slides_ready') || matches[0];
+    if (!task) throw new ApiError(404, 'TASK_NOT_FOUND', '未找到该知识点的已生成视频');
+    return send(res, 200, { data: {
+      task_id: task.id,
+      status: task.status,
+      audio_url: task.audioUrl,
+      slides: task.slides,
+      query: task.query,
+      progress: task.progress || 0,
+      ...(task.error ? { error: task.error } : {})
+    }, requestId: id }, id);
+  }
   // ── 导出学习笔记（Markdown / 打印版） ──
   if (route === '/video/export' && req.method === 'GET') {
     const taskId = url.searchParams.get('task_id');
@@ -1068,7 +1103,7 @@ async function api(req, res, url, id) {
           const data = await res.json();
           const raw = data.choices?.[0]?.message?.content?.trim() || '';
           let json;
-          try { json = JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim()); } catch (e) { json = null; }
+          try { json = parseLLMJson(raw); } catch (e) { json = null; }
           if (Array.isArray(json?.weakTopics)) {
             report.summary.weakTopics = weak.map((w) => {
               const found = json.weakTopics.find((x) => String(x.topic).includes(w.topic) || w.topic.includes(String(x.topic)));
@@ -1124,7 +1159,11 @@ async function staticFile(req, res, url, id) {
   let stat;
   try { stat = await fs.stat(target); } catch (error) { if (error.code === 'ENOENT') throw new ApiError(404, 'NOT_FOUND', '文件不存在'); throw error; }
   if (stat.isDirectory()) throw new ApiError(404, 'NOT_FOUND', '目录不可访问');
-  const headers = { 'content-type': mime(target), 'x-request-id': id, 'x-content-type-options': 'nosniff', 'accept-ranges': 'bytes' };
+  const contentType = mime(target);
+  const headers = { 'content-type': contentType, 'x-request-id': id, 'x-content-type-options': 'nosniff', 'accept-ranges': 'bytes' };
+  // 开发期：HTML/JS/CSS/JSON 走 no-cache，浏览器每次回源，避免编辑页面后还在用旧版本；
+  // 媒体文件用时间戳+UUID 命名（URL 不可变），保持默认启发式缓存以利 seek 复用。
+  if (/text\/|application\/javascript|application\/json/.test(contentType)) headers['cache-control'] = 'no-cache';
   const rangeHeader = req.headers.range;
   // 支持 Range 请求（媒体 seek 必需），返回 206 Partial Content
   if (rangeHeader && stat.isFile()) {
@@ -1154,4 +1193,4 @@ const server = http.createServer(async (req, res) => {
   catch (error) { stats.errors += !error.status ? 1 : 0; send(res, error.status || 500, errorPayload(error, id), id); log('request.error', { id, method: req.method, status: error.status || 500, code: error.code || 'INTERNAL_ERROR' }); }
 });
 if (require.main === module) store.init().then(() => server.listen(PORT, () => log('server.started', { port: PORT, url: `http://localhost:${PORT}` }))).catch((error) => { console.error(error); process.exit(1); });
-module.exports = { server, store, cleanText, generateQuestions, buildLessonPlan, grade, encryptSensitive };
+module.exports = { server, store, cleanText, generateQuestions, buildLessonPlan, grade, encryptSensitive, parseLLMJson };

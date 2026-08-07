@@ -9,7 +9,7 @@ process.env.APP_DATA_DIR = path.join(testRuntime, 'data');
 process.env.APP_STORAGE_DIR = path.join(testRuntime, 'storage');
 // 测试环境禁用真实 LLM/媒体调用：AI 函数在调用时读取 process.env，这里在 require 后、测试前清空，
 // 确保错题归因等回退到本地规则，结果确定且不产生网络请求。
-const { cleanText, generateQuestions, buildLessonPlan, grade, encryptSensitive, server, store } = require('../server');
+const { cleanText, generateQuestions, buildLessonPlan, grade, encryptSensitive, parseLLMJson, server, store } = require('../server');
 
 let baseUrl;
 test.before(async () => {
@@ -127,6 +127,34 @@ test('错题 analyze/review 仅允许属主客户端访问', async () => {
   assert.equal((await ownAnalyze.json()).data.cause, 'concept');
 });
 
+test('parseLLMJson 修复 LLM 输出中的裸反斜杠 LaTeX 转义', () => {
+  // 模拟线上失败：LLM 在 JSON 字符串里直接写单反斜杠 LaTeX（O(n\log n)、\sqrt、\frac、\Theta），
+  // 裸 \s、\l、\T 是非法 JSON 转义，直接 JSON.parse 会抛 "Bad escaped character in JSON at position ..."。
+  const raw = '{"slides":[{"title":"复杂度分析","text":"由递推式 T(n)=2T(n/2)+O(n\\sqrt{n}) 解得 O(n\\log n)；\\frac{n(n-1)}{2} 次比较。","layout":"bottom_bar","visuals":[{"type":"formula","data":"O(n\\log n) 且 \\Theta(n\\log n)，n 为数据规模","caption":"核心复杂度"}]}]}';
+  assert.throws(() => JSON.parse(raw), /Bad escaped character in JSON/);
+  const slides = parseLLMJson(raw).slides;
+  assert.equal(slides.length, 1);
+  assert.match(slides[0].text, /O\(n\\log n\)/);
+  assert.match(slides[0].text, /\\frac\{n\(n-1\)\}\{2\}/);
+  assert.match(slides[0].visuals[0].data, /O\(n\\log n\)/);
+  assert.match(slides[0].visuals[0].data, /\\Theta\(n\\log n\)/);
+});
+
+test('parseLLMJson 保留合法 JSON 与 \\n 表格转义', () => {
+  const valid = '{"slides":[{"title":"复杂度分析","visuals":[{"type":"table","data":"维度|时间|空间\\n最优|O(1)|O(1)\\n最差|O(n)|O(n)"}]}]}';
+  const json = parseLLMJson(valid);
+  assert.equal(json.slides[0].visuals[0].data, '维度|时间|空间\n最优|O(1)|O(1)\n最差|O(n)|O(n)');
+});
+
+test('parseLLMJson 剥离 Markdown 代码围栏', () => {
+  const wrapped = '```json\n{"slides":[{"title":"概述引入"}]}\n```';
+  assert.equal(parseLLMJson(wrapped).slides[0].title, '概述引入');
+});
+
+test('parseLLMJson 对无法修复的输入抛出解析错误', () => {
+  assert.throws(() => parseLLMJson('{这根本不是 JSON'), SyntaxError);
+});
+
 test('video/generate 处理 persona（拒绝提示注入、接受正常内容）', async () => {
   // 提示注入内容 → 422 UNSAFE_CONTENT（与 query 同一防护）
   const bad = await fetch(`${baseUrl}/video/generate`, {
@@ -149,4 +177,29 @@ test('video/generate 处理 persona（拒绝提示注入、接受正常内容）
     if (status === 'failed' || status === 'slides_ready') break;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
+});
+
+test('GET /video/tasks 按 query 返回该知识点最近生成的视频任务', async () => {
+  const query = 'KMP 字符串匹配';
+  // 两次相同知识点生成（第二次带多余空白，服务端会规范化为同一 query）→ 记录都存在
+  const first = await fetch(`${baseUrl}/video/generate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query }) });
+  assert.equal(first.status, 201);
+  const firstTask = (await first.json()).data.task_id;
+  const second = await fetch(`${baseUrl}/video/generate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query: `  ${query}  ` }) });
+  assert.equal(second.status, 201);
+  const secondTask = (await second.json()).data.task_id;
+  assert.notEqual(firstTask, secondTask);
+
+  const lookup = await fetch(`${baseUrl}/video/tasks?query=${encodeURIComponent(query)}`);
+  assert.equal(lookup.status, 200);
+  const found = (await lookup.json()).data;
+  assert.equal(found.query, query);
+  assert.ok([firstTask, secondTask].includes(found.task_id), '应返回该知识点的某个已生成任务');
+
+  // 未知知识点 → 404
+  const missing = await fetch(`${baseUrl}/video/tasks?query=${encodeURIComponent('不存在的知识点zzz')}`);
+  assert.equal(missing.status, 404);
+  // 缺少 query 参数 → 400
+  const noParam = await fetch(`${baseUrl}/video/tasks`);
+  assert.equal(noParam.status, 400);
 });
