@@ -9,63 +9,64 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600;700;800&family=Orbitron:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#f5f9ff;--bg2:#fafcff;--panel:#ffffff;--panel2:#f5f9ff;
-      --line:#eef3fc;--line-bright:#c8daff;
-      --muted:#7a8eb0;--muted2:#8ea0b8;
-      --text:#1a2744;--text2:#506280;
-      --primary:#4a8eff;--primary2:#7c9bff;--primary-glow:rgba(74,142,255,.2);
-      --shadow:0 2px 12px rgba(74,142,255,.06);
+      --bg:#F7F9FC;--bg2:#FBFCFE;--panel:#FFFFFF;--panel2:#F7F9FC;
+      --line:#E2E8F0;--line-bright:#C7D2FE;
+      --muted:#64748B;--muted2:#7A86A0;
+      --text:#0F172A;--text2:#475569;
+      --primary:#4F6BF0;--primary2:#6D83F5;--primary-glow:rgba(79,107,240,.2);
+      --accent:#F59E0B;--success:#16A34A;--danger:#DC2626;
+      --shadow:0 2px 12px rgba(15,23,42,.06);
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{color:var(--text);font-family:"Inter","PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;min-height:100vh;overflow-x:hidden;background:radial-gradient(1200px 600px at 12% -10%,rgba(74,142,255,.12),transparent 60%),radial-gradient(900px 520px at 92% -5%,rgba(124,155,255,.10),transparent 55%),radial-gradient(1000px 640px at 50% 115%,rgba(56,189,248,.07),transparent 60%),var(--bg)}
-    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(74,142,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(74,142,255,.02) 1px,transparent 1px),linear-gradient(rgba(74,142,255,.014) 1px,transparent 1px),linear-gradient(90deg,rgba(74,142,255,.014) 1px,transparent 1px);background-size:28px 28px,28px 28px,140px 140px,140px 140px;pointer-events:none;z-index:0}
-    body::after{content:'';position:fixed;left:-10%;width:120%;height:30vh;top:-40vh;background:linear-gradient(180deg,transparent,rgba(124,155,255,.07),transparent);pointer-events:none;z-index:0;animation:scan 14s linear infinite}
-    @keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(170vh)}}
+    body{color:var(--text);font-family:"Inter","PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;min-height:100vh;overflow-x:hidden;background:radial-gradient(1200px 600px at 12% -10%,rgba(79,107,240,.12),transparent 60%),radial-gradient(900px 520px at 92% -5%,rgba(109,131,245,.10),transparent 55%),radial-gradient(1000px 640px at 50% 115%,rgba(34,195,230,.07),transparent 60%),var(--bg)}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(79,107,240,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(79,107,240,.02) 1px,transparent 1px),linear-gradient(rgba(79,107,240,.014) 1px,transparent 1px),linear-gradient(90deg,rgba(79,107,240,.014) 1px,transparent 1px);background-size:28px 28px,28px 28px,140px 140px,140px 140px;pointer-events:none;z-index:0}
+    body::after{content:'';position:fixed;left:-10%;width:120%;height:30vh;top:-40vh;background:linear-gradient(180deg,transparent,rgba(109,131,245,.07),transparent);pointer-events:none;z-index:0}
     .app{max-width:1500px;margin:auto;padding:20px 24px 28px;position:relative;z-index:1}
     .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
     .brand{display:flex;gap:13px;align-items:center}
-    .badge{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary2));font-family:"Orbitron","Inter";font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(74,142,255,.2);animation:badgeGlow 3.2s ease-in-out infinite;position:relative}
-    .badge::after{content:'';position:absolute;inset:0;border-radius:10px;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.35) 50%,transparent 60%);background-size:220% 220%;animation:badgeShine 4.5s ease-in-out infinite;z-index:0}
+    .badge{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary2));font-family:"Orbitron","Inter";font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(79,107,240,.2);animation:badgeGlow 3.2s ease-in-out infinite;position:relative}
+    .badge::after{content:'';position:absolute;inset:0;border-radius:10px;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.35) 50%,transparent 60%);background-size:220% 220%;z-index:0}
+    .badge:hover::after{animation:badgeShine .9s ease-in-out}
     .badge span{position:relative;z-index:1}
-    @keyframes badgeGlow{0%,100%{box-shadow:0 6px 18px rgba(74,142,255,.2)}50%{box-shadow:0 6px 30px rgba(74,142,255,.5)}}
+    @keyframes badgeGlow{0%,100%{box-shadow:0 6px 18px rgba(79,107,240,.2)}50%{box-shadow:0 6px 30px rgba(79,107,240,.5)}}
     @keyframes badgeShine{0%,55%{background-position:220% 220%}75%,100%{background-position:-60% -60%}}
     .eyebrow{font:10px "Orbitron","Inter";font-weight:600;letter-spacing:.16em;color:var(--primary);margin-bottom:1px}
     .brand h1{font-size:19px;letter-spacing:.03em;font-weight:800;color:var(--text)}
     .actions{display:flex;gap:8px}
     .ghost{padding:7px 14px;border-radius:8px;font-size:12.5px;color:var(--text2);background:var(--panel);border:1px solid var(--line);cursor:pointer;font-family:inherit;transition:all .2s;position:relative;overflow:hidden}
-    .ghost::after{content:'';position:absolute;top:0;bottom:0;left:-80%;width:50%;background:linear-gradient(100deg,transparent,rgba(74,142,255,.18),transparent);transform:skewX(-20deg);transition:left .5s;pointer-events:none}
-    .ghost:hover{color:var(--primary);border-color:var(--primary);background:rgba(74,142,255,.04)}
+    .ghost::after{content:'';position:absolute;top:0;bottom:0;left:-80%;width:50%;background:linear-gradient(100deg,transparent,rgba(79,107,240,.18),transparent);transform:skewX(-20deg);transition:left .5s;pointer-events:none}
+    .ghost:hover{color:var(--primary);border-color:var(--primary);background:rgba(79,107,240,.04)}
     .ghost:hover::after{left:130%}
-    .video-link{padding:8px 16px;border-radius:10px;font-size:12px;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary2));cursor:pointer;font-family:inherit;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 10px rgba(74,142,255,.25);position:relative;overflow:hidden}
+    .video-link{padding:8px 16px;border-radius:10px;font-size:12px;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary2));cursor:pointer;font-family:inherit;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 10px rgba(79,107,240,.25);position:relative;overflow:hidden}
     .video-link::after{content:'';position:absolute;top:0;bottom:0;left:-80%;width:50%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg);transition:left .5s;pointer-events:none}
-    .video-link:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(74,142,255,.35)}
+    .video-link:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(79,107,240,.35)}
     .video-link:hover::after{left:130%}
     .video-rec-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:all .2s;text-decoration:none;margin-top:6px}
-    .video-rec-card:hover{border-color:var(--primary);box-shadow:0 2px 12px rgba(74,142,255,.1);background:#f8fbff}
+    .video-rec-card:hover{border-color:var(--primary);box-shadow:0 2px 12px rgba(79,107,240,.1);background:#f8fbff}
     .video-rec-icon{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--primary2));display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:15px}
     .video-rec-info{display:flex;flex-direction:column;justify-content:center;min-width:0;flex:1}
     .video-rec-title{font-size:12px;font-weight:600;color:var(--text);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
     .video-rec-source{font-size:10px;color:var(--muted);margin-top:2px}
-    .layout{display:grid;grid-template-columns:1fr minmax(300px,330px);border:1px solid var(--line-bright);border-radius:16px;overflow:hidden;background:var(--panel);box-shadow:var(--shadow),0 0 46px rgba(74,142,255,.06)}
-    .tree{position:relative;overflow:hidden;height:900px;background:radial-gradient(700px 340px at 50% -8%,rgba(74,142,255,.07),transparent 70%),var(--bg2)}
-    .tree::before{content:'';position:absolute;left:16px;right:16px;top:46px;height:1px;background:linear-gradient(90deg,transparent,rgba(74,142,255,.28),transparent);z-index:0;pointer-events:none}
-    .tree:after{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(74,142,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(74,142,255,.025) 1px,transparent 1px),linear-gradient(rgba(74,142,255,.016) 1px,transparent 1px),linear-gradient(90deg,rgba(74,142,255,.016) 1px,transparent 1px);background-size:24px 24px,24px 24px,120px 120px,120px 120px;z-index:0}
+    .layout{display:grid;grid-template-columns:1fr minmax(300px,330px);height:min(900px,calc(100vh - 106px));border:1px solid var(--line-bright);border-radius:16px;overflow:hidden;background:var(--panel);box-shadow:var(--shadow),0 0 46px rgba(79,107,240,.06)}
+    .tree{position:relative;overflow:hidden;height:100%;background:radial-gradient(700px 340px at 50% -8%,rgba(79,107,240,.07),transparent 70%),var(--bg2)}
+    .tree::before{content:'';position:absolute;left:16px;right:16px;top:46px;height:1px;background:linear-gradient(90deg,transparent,rgba(79,107,240,.28),transparent);z-index:0;pointer-events:none}
+    .tree:after{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(79,107,240,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(79,107,240,.025) 1px,transparent 1px),linear-gradient(rgba(79,107,240,.016) 1px,transparent 1px),linear-gradient(90deg,rgba(79,107,240,.016) 1px,transparent 1px);background-size:24px 24px,24px 24px,120px 120px,120px 120px;z-index:0}
     .cp-decor{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-    .cp-decor::before,.cp-decor::after{content:'';position:absolute;width:16px;height:16px;border:1.5px solid rgba(74,142,255,.4);border-radius:2px}
+    .cp-decor::before,.cp-decor::after{content:'';position:absolute;width:16px;height:16px;border:1.5px solid rgba(79,107,240,.4);border-radius:2px}
     .cp-decor::before{top:8px;left:8px;border-right:none;border-bottom:none}
     .cp-decor::after{bottom:8px;right:8px;border-left:none;border-top:none}
     .cp-particles{position:absolute;inset:0;z-index:0;pointer-events:none}
-    .cp-particles span{position:absolute;width:var(--ps);height:var(--ps);border-radius:50%;background:linear-gradient(135deg,#bcd4ff,#4a8eff);opacity:0;filter:blur(.4px);animation:drift var(--pdur,10s) linear infinite;animation-delay:var(--pdelay,0s)}
+    .cp-particles span{position:absolute;width:var(--ps);height:var(--ps);border-radius:50%;background:linear-gradient(135deg,#A5B4FC,var(--primary));opacity:0;filter:blur(.4px);animation:drift var(--pdur,10s) linear infinite;animation-delay:var(--pdelay,0s)}
     @keyframes drift{0%{transform:translate3d(0,0,0) scale(.6);opacity:0}12%{opacity:var(--pop,.45)}85%{opacity:var(--pop,.45)}100%{transform:translate3d(var(--px,30px),var(--py,-46px),0) scale(1.15);opacity:0}}
     .cp-canvas{position:relative;z-index:1;width:100%;height:100%}
     .cp-svg{position:absolute;inset:0;z-index:1;pointer-events:none}
-    .cp-cnode{position:absolute;width:86px;height:86px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;font-family:inherit;z-index:3;transition:transform .25s,box-shadow .35s,opacity .35s,filter .35s;border:3px solid rgba(255,255,255,.95);background:linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)),var(--cc,#4a8eff);color:#1a2744;box-shadow:0 6px 16px var(--cc-shadow,rgba(74,142,255,.2)),inset 0 2px 0 rgba(255,255,255,.65),inset 0 -4px 10px rgba(255,255,255,.15);transform:rotate(var(--rot,0deg));overflow:hidden}
-    .cp-cnode .cni{font-size:20px;position:relative;z-index:1;line-height:1;color:var(--cc,#4a8eff);filter:none}
-    .cp-cnode .cnn{font-size:14px;font-weight:800;position:relative;z-index:1;line-height:1.2;margin-top:1px;white-space:nowrap;color:#1a2744;text-shadow:none}
-    .cp-cnode .ccount{font-size:10px;font-weight:700;position:relative;z-index:1;line-height:1;margin-top:2px;color:var(--cc,#4a8eff);font-family:"DM Mono","Inter";letter-spacing:.04em;text-shadow:none}
+    .cp-cnode{position:absolute;width:86px;height:86px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;font-family:inherit;z-index:3;transition:transform .25s,box-shadow .35s,opacity .35s,filter .35s;border:3px solid rgba(255,255,255,.95);background:linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)),var(--cc,var(--primary));color:var(--text);box-shadow:0 6px 16px var(--cc-shadow,rgba(79,107,240,.2)),inset 0 2px 0 rgba(255,255,255,.65),inset 0 -4px 10px rgba(255,255,255,.15);transform:rotate(var(--rot,0deg));overflow:hidden}
+    .cp-cnode .cni{font-size:20px;position:relative;z-index:1;line-height:1;color:var(--cc,var(--primary));filter:none}
+    .cp-cnode .cnn{font-size:14px;font-weight:800;position:relative;z-index:1;line-height:1.2;margin-top:1px;white-space:nowrap;color:var(--text);text-shadow:none}
+    .cp-cnode .ccount{font-size:10px;font-weight:700;position:relative;z-index:1;line-height:1;margin-top:2px;color:var(--cc,var(--primary));font-family:"DM Mono","Inter";letter-spacing:.04em;text-shadow:none}
     .cp-cnode.sel .ccount{color:#fff}
-    .cp-cnode:hover{transform:scale(1.14) rotate(var(--rot,0deg));z-index:5;box-shadow:0 12px 26px var(--cc-shadow,rgba(74,142,255,.25)),inset 0 2px 0 rgba(255,255,255,.5);background:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.6)),var(--cc,#4a8eff)}
-    .cp-cnode.sel{background:var(--cc,#4a8eff);box-shadow:0 0 18px var(--cc-shadow),0 0 42px var(--cc-shadow),inset 0 2px 0 rgba(255,255,255,.45);animation:selPulse 2.6s ease-in-out infinite}
+    .cp-cnode:hover{transform:scale(1.14) rotate(var(--rot,0deg));z-index:5;box-shadow:0 12px 26px var(--cc-shadow,rgba(79,107,240,.25)),inset 0 2px 0 rgba(255,255,255,.5);background:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.6)),var(--cc,var(--primary))}
+    .cp-cnode.sel{background:var(--cc,var(--primary));box-shadow:0 0 18px var(--cc-shadow),0 0 42px var(--cc-shadow),inset 0 2px 0 rgba(255,255,255,.45);animation:selPulse 2.6s ease-in-out infinite}
     @keyframes selPulse{0%,100%{box-shadow:0 0 18px var(--cc-shadow),0 0 42px var(--cc-shadow),inset 0 2px 0 rgba(255,255,255,.45)}50%{box-shadow:0 0 30px var(--cc-shadow),0 0 62px var(--cc-shadow),inset 0 2px 0 rgba(255,255,255,.5)}}
     .cp-cnode.sel .cnn{color:#fff}
     .cp-cnode.sel .cni{color:#fff}
@@ -74,8 +75,8 @@
     .cp-snode canvas{display:block;width:100%;height:100%;pointer-events:none}
     .cp-snode:hover{animation-play-state:paused;transform:scale(1.14) rotate(var(--rot,0deg));z-index:5}
     .cp-snode.dragging{animation-play-state:paused;transform:scale(1.12) rotate(var(--rot,0deg));cursor:grabbing;filter:drop-shadow(0 14px 20px rgba(15,35,70,.28))}
-    .cp-snode.on{filter:drop-shadow(0 0 7px rgba(74,142,255,.95)) drop-shadow(0 0 16px rgba(74,142,255,.45))}
-    .cp-snode.hl{filter:drop-shadow(0 0 5px var(--sc-glow,rgba(74,142,255,.55)))}
+    .cp-snode.on{filter:drop-shadow(0 0 7px rgba(79,107,240,.95)) drop-shadow(0 0 16px rgba(79,107,240,.45))}
+    .cp-snode.hl{filter:drop-shadow(0 0 5px var(--sc-glow,rgba(79,107,240,.55)))}
     .cp-snode.dim{opacity:.22;animation-play-state:paused;filter:grayscale(.5)}
     .cp-snode canvas{will-change:transform}
     .cp-curve{fill:none;stroke-width:1;opacity:0;transition:opacity .4s,stroke-width .4s,filter .4s}
@@ -84,15 +85,19 @@
     @keyframes float{from{transform:translate3d(0,-3px,0) rotate(calc(var(--rot,0deg) - 1.2deg))}to{transform:translate3d(0,5px,0) rotate(calc(var(--rot,0deg) + 1.2deg))}}
     .tree-head{position:absolute;top:10px;left:16px;right:16px;z-index:4;pointer-events:none;display:flex;justify-content:space-between;align-items:flex-start}
     .tree-head h2{font-size:14px;margin:0;font-weight:700;letter-spacing:.02em;color:var(--text)}
-    .points{font:600 11px "Orbitron","Inter";padding:5px 10px;color:var(--primary);border:1px solid rgba(74,142,255,.18);background:rgba(74,142,255,.04);border-radius:8px;pointer-events:auto;letter-spacing:.06em;box-shadow:inset 0 0 12px rgba(74,142,255,.05)}
-    aside{padding:24px 20px;background:var(--bg2);border-left:1px solid var(--line)}
+    .points{font:600 11px "Orbitron","Inter";padding:5px 10px;color:var(--primary);border:1px solid rgba(79,107,240,.18);background:rgba(79,107,240,.04);border-radius:8px;pointer-events:auto;letter-spacing:.06em;box-shadow:inset 0 0 12px rgba(79,107,240,.05)}
+    aside{padding:24px 20px;background:var(--bg2);border-left:1px solid var(--line);height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(79,107,240,.25) transparent}
+    aside::-webkit-scrollbar{width:6px}
+    aside::-webkit-scrollbar-thumb{background:rgba(79,107,240,.22);border-radius:3px}
+    aside::-webkit-scrollbar-thumb:hover{background:rgba(79,107,240,.42)}
+    aside::-webkit-scrollbar-track{background:transparent}
     .aside-title{font:600 10px "Orbitron","Inter";letter-spacing:.16em;color:var(--primary);margin:0 0 6px;text-transform:uppercase}
     .route-title{font-size:21px;font-weight:800;letter-spacing:.01em;margin:0 0 8px;color:var(--text)}
     .description{font-size:13px;line-height:1.8;color:var(--text2);margin:0 0 18px}
     .section-label{font:700 13px "Inter","Noto Sans SC";letter-spacing:.06em;color:var(--text);text-transform:uppercase;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:7px}
     .section-label::before{content:'';width:3px;height:12px;border-radius:2px;background:linear-gradient(180deg,var(--primary),var(--primary2));box-shadow:0 0 8px var(--primary-glow);flex-shrink:0}
     .current-skills{font-size:13px;color:var(--muted);min-height:20px;line-height:1.6}
-    .current-skills .sk-chip{display:inline-flex;align-items:center;gap:4px;margin:3px 5px 3px 0;padding:4px 8px 4px 11px;font-size:12px;background:rgba(74,142,255,.06);border:1px solid rgba(74,142,255,.14);border-radius:14px;color:var(--primary);font-weight:500}
+    .current-skills .sk-chip{display:inline-flex;align-items:center;gap:4px;margin:3px 5px 3px 0;padding:4px 8px 4px 11px;font-size:12px;background:rgba(79,107,240,.06);border:1px solid rgba(79,107,240,.14);border-radius:14px;color:var(--primary);font-weight:500}
     .current-skills .sk-close{cursor:pointer;font-size:14px;line-height:1;color:var(--muted);padding:0 2px;border-radius:50%;transition:all .15s}
     .current-skills .sk-close:hover{color:#ef4444;background:rgba(239,68,68,.08)}
     .stat{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--panel)}
@@ -105,13 +110,47 @@
     @keyframes barFlow{0%{transform:translateX(-110%)}55%,100%{transform:translateX(330%)}}
     .log{margin-top:20px;font:400 11px/1.7 "DM Mono","Inter";color:var(--muted);border-left:2px solid var(--line);padding-left:10px;min-height:32px}
 
+    /* ══ 节点详情面板（参考 MapFlow NodeDetailPanel） ══ */
+    .node-detail{display:none;margin:16px 0 4px;padding:16px;border:1px solid var(--line-bright);border-radius:14px;background:linear-gradient(165deg,#FFFFFF 0%,var(--bg2) 100%);box-shadow:var(--shadow),0 6px 24px rgba(79,107,240,.08);animation:ndIn .32s cubic-bezier(.22,.61,.36,1)}
+    .node-detail.show{display:block}
+    @keyframes ndIn{from{opacity:0;transform:translateY(10px)}}
+    .nd-head{display:flex;align-items:flex-start;gap:11px}
+    .nd-ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:19px;flex-shrink:0;color:#fff;box-shadow:0 4px 12px rgba(79,107,240,.25);background:linear-gradient(135deg,var(--primary),var(--primary2))}
+    .nd-ico.career{background:linear-gradient(135deg,var(--cc,var(--primary)),var(--primary2))}
+    .nd-head-main{min-width:0}
+    .nd-title{font-size:15px;font-weight:800;color:var(--text);margin:0;line-height:1.3;letter-spacing:.01em}
+    .nd-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+    .nd-tag{font-size:10.5px;padding:2.5px 9px;border-radius:999px;background:rgba(79,107,240,.07);border:1px solid rgba(79,107,240,.16);color:var(--primary);font-weight:600;white-space:nowrap}
+    .nd-tag.depth{background:rgba(34,195,230,.09);border-color:rgba(34,195,230,.3);color:#0E7490}
+    .nd-tag.hard{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:#B45309}
+    .nd-close{margin-left:auto;width:26px;height:26px;border:none;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;transition:all .16s}
+    .nd-close:hover{background:rgba(239,68,68,.1);color:#EF4444}
+    .nd-desc{font-size:12.5px;line-height:1.8;color:var(--text2);margin:12px 0 0}
+    .nd-sec{margin-top:13px;padding-top:12px;border-top:1px dashed var(--line)}
+    .nd-sec h4{font:700 10.5px "Inter","Noto Sans SC";letter-spacing:.08em;text-transform:uppercase;color:var(--primary);margin:0 0 8px;display:flex;align-items:center;gap:6px}
+    .nd-sec h4::before{content:'';width:3px;height:11px;border-radius:2px;background:linear-gradient(180deg,var(--primary),var(--primary2))}
+    .nd-sec p{font-size:12.5px;line-height:1.75;color:var(--text2);margin:0}
+    .nd-sec ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+    .nd-sec li{font-size:12.5px;line-height:1.6;color:var(--text2);display:flex;gap:8px}
+    .nd-sec li::before{content:'•';color:var(--primary);font-weight:800;flex-shrink:0}
+    .nd-sec li.ev::before{content:'✓';color:var(--success);font-weight:800;flex-shrink:0}
+    .nd-chips{display:flex;flex-wrap:wrap;gap:6px}
+    .nd-chip{font-size:11.5px;padding:4px 11px;border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--text2);cursor:pointer;transition:all .16s}
+    .nd-chip:hover{border-color:var(--primary);color:var(--primary);background:rgba(79,107,240,.06);box-shadow:0 2px 8px rgba(79,107,240,.12)}
+    .nd-chip.on{background:rgba(79,107,240,.12);border-color:var(--primary);color:var(--primary);font-weight:700}
+    .nd-stat-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+    .nd-stat{flex:1;min-width:76px;text-align:center;padding:9px 6px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+    .nd-stat b{font:600 15px "DM Mono","Inter";color:var(--primary);display:block}
+    .nd-stat span{font-size:10px;color:var(--muted);display:block;margin-top:2px;letter-spacing:.04em}
+    .nd-empty{font-size:12px;color:var(--muted);padding:4px 0}
+
     /* ══ 参赛增强：入场过渡 ══ */
     .cp-canvas{animation:fadeUp .7s cubic-bezier(.22,.61,.36,1) both}
     .tree-head{animation:fadeIn .55s ease-out .12s both}
     aside{animation:fadeUp .7s cubic-bezier(.22,.61,.36,1) .18s both}
     @keyframes fadeUp{0%{opacity:0;transform:translateY(26px)}100%{opacity:1;transform:translateY(0)}}
     @keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
-    .tree-head h2{background:linear-gradient(90deg,#1a2744,#4a8eff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .tree-head h2{background:linear-gradient(90deg,var(--text),var(--primary));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 
     /* ══ 参赛增强：计数跳动 ══ */
     #count{display:inline-block}
@@ -119,15 +158,21 @@
     @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.4)}100%{transform:scale(1)}}
 
     /* ══ 参赛增强：节点点击涟漪 ══ */
-    .cp-ripple{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid rgba(74,142,255,.55);pointer-events:none;z-index:6;animation:ripple .65s cubic-bezier(.16,.84,.44,1) forwards}
+    .cp-ripple{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid rgba(79,107,240,.55);pointer-events:none;z-index:6;animation:ripple .65s cubic-bezier(.16,.84,.44,1) forwards}
     @keyframes ripple{0%{transform:scale(.2);opacity:1}100%{transform:scale(6);opacity:0}}
 
     /* ══ 参赛增强：粒子分层 ══ */
-    .cp-particles span.l-far{background:linear-gradient(135deg,#dce9ff,#a5c8ff)}
-    .cp-particles span.l-mid{background:linear-gradient(135deg,#cfe4ff,#5eead4)}
-    .cp-particles span.l-close{background:linear-gradient(135deg,#eef5ff,#7c9bff);box-shadow:0 0 6px rgba(124,155,255,.55)}
+    .cp-particles span.l-far{background:linear-gradient(135deg,#D7DFFE,#A5B4FC)}
+    .cp-particles span.l-mid{background:linear-gradient(135deg,#CBD6FE,#22C3E6)}
+    .cp-particles span.l-close{background:linear-gradient(135deg,#EEF2FF,var(--primary-light));box-shadow:0 0 6px rgba(109,131,245,.55)}
 
-    @media(max-width:900px){.app{padding:12px}.layout{grid-template-columns:1fr}.tree{height:620px}.top{align-items:flex-start}.actions{display:none}}
+    @media(max-width:900px){.app{padding:12px}.layout{grid-template-columns:1fr;height:auto}.tree{height:620px}.aside,aside{height:auto;overflow:visible}.top{align-items:flex-start}.actions{display:none}}
+
+    /* ══ UI 优化：按压反馈 + 减少动态效果 ══ */
+    button:active{transform:scale(.97)}
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+    }
   </style>
 </head>
 <body>
@@ -151,6 +196,7 @@
         <p class="aside-title">CAREER ANALYSIS</p>
         <h2 class="route-title" id="routeTitle">规划职业方向</h2>
         <p class="description" id="routeDesc">点击技能进行多选，系统按每个大类的高频三技能组合计算最接近的方向。</p>
+        <div id="nodeDetail" class="node-detail" aria-live="polite"></div>
         <div class="section-label">当前技能</div>
         <div id="currentSkills" class="current-skills">尚未选择技能</div>
         <div class="section-label">推荐方向</div>
@@ -278,9 +324,223 @@
         // 通用工具
         'Git/GitHub': {bvid:'BV1ySLc6QEcB',title:'Git+Github核心概念大串讲，从零到一全攻略，详细实战教程'},
         'VS Code': {bvid:'BV1ty4y1S7mC',title:'VS Code 零基础教程 | 持续更新中'},
-        'Markdown': {bvid:'BV1JA411h7Gw',title:'8分钟让你快速掌握Markdown'}
+        'Markdown': {bvid:'BV1JA411h7Gw',title:'8分钟让你快速掌握Markdown'},
+        // ── 补充课程链接（2026-08-17） ──
+        // 前端
+        'JavaScript': {bvid:'BV1Sy4y1C7ha',title:'JavaScript前端课程-dom-bom-js-es6新语法-jQuery-数据可视化echarts黑马pink老师前端入门基础视频教程(500多集)持续'},
+        'React': {bvid:'BV1wy4y1D7JT',title:'尚硅谷React教程（已加更新版内容，B站最火）'},
+        'TypeScript': {bvid:'BV1Xy4y1v7S2',title:'尚硅谷TypeScript教程'},
+        '响应式设计': {bvid:'BV1A34y1e7wL',title:'【Udemy排名第一的 HTML5+CSS3 课程】使用 HTML 和 CSS 构建响应式真实世界网站（中英文字幕）'},
+        // 后端
+        'Node.js': {bvid:'BV1a34y167AZ',title:'黑马程序员Node.js全套入门教程，nodejs新教程含es6模块化+npm+express+webpack+promise等_Nodejs实战案例详解'},
+        'Spring Boot': {bvid:'BV1TP411v7v6',title:'黑马程序员Java项目实战《苍穹外卖》，最适合新手的SpringBoot+SSM的企业级Java项目实战'},
+        'Redis': {bvid:'BV1cr4y1671t',title:'黑马程序员Redis入门到实战教程，深度透析redis底层原理+redis分布式锁+企业解决方案+黑马点评实战项目'},
+        '数据库原理': {bvid:'BV1jf4y147jz',title:'【拯救者】 2026年新录制 数据库系统概论（原理）速成(期末+考研/复试+专升本均可)'},
+        '软件工程': {bvid:'BV1xNzRYiEkz',title:'《软件工程》3小时期末速成课！期末速成丨考前突击丨期末不挂科丨考点总结'},
+        'Python': {bvid:'BV1wD4y1o7AS',title:'花了2万多买的Python教程全套，现在分享给大家，入门到精通(Python全栈开发教程)'},
+        // 运维
+        'Docker': {bvid:'BV1gr4y1U7CY',title:'Docker实战教程，跟架构师学docker，docker入门到大神'},
+        'CI/CD': {bvid:'BV1z7411u7gg',title:'基于Docker+Jenkins+Git 实现企业持续集成持续部署（CI/CD）'},
+        '云计算基础': {bvid:'BV1pz4y1D73n',title:'千锋云计算Linux教程650集，linux系统运维从入门到精通教程（Linux安装极速入门，零基础必备）'},
+        // AI
+        '深度学习': {bvid:'BV1hE411t7RN',title:'PyTorch深度学习快速入门教程（绝对通俗易懂！）【小土堆】'},
+        '大模型应用': {bvid:'BV1hy5YzaErV',title:'【全网炸裂的大模型教程】3天速通大模型，轻松搞定大模型原理、Prompt、langchain、RAG、agent、大模型微调等，从入门到精通一口气学完！'},
+        // 数据
+        '数据分析': {bvid:'BV1ZM4y1u7uF',title:'全网最良心的【数据分析自学课程】它来啦！必备的Excel/SQL/Tableau/Python|求职|简历面试|产品|大厂分析报告制作、戴师兄数据分析入门免费课'},
+        'Jupyter': {bvid:'BV1Q4411H7fJ',title:'python数据分析神器Jupyter notebook快速入门'},
+        'Pandas': {bvid:'BV1Ex411L7oT',title:'【莫烦Python】Numpy & Pandas (数据处理教程)'},
+        '数据可视化': {bvid:'BV1E4411B7ef',title:'【Tableau教程】Tableau零基础教程，带你解锁当下最受欢迎的数据可视化软件'},
+        'Hadoop': {bvid:'BV1Qp4y1n7EN',title:'Hadoop教程，大数据hadoop3.x搭建到集群调优（MapReduce、YARN、HDFS）'},
+        // 算法
+        '算法设计与分析': {bvid:'BV1Ls411W7PB',title:'【北大公开课】算法设计与分析 屈婉玲教授 （76p）'},
+        '图论': {bvid:'BV1Fb411M7d9',title:'图论 - 哈尔滨工业大学（哈工大 HIT）'},
+        '编译原理': {bvid:'BV1ft4y1X7p6',title:'编译原理—混子速成期末保过'},
+        // 测试
+        '自动化测试': {bvid:'BV17p4y1B77x',title:'【已更新】B站讲的最详细的Python接口自动化测试实战教程全集（实战最新版）'},
+        '接口测试': {bvid:'BV11K4y1J7sh',title:'Postman接口测试从入门到精通教程 | 案例详解+项目实战'},
+        '测试用例设计': {bvid:'BV1b54y1m7qM',title:'不吹不黑软件测试之10分钟教会你设计测试用例'},
+        // 安全
+        '密码学基础': {bvid:'BV14FTi6eEEj',title:'【极致中配】麻省理工学院MIT6.5620/6.875/18.425 密码学基础（2025 年秋季）'},
+        '渗透测试': {bvid:'BV1Lf4y1t7Mc',title:'网络安全300集全套视频教程(web安全/渗透测试/黑客攻防/信息安全/代码审计)，网络安全基础入门到精通'},
+        // 网络
+        'HTTP/HTTPS': {bvid:'BV1KY411x7Jp',title:'HTTPS是什么？加密原理和证书。SSL/TLS握手过程'},
+        '网络协议分析': {bvid:'BV1Sb41177Hv',title:'Wireshark 网络数据抓包协议分析必备 入门+深入（完）'},
+        // 客户端
+        'Kotlin': {bvid:'BV1kT4y1o7nP',title:'【2021最新版Kotlin教程】Android Kotlin从入门到进阶全套教程（全网最完善kotlin教程）'},
+        'Swift': {bvid:'BV1mT4y1C7JZ',title:'从入门到精通Swift5.1编程'},
+        // 硬件
+        '单片机': {bvid:'BV1Mb411e7re',title:'51单片机入门教程-2020版 程序全程纯手打 从零开始入门'},
+        // 游戏
+        'Unity引擎': {bvid:'BV1AU411S72z',title:'物理碰撞模块【Untiy入门到上班29】'},
+        // 数学
+        '线性代数': {bvid:'BV1aW411Q7x1',title:'《线性代数》教学视频 宋浩老师（2024年更新）'},
+        // DBA
+        '数据库设计': {bvid:'BV1LZ4y1k7ma',title:'「软件设计师」 上午题 #6 数据库'},
+        'PostgreSQL': {bvid:'BV1av411r7yB',title:'一天学完 PostgreSQL'}
       };
 
+
+      /* ── 节点详情数据（参考 MapFlow SkillNode 结构：难度/时长/推荐深度/目标/概念/证据/前置） ── */
+      const DEPTH_LABELS={Recognize:'了解',Understand:'理解',Use:'熟练运用',Transfer:'迁移应用',DeepMastery:'深入掌握'};
+      const SKILL_DETAILS={
+        'HTML/CSS':{
+          category:'前端基础',difficulty:1,estimated_minutes:240,recommended_depth:'Use',
+          description:'网页结构与样式的基石：用语义化标签组织内容，用 CSS 控制布局、色彩与响应式表现。',
+          depth_rationale:'前端一切交互的入口，学习终点是脱离教程直接搭建常见静态页面并解决浏览器兼容问题。',
+          learning_objectives:['掌握语义化标签与文档结构','掌握盒模型、Flexbox 与 Grid 布局','理解层叠、继承与媒体查询实现响应式'],
+          key_concepts:['语义化标签','盒模型','Flexbox','Grid','响应式设计'],
+          observable_evidence:['独立完成一个多端适配的完整页面','能用一句话解释盒模型与层叠规则','能在不查资料时写出常见布局'],
+          prerequisites:[],primary:'frontend'
+        },
+        'JavaScript':{
+          category:'前端基础',difficulty:2,estimated_minutes:360,recommended_depth:'Use',
+          description:'浏览器与 Node 的通用语言，是前端交互、后端脚本与工具链的共同基础。',
+          depth_rationale:'需要达到能独立实现交互逻辑的水平：作用域、异步与 DOM 是日常主战场。',
+          learning_objectives:['掌握变量作用域、闭包与原型链','掌握 DOM 操作与事件机制','掌握 Promise 与 async/await 异步编程'],
+          key_concepts:['闭包','事件循环','Promise','原型链','ES6+'],
+          observable_evidence:['独立实现一个带交互逻辑的组件','能口述事件循环与宏任务/微任务顺序','能写出无内存泄漏的事件绑定'],
+          prerequisites:['HTML/CSS'],primary:'frontend'
+        },
+        'React':{
+          category:'前端框架',difficulty:3,estimated_minutes:480,recommended_depth:'Use',
+          description:'当前最主流的组件化 UI 框架，用声明式组件 + 单向数据流构建大型前端应用。',
+          depth_rationale:'工程化前端的主力技能，需要能独立搭建项目并合理组织状态与副作用。',
+          learning_objectives:['掌握组件化、props/state 与受控组件','掌握 Hooks 与自定义 Hook 复用逻辑','理解虚拟 DOM 与渲染优化手段'],
+          key_concepts:['组件','Hooks','虚拟 DOM','单向数据流','状态管理'],
+          observable_evidence:['独立实现一个组件库级别的页面','能解释 useMemo/useCallback 的取舍','能完成一次性能优化并量化收益'],
+          prerequisites:['JavaScript','HTML/CSS'],primary:'frontend'
+        },
+        'Vue':{
+          category:'前端框架',difficulty:3,estimated_minutes:420,recommended_depth:'Use',
+          description:'渐进式前端框架，模板语法 + 响应式系统让中小型应用开发效率极高。',
+          depth_rationale:'国内企业使用最广的框架之一，学习终点是能独立完成业务页面并理解响应式原理。',
+          learning_objectives:['掌握模板语法、指令与计算属性','掌握组件通信与插槽机制','理解响应式系统与生命周期'],
+          key_concepts:['响应式数据','指令','插槽','组合式 API','生命周期'],
+          observable_evidence:['独立实现一个完整的业务页面','能解释数据变化如何触发视图更新','能完成组件间多种通信方式'],
+          prerequisites:['JavaScript','HTML/CSS'],primary:'frontend'
+        },
+        'Node.js':{
+          category:'后端运行时',difficulty:3,estimated_minutes:360,recommended_depth:'Use',
+          description:'JavaScript 的服务端运行时，事件驱动 + 非阻塞 I/O，是现代工具链与后端开发的基础。',
+          depth_rationale:'需要能写出可维护的 HTTP 服务：模块化、错误处理与进程模型都要心中有数。',
+          learning_objectives:['掌握模块系统与 npm 生态','掌握核心模块编写 HTTP 服务','理解事件循环与异步资源管理'],
+          key_concepts:['事件循环','模块系统','流','中间件','非阻塞 I/O'],
+          observable_evidence:['独立实现一个带路由与中间件的服务','能解释 libuv 线程池与事件循环','能处理背压与内存泄漏问题'],
+          prerequisites:['JavaScript'],primary:'backend'
+        },
+        'Java':{
+          category:'后端语言',difficulty:3,estimated_minutes:480,recommended_depth:'Use',
+          description:'企业级后端主力语言，强类型 + JVM 生态 + Spring 体系支撑大量业务系统。',
+          depth_rationale:'后端面试与就业的硬通货，需要掌握语法、面向对象与常用生态后能独立开发接口。',
+          learning_objectives:['掌握面向对象核心：继承、多态、接口','掌握集合框架与泛型','掌握异常处理与多线程基础'],
+          key_concepts:['JVM','面向对象','集合框架','泛型','多线程'],
+          observable_evidence:['独立实现一个带分层结构的业务模块','能解释 JVM 内存分区与 GC 基本流程','能写出线程安全的生产者消费者'],
+          prerequisites:['数据结构'],primary:'backend'
+        },
+        'Python':{
+          category:'通用语言',difficulty:2,estimated_minutes:300,recommended_depth:'Use',
+          description:'语法简洁的通用语言，覆盖 Web、自动化、数据分析与 AI 等几乎所有领域。',
+          depth_rationale:'AI 与数据方向的第一语言，需要达到能读能写、快速搭建脚本与小型服务。',
+          learning_objectives:['掌握基础语法与数据结构','掌握函数、装饰器与生成器','掌握面向对象与常用标准库'],
+          key_concepts:['动态类型','装饰器','生成器','GIL','标准库'],
+          observable_evidence:['独立实现一个爬虫或自动化脚本','能写出地道的列表推导式','能解释 GIL 对多线程的影响'],
+          prerequisites:[],primary:'ai'
+        },
+        'MySQL':{
+          category:'关系型数据库',difficulty:2,estimated_minutes:360,recommended_depth:'Use',
+          description:'最常用的关系型数据库，掌握建表、查询、索引与事务是后端基本功。',
+          depth_rationale:'数据层的核心技能，学习终点是能设计合理表结构并写出高效查询。',
+          learning_objectives:['掌握 DDL/DML 与查询语法','掌握索引原理与执行计划','掌握事务隔离级别与锁'],
+          key_concepts:['B+树索引','事务','隔离级别','锁','执行计划'],
+          observable_evidence:['独立设计一个第三范式的表结构','能基于 EXPLAIN 优化慢查询','能解释脏读/幻读的产生与解决'],
+          prerequisites:['SQL'],primary:'backend'
+        },
+        'Redis':{
+          category:'缓存与中间件',difficulty:3,estimated_minutes:240,recommended_depth:'Understand',
+          description:'高性能内存数据库，承担缓存、分布式锁、消息队列等职责，是后端高并发的关键组件。',
+          depth_rationale:'高并发场景的标配，需要理解数据模型与持久化取舍，避免缓存穿透/击穿/雪崩。',
+          learning_objectives:['掌握五种核心数据结构与场景','掌握持久化与淘汰策略','掌握分布式锁与缓存一致性方案'],
+          key_concepts:['数据结构','持久化 RDB/AOF','淘汰策略','缓存穿透','分布式锁'],
+          observable_evidence:['能为一类业务设计 Redis 缓存方案','能解释缓存穿透/击穿/雪崩的区别与对策','能说明 AOF 与 RDB 的取舍'],
+          prerequisites:['Linux'],primary:'backend'
+        },
+        'Linux':{
+          category:'操作系统',difficulty:2,estimated_minutes:300,recommended_depth:'Use',
+          description:'服务器操作系统的事实标准，掌握常用命令、权限与进程管理是部署一切服务的前提。',
+          depth_rationale:'开发与运维的公共底座，需要达到能独立在命令行完成环境搭建与排障。',
+          learning_objectives:['掌握文件系统、权限与常用命令','掌握进程管理与系统监控','掌握 vim 与 shell 基础脚本'],
+          key_concepts:['文件权限','进程','管道','systemd','shell'],
+          observable_evidence:['独立完成一次服务部署与排障','能通过 top/ps/logs 定位问题','能编写 20 行内的 shell 脚本'],
+          prerequisites:[],primary:'ops'
+        },
+        'Docker':{
+          category:'容器化',difficulty:3,estimated_minutes:240,recommended_depth:'Use',
+          description:'容器化部署的标准方案，把应用与环境一起打包，实现一致的交付与运行。',
+          depth_rationale:'现代交付流程的必备技能，学习终点是能独立编写 Dockerfile 并管理容器生命周期。',
+          learning_objectives:['掌握镜像与容器核心概念','掌握 Dockerfile 最佳实践','掌握多容器编排与数据卷'],
+          key_concepts:['镜像','容器','Dockerfile','数据卷','容器网络'],
+          observable_evidence:['独立编写并优化一个 Dockerfile','能用容器运行一套前后端应用','能解释镜像分层与缓存机制'],
+          prerequisites:['Linux'],primary:'ops'
+        },
+        '机器学习':{
+          category:'AI 基础',difficulty:4,estimated_minutes:600,recommended_depth:'Understand',
+          description:'让机器从数据中学习的学科，覆盖监督/无监督学习与模型评估等核心范式。',
+          depth_rationale:'AI 方向的分水岭，需要理解原理与调参方向，而不仅是调用库，才能应对面试与工程问题。',
+          learning_objectives:['掌握回归/分类/聚类核心算法','掌握特征工程与模型评估','理解过拟合与正则化手段'],
+          key_concepts:['监督学习','无监督学习','过拟合','交叉验证','梯度下降'],
+          observable_evidence:['独立完成一个端到端建模流程','能解释偏差与方差的权衡','能根据指标判断模型问题并改进'],
+          prerequisites:['Python','概率统计','线性代数'],primary:'ai'
+        },
+        'Prompt工程':{
+          category:'大模型应用',difficulty:2,estimated_minutes:180,recommended_depth:'Use',
+          description:'面向大模型的高效提示设计方法，是 AI 应用落地成本最低的入口技能。',
+          depth_rationale:'AI 应用工程师的日常技能，需要掌握结构化提示与迭代调优的方法论。',
+          learning_objectives:['掌握提示的基本结构与角色设定','掌握少样本与思维链技巧','掌握提示迭代与评估方法'],
+          key_concepts:['角色设定','少样本','思维链','上下文窗口','评测'],
+          observable_evidence:['为场景设计并调优一套提示','能对比不同提示策略的效果','能说明幻觉与缓解手段'],
+          prerequisites:[],primary:'ai'
+        },
+        '数据结构':{
+          category:'算法基础',difficulty:3,estimated_minutes:480,recommended_depth:'Understand',
+          description:'组织与管理数据的方式：数组、链表、树、图与哈希，是算法与系统设计的共同基础。',
+          depth_rationale:'面试与系统设计的底层语言，需要达到能分析复杂度并选型数据结构的水平。',
+          learning_objectives:['掌握线性表、栈、队列与哈希表','掌握树与图的遍历','掌握复杂度分析方法'],
+          key_concepts:['链表','哈希表','二叉树','图','时间复杂度'],
+          observable_evidence:['能手写常用数据结构的增删查改','能分析算法的时间/空间复杂度','能为场景选择合适的数据结构'],
+          prerequisites:['C语言'],primary:'algo'
+        },
+        '计算机网络':{
+          category:'网络基础',difficulty:3,estimated_minutes:420,recommended_depth:'Understand',
+          description:'理解数据如何跨设备传输：分层模型、TCP/IP、HTTP 与 DNS 是前后端共同的常识。',
+          depth_rationale:'排查问题与面试高频，需要能解释机制与典型故障，而不只是背概念。',
+          learning_objectives:['掌握分层模型与各层职责','掌握 TCP 三次握手与拥塞控制','掌握 HTTP 协议与常见状态码'],
+          key_concepts:['OSI/TCP-IP','TCP/UDP','HTTP','DNS','三次握手'],
+          observable_evidence:['能抓包分析一次完整请求链路','能解释 TCP 与 UDP 的适用场景','能排查常见的网络超时问题'],
+          prerequisites:[],primary:'network'
+        },
+        'SQL':{
+          category:'数据查询',difficulty:2,estimated_minutes:240,recommended_depth:'Use',
+          description:'结构化查询语言，是与数据库对话的通用方式，数据分析与后端开发的必备技能。',
+          depth_rationale:'数据能力的起点，学习终点是能写出清晰、正确、可维护的查询语句。',
+          learning_objectives:['掌握 SELECT 与常用子句','掌握多表连接与聚合分组','掌握子查询与窗口函数'],
+          key_concepts:['JOIN','聚合','分组','窗口函数','索引'],
+          observable_evidence:['独立完成多表关联的统计查询','能写出正确区分 JOIN 类型的语句','能优化一个慢查询'],
+          prerequisites:[],primary:'data'
+        }
+      };
+      function defaultDetail(s){
+        const cs=s.c.map(id=>careerNames[id]||id),cat=cs.join(' / ')||'通用';
+        return {
+          category:cat,difficulty:2,estimated_minutes:90,recommended_depth:'Understand',
+          description:`${s.n} 是「${cat}」方向的核心技能，建议先掌握基本概念，再通过小项目巩固动手能力。`,
+          depth_rationale:'该技能属于可复用的工程能力，学习终点是能独立完成常见任务，并解释其核心机制与适用边界。',
+          learning_objectives:[`理解 ${s.n} 的核心概念与适用场景`,`能独立完成一个使用 ${s.n} 的最小示例`],
+          key_concepts:[s.n].concat(cs.slice(0,2)),
+          observable_evidence:[`能用一句话解释 ${s.n} 解决什么问题`,`能独立完成一个基于 ${s.n} 的小练习`],
+          prerequisites:[],primary:s.c[0]||'frontend'
+        };
+      }
+      function detailFor(s){return SKILL_DETAILS[s.n]||defaultDetail(s);}
 
       const canvas=document.getElementById('cpCanvas');
       const svg=document.getElementById('cpSvg');
@@ -426,7 +686,7 @@
       function paintSkillNode(p){
         const e=skillEls[p.id];if(!e)return;
         const cc=careers.find(x=>x.id===p.cid);
-        const sc=cc?cc.color:'#4a8eff';
+        const sc=cc?cc.color:'var(--primary)';
         const cw=calcCJK(p.id);
         const fs=Math.max(10,Math.min(16,Math.floor((p.size*1.6-24)/cw)));
         const r=renderSticker(p.id,fs,sc,Math.min(window.devicePixelRatio||1,2));
@@ -539,19 +799,19 @@
       function toggleSkill(sn){
         curCareer=null;
         const e=skillEls[sn];
-        if(e){const c=nodeCenter(e);spawnRipple(c.x,c.y,'rgba(74,142,255,.55)');}
+        if(e){const c=nodeCenter(e);spawnRipple(c.x,c.y,'rgba(79,107,240,.55)');}
         if(curSkill===sn){curSkill=null;selected.delete(sn);}
         else{curSkill=sn;selected.add(sn);}
-        renderHL();updatePanel();
+        renderHL();updatePanel();showSkillDetail(sn);
       }
 
       function toggleCareer(cid){
         curSkill=null;
         const e=careerEls[cid],cd=careers.find(c=>c.id===cid);
-        if(e){const c=nodeCenter(e);spawnRipple(c.x,c.y,cd?cd.color+'88':'rgba(74,142,255,.55)');}
+        if(e){const c=nodeCenter(e);spawnRipple(c.x,c.y,cd?cd.color+'88':'rgba(79,107,240,.55)');}
         if(curCareer===cid){curCareer=null;}
         else{curCareer=cid;}
-        renderHL();updatePanel();
+        renderHL();updatePanel();showCareerDetail(cid);
       }
 
       /* ── 贴纸拖拽 + 抛掷 ── */
@@ -634,6 +894,75 @@
         requestAnimationFrame(physLoop);
       }
 
+      /* ── 节点详情面板（可交互：关闭 / 前置跳转 / 方向跳转） ── */
+      function bindDetailActions(){
+        const box=el('nodeDetail');
+        box.querySelectorAll('[data-act]').forEach(btn=>{
+          btn.addEventListener('click',()=>{
+            const act=btn.getAttribute('data-act');
+            if(act==='nd-close'){closeNodeDetail();}
+            else if(act==='nd-pre'){toggleSkill(btn.getAttribute('data-sn'));}
+            else if(act==='nd-career'){toggleCareer(btn.getAttribute('data-cid'));}
+            else if(act==='nd-skill'){toggleSkill(btn.getAttribute('data-sn'));}
+          });
+        });
+      }
+      function closeNodeDetail(){
+        const box=el('nodeDetail');
+        box.classList.remove('show');
+        box.innerHTML='';
+      }
+      function showSkillDetail(sn){
+        const s=skills.find(x=>x.n===sn); if(!s)return;
+        const d=detailFor(s);
+        const pc=careers.find(c=>c.id===d.primary)||careers[0];
+        const stars='★'.repeat(d.difficulty)+'☆'.repeat(Math.max(0,5-d.difficulty));
+        const box=el('nodeDetail');
+        box.innerHTML=
+          '<div class="nd-head"><div class="nd-ico" style="background:linear-gradient(135deg,'+pc.color+',var(--primary2))">'+pc.icon+'</div>'+
+          '<div class="nd-head-main"><h3 class="nd-title">'+s.n+'</h3><div class="nd-tags">'+
+            '<span class="nd-tag">'+d.category+'</span>'+
+            '<span class="nd-tag depth">'+DEPTH_LABELS[d.recommended_depth]+' · '+d.recommended_depth+'</span>'+
+            '<span class="nd-tag hard">难度 '+stars+'</span>'+
+            '<span class="nd-tag">约 '+d.estimated_minutes+' 分钟</span>'+
+          '</div></div>'+
+          '<button class="nd-close" data-act="nd-close" aria-label="关闭详情">×</button></div>'+
+          (d.description?'<p class="nd-desc">'+d.description+'</p>':'')+
+          '<div class="nd-sec"><h4>目标深度</h4><p>'+d.depth_rationale+'</p></div>'+
+          (d.learning_objectives.length?'<div class="nd-sec"><h4>学习目标</h4><ul>'+d.learning_objectives.map(o=>'<li>'+o+'</li>').join('')+'</ul></div>':'')+
+          (d.key_concepts.length?'<div class="nd-sec"><h4>关键概念</h4><div class="nd-chips">'+d.key_concepts.map(k=>'<span class="nd-chip">'+k+'</span>').join('')+'</div></div>':'')+
+          (d.observable_evidence.length?'<div class="nd-sec"><h4>通过标准</h4><ul>'+d.observable_evidence.map(e=>'<li class="ev">'+e+'</li>').join('')+'</ul></div>':'')+
+          (d.prerequisites.length?'<div class="nd-sec"><h4>前置技能</h4><div class="nd-chips">'+d.prerequisites.map(p=>'<button class="nd-chip" data-act="nd-pre" data-sn="'+p+'">'+p+' →</button>').join('')+'</div></div>':'')+
+          '<div class="nd-sec"><h4>适合方向</h4><div class="nd-chips">'+s.c.map(cid=>{const c=careers.find(x=>x.id===cid);return c?'<button class="nd-chip" data-act="nd-career" data-cid="'+cid+'">'+c.icon+' '+c.name+'</button>':'';}).join('')+'</div></div>';
+        box.classList.add('show');
+        bindDetailActions();
+        box.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+      function showCareerDetail(cid){
+        const c=careers.find(x=>x.id===cid); if(!c)return;
+        const related=skills.filter(s=>s.c.includes(cid));
+        const done=related.filter(s=>selected.has(s.n)).length;
+        const pct=Math.round(related.length?done/related.length*100:0);
+        const box=el('nodeDetail');
+        box.innerHTML=
+          '<div class="nd-head"><div class="nd-ico career" style="--cc:'+c.color+';background:linear-gradient(135deg,'+c.color+',var(--primary2))">'+c.icon+'</div>'+
+          '<div class="nd-head-main"><h3 class="nd-title">'+c.name+' · 职业方向</h3><div class="nd-tags">'+
+            '<span class="nd-tag">'+related.length+' 个技能点</span>'+
+            '<span class="nd-tag depth">已点亮 '+done+'</span>'+
+          '</div></div>'+
+          '<button class="nd-close" data-act="nd-close" aria-label="关闭详情">×</button></div>'+
+          '<p class="nd-desc">「'+c.name+'」方向共 '+related.length+' 个技能，点击下方技能查看学习详情，并把它加入你的加点计划。</p>'+
+          '<div class="nd-stat-row">'+
+            '<div class="nd-stat"><b>'+related.length+'</b><span>技能点</span></div>'+
+            '<div class="nd-stat"><b>'+done+'</b><span>已点亮</span></div>'+
+            '<div class="nd-stat"><b>'+pct+'%</b><span>覆盖率</span></div>'+
+          '</div>'+
+          '<div class="nd-sec"><h4>方向技能</h4><div class="nd-chips">'+related.map(s=>'<button class="nd-chip'+(selected.has(s.n)?' on':'')+'" data-act="nd-skill" data-sn="'+s.n+'">'+s.n+'</button>').join('')+'</div></div>';
+        box.classList.add('show');
+        bindDetailActions();
+        box.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+
       /* ── 面板 ── */
       function updatePanel(){
         const scores=getScores();
@@ -697,7 +1026,7 @@
         }
       }
 
-      el('reset').onclick=()=>{selected.clear();curSkill=null;curCareer=null;renderHL();updatePanel();};
+      el('reset').onclick=()=>{selected.clear();curSkill=null;curCareer=null;renderHL();updatePanel();closeNodeDetail();};
 
       /* ── 背景粒子（三层视差：远层小淡慢、中层青蓝、近层大亮快，纯 CSS 动画，不拦截交互） ── */
       (function initParticles(){

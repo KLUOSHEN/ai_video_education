@@ -178,12 +178,13 @@ function initVortex() {
         octx.textAlign = 'left';
         octx.textBaseline = 'alphabetic';
 
-        // 4) CRT 覆盖层（扫描线/暗角/暖调）
-        octx.drawImage(fxLayer, 0, 0);
+        // 4) CRT 覆盖层（扫描线/暗角/暖调）；页面加载瞬间画布可能尚未布局（宽高为 0），跳过该帧绘制
+        if (fxLayer && fxLayer.width > 0 && fxLayer.height > 0) octx.drawImage(fxLayer, 0, 0);
 
-        // 5) 桶形弯曲：分条重绘
+        // 5) 桶形弯曲：分条重绘（oc 与 fxLayer 同源，加载瞬间也可能为 0 尺寸，一并守卫）
         var curve = easeOutQuad(Math.min(d / 3, 1));
         ctx.clearRect(0, 0, W, H);
+        if (!oc.width || !oc.height) { requestAnimationFrame(frame); return; }
         var strips = 14;
         var amp = BARREL_GAIN * curve;
         for (var k = 0; k < strips; k++) {

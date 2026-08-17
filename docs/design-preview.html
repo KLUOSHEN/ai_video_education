@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>栈知映 · UI 优化效果预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============ 新设计系统 tokens ============ */
+:root{
+  --primary:#4F6BF0; --primary-deep:#3B4FE0; --primary-soft:#EEF2FF;
+  --cyan:#22C3E6; --accent:#F59E0B;
+  --success:#16A34A; --danger:#DC2626;
+  --bg:#F7F9FC; --card:#FFFFFF;
+  --ink:#0F172A; --ink-2:#475569; --ink-3:#94A3B8;
+  --line:#E2E8F0;
+  --bg-dark:#0B1220; --ink-light:#E6EDF7; --ink-dim:#8CA3C0;
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px;
+  --sh-1:0 1px 2px rgba(15,23,42,.05);
+  --sh-2:0 4px 12px rgba(15,23,42,.07);
+  --sh-3:0 12px 32px rgba(15,23,42,.12);
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --dur-1:160ms; --dur-2:250ms; --dur-3:350ms;
+  --font-zh:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --font-en:"Inter","Noto Sans SC",sans-serif;
+  --font-mono:"DM Mono",monospace;
+  --font-brand:"Orbitron","Inter",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-zh);color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px 96px}
+
+/* ============ Hero ============ */
+.hero{background:radial-gradient(1000px 460px at 18% -12%,rgba(79,107,240,.35),transparent 60%),radial-gradient(800px 420px at 88% -8%,rgba(34,195,230,.22),transparent 55%),var(--bg-dark);color:var(--ink-light);padding:64px 24px 56px;text-align:center}
+.badge{width:64px;height:64px;margin:0 auto 18px;display:grid;place-items:center;border-radius:18px;color:#fff;font-family:var(--font-brand);font-weight:800;font-size:20px;letter-spacing:.02em;background:linear-gradient(135deg,var(--primary),var(--cyan));box-shadow:0 10px 30px rgba(79,107,240,.45)}
+.hero h1{font-size:34px;font-weight:800;letter-spacing:-.02em;color:#fff}
+.hero .sub{color:var(--ink-dim);margin-top:8px;font-size:14px}
+.hero .tags{margin-top:18px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.tag{font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid rgba(230,237,247,.22);color:var(--ink-dim)}
+.hero .notice{margin-top:22px;font-size:12.5px;color:#7FA0C4;background:rgba(34,195,230,.08);border:1px solid rgba(34,195,230,.25);display:inline-block;padding:6px 14px;border-radius:999px}
+
+/* ============ 区块 ============ */
+.sec{margin-top:44px}
+.sec-h{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
+.sec-h .no{font-family:var(--font-mono);color:var(--primary);font-size:13px;font-weight:500}
+.sec-h h2{font-size:21px;font-weight:700;letter-spacing:-.01em}
+.sec-h .desc{font-size:12.5px;color:var(--ink-3)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-1);padding:26px}
+
+/* ============ 色板 ============ */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.sw{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);background:#fff}
+.sw .chipc{height:74px}
+.sw .meta{padding:8px 10px}
+.sw .meta b{display:block;font-family:var(--font-mono);font-size:11.5px;font-weight:500;color:var(--ink)}
+.sw .meta span{font-size:10.5px;color:var(--ink-3)}
+
+/* ============ 字体 ============ */
+.typo{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.typo .t1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.25}
+.typo .t2{font-size:18px;font-weight:700;line-height:1.35}
+.typo .t3{font-size:14px;color:var(--ink-2);line-height:1.7}
+.typo .t4{font-family:var(--font-mono);font-size:13px;color:var(--primary)}
+.typo .t5{font-family:var(--font-brand);font-size:14px;letter-spacing:.08em;color:var(--ink-2)}
+.typo .cap{font-size:11px;color:var(--ink-3);margin-bottom:6px;font-family:var(--font-mono)}
+.mono-note{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-3);margin-top:14px;background:var(--bg);border:1px dashed var(--line);padding:10px 12px;border-radius:var(--r-sm);line-height:1.9}
+
+/* ============ 对比两栏 ============ */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:#fff}
+.cmp .col{padding:22px}
+.cmp .col.old{background:#FBFCFE;border-right:1px solid var(--line)}
+.cmp .col h4{font-size:12px;font-weight:600;color:var(--ink-3);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.cmp .col h4::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ink-3)}
+.cmp .col.new h4{color:var(--primary)} .cmp .col.new h4::before{background:var(--primary)}
+.cmp .row{margin-bottom:16px}
+.cmp .lbl{font-size:11px;color:var(--ink-3);margin-bottom:6px;font-family:var(--font-mono)}
+
+/* 旧样式 */
+.btn-old{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:10px;color:#fff;font-family:var(--font-zh);font-size:13px;cursor:pointer;background:linear-gradient(135deg,#4a8eff,#7c9bff);box-shadow:0 2px 10px rgba(74,142,255,.3)}
+.btn-old.alt{background:linear-gradient(135deg,#4a8eff,#6366f1)}
+.chip-old{display:inline-block;padding:5px 12px;border-radius:999px;font-size:12px;color:#4a8eff;background:#fff;border:1px solid #cfe0ff}
+.card-old{background:#fff;border-radius:12px;padding:14px;box-shadow:0 4px 14px rgba(74,142,255,.18);border:1px solid #e6eeff}
+.input-old{width:100%;padding:9px 12px;border-radius:8px;border:1px solid #d7e3f7;font-size:13px;font-family:var(--font-zh)}
+.prog-old{height:8px;border-radius:999px;background:linear-gradient(90deg,#4a8eff,#7c9bff);width:64%}
+.bubble-old{display:inline-block;padding:9px 13px;border-radius:12px;font-size:12.5px;background:#f0f6ff;color:#1a2744;max-width:80%}
+
+/* 新样式 */
+.btn-new{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:var(--r-sm);color:#fff;background:var(--primary);font-family:var(--font-zh);font-size:13px;font-weight:500;cursor:pointer;transition:background var(--dur-1) var(--ease-out),transform var(--dur-1) var(--ease-out),box-shadow var(--dur-1) var(--ease-out)}
+.btn-new:hover{background:var(--primary-deep);box-shadow:var(--sh-2)}
+.btn-new:active{transform:scale(.97)}
+.btn-new.ghost{background:#fff;color:var(--primary);border:1px solid #C7D2FE}
+.btn-new.ghost:hover{background:var(--primary-soft)}
+.btn-new.cta{background:linear-gradient(135deg,var(--primary),var(--cyan));box-shadow:0 4px 14px rgba(79,107,240,.35)}
+.chip-new{display:inline-block;padding:5px 12px;border-radius:999px;font-size:12px;color:var(--primary);background:var(--primary-soft);border:1px solid #DBE3FD}
+.chip-new.amber{color:#B45309;background:#FEF3C7;border-color:#FDE68A}
+.card-new{background:#fff;border-radius:var(--r-md);padding:14px;box-shadow:var(--sh-1);border:1px solid var(--line)}
+.card-new h5{font-size:13px;font-weight:600;margin-bottom:4px}
+.card-new p{font-size:11.5px;color:var(--ink-3)}
+.input-new{width:100%;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--line);font-size:13px;font-family:var(--font-zh);transition:border-color var(--dur-1),box-shadow var(--dur-1)}
+.input-new:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.prog-new{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--primary),var(--cyan));width:64%;position:relative}
+.prog-new::after{content:'';position:absolute;right:-5px;top:-3px;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--accent);box-shadow:var(--sh-1)}
+.bubble-new{display:inline-block;padding:9px 13px;border-radius:12px;font-size:12.5px;background:var(--bg);color:var(--ink);border:1px solid var(--line);max-width:80%}
+.bubble-new.user{background:var(--primary);color:#fff;border:none}
+.side-old{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;font-size:12.5px;color:#1a2744;background:#fff;border-left:3px solid transparent}
+.side-new{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--r-sm);font-size:12.5px;color:var(--ink);border-left:3px solid transparent;transition:background var(--dur-1),color var(--dur-1)}
+.side-new:hover{background:var(--primary-soft);color:var(--primary-deep)}
+.side-new.on{background:var(--primary-soft);border-left-color:var(--primary);color:var(--primary-deep);font-weight:500}
+.scene-old{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;font-size:12px;color:#506280;border:1px solid #e8eefb;background:#fff;margin-bottom:6px}
+.scene-new{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--r-sm);font-size:12px;color:var(--ink-2);border:1px solid var(--line);background:#fff;margin-bottom:6px;transition:border-color var(--dur-1),background var(--dur-1)}
+.scene-new.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary-deep);font-weight:500}
+.scene-new .dot{width:6px;height:6px;border-radius:50%;background:var(--line);flex-shrink:0}
+.scene-new.on .dot{background:var(--primary)}
+
+/* ============ mockup 页面示意 ============ */
+.mock{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.mock .mk{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:#fff;box-shadow:var(--sh-2)}
+.mock .mk .mk-head{padding:10px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.mock .mk .mk-head b{font-size:12.5px}
+.mock .mk .mk-head span{font-size:11px;color:var(--ink-3);font-family:var(--font-mono)}
+/* search 首页 mockup */
+.mk-search{display:grid;grid-template-columns:210px 1fr;min-height:360px}
+.mk-sb{border-right:1px solid var(--line);padding:14px 12px;background:#FBFCFE}
+.mk-sb .entry{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-sm);font-size:11.5px;color:var(--ink-2);margin-bottom:6px}
+.mk-sb .entry.hot{background:var(--primary-soft);color:var(--primary-deep);font-weight:500}
+.mk-sb .entry .ic{width:22px;height:22px;border-radius:7px;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:10px;font-family:var(--font-en);font-weight:700}
+.mk-sb .entry .ic.c{background:var(--accent)} .mk-sb .entry .ic.g{background:var(--success)}
+.mk-sb .hist{font-size:10.5px;color:var(--ink-3);margin:14px 2px 8px;font-family:var(--font-mono)}
+.mk-sb .hitem{font-size:11px;color:var(--ink-2);padding:6px 10px;border-radius:var(--r-sm)}
+.mk-main{padding:22px}
+.mk-brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.mk-brand .logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--primary),var(--cyan));display:grid;place-items:center;color:#fff;font-family:var(--font-brand);font-weight:800;font-size:13px;box-shadow:0 4px 12px rgba(79,107,240,.35)}
+.mk-brand b{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.mk-brand span{font-size:10.5px;color:var(--ink-3);display:block;margin-top:-2px}
+.mk-searchcard{border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-2);overflow:hidden}
+.mk-sc-head{display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line)}
+.mk-userchip{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.mk-userchip .av{width:20px;height:20px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:9px;font-weight:700}
+.mk-msg{display:flex;gap:8px;margin:14px 14px 4px}
+.mk-msg .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--cyan));display:grid;place-items:center;color:#fff;font-size:10px;flex-shrink:0}
+.mk-msg .txt{font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:4px 12px 12px 12px;padding:8px 11px;color:var(--ink-2);max-width:85%}
+.mk-sc-input{margin:10px 14px 14px;display:flex;gap:8px;align-items:flex-end}
+.mk-sc-input .fake{flex:1;border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 11px;font-size:11.5px;color:var(--ink-3);background:#fff}
+.mk-sc-input .go{width:30px;height:30px;border-radius:9px;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:12px;flex-shrink:0}
+.mk-chips{display:flex;gap:6px;padding:0 14px 12px;flex-wrap:wrap}
+/* watch mockup（深色观影） */
+.mk-watch{background:var(--bg-dark);min-height:360px;display:grid;grid-template-columns:1fr 170px}
+.mk-wv{padding:16px}
+.mk-player{background:#050B16;border:1px solid rgba(140,163,192,.18);border-radius:var(--r-md);aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.mk-player .mid{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(4px);display:grid;place-items:center;color:#fff;font-size:18px}
+.mk-player .bar{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;background:linear-gradient(180deg,transparent,rgba(2,6,18,.85))}
+.mk-player .pbar{height:4px;border-radius:999px;background:rgba(255,255,255,.18);position:relative;margin-bottom:8px}
+.mk-player .pbar i{position:absolute;left:0;top:0;bottom:0;width:58%;border-radius:999px;background:linear-gradient(90deg,var(--primary),var(--cyan))}
+.mk-player .pbar b{position:absolute;left:58%;top:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 8px rgba(34,195,230,.8)}
+.mk-ctrl{display:flex;gap:12px;align-items:center;color:var(--ink-light);font-size:11px}
+.mk-ctrl .pi{opacity:.75}
+.mk-sub{margin-top:12px;background:rgba(140,163,192,.08);border:1px solid rgba(140,163,192,.16);border-radius:var(--r-sm);padding:9px 12px;font-size:12px;color:var(--ink-light)}
+.mk-sub .speak{font-size:10px;color:var(--ink-dim);margin-bottom:2px}
+.mk-srail{border-left:1px solid rgba(140,163,192,.15);padding:16px 12px;background:rgba(11,18,32,.6)}
+.mk-srail .t{font-size:10.5px;color:var(--ink-dim);font-family:var(--font-mono);margin-bottom:10px}
+.mk-sitem{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--ink-dim);padding:6px 8px;border-radius:var(--r-sm);margin-bottom:5px;border:1px solid transparent}
+.mk-sitem.on{color:#fff;background:rgba(79,107,240,.25);border-color:rgba(79,107,240,.55);font-weight:500}
+.mk-sitem .dot{width:5px;height:5px;border-radius:50%;background:rgba(140,163,192,.4);flex-shrink:0}
+.mk-sitem.on .dot{background:var(--cyan)}
+
+/* ============ 动效演示 ============ */
+.demo-btns{display:flex;gap:10px;flex-wrap:wrap}
+.demo-btns button{font-family:var(--font-zh)}
+.dlg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50}
+.dlg.open{display:flex}
+.dlg .scrim{position:absolute;inset:0;background:rgba(15,23,42,.4);animation:fadeIn 200ms var(--ease-out)}
+.dlg .box{position:relative;background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-3);width:340px;padding:22px;animation:popIn 250ms var(--ease-out)}
+.dlg .box h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.dlg .box p{font-size:12.5px;color:var(--ink-2);line-height:1.7}
+.dlg .box .x{position:absolute;top:12px;right:14px;border:none;background:none;font-size:16px;color:var(--ink-3);cursor:pointer}
+.dlg .box .ok{margin-top:14px;width:100%}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.sub-demo{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-dark);border-radius:var(--r-md);color:var(--ink-light)}
+.sub-demo .cur{font-size:13px;transition:opacity 150ms ease}
+.sub-demo .cur.swap{opacity:0}
+.sub-demo button{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:11px;padding:5px 12px;border-radius:999px;cursor:pointer;font-family:var(--font-zh)}
+.tip{font-size:11.5px;color:var(--ink-3);margin-top:12px}
+.foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-3)}
+@media (max-width:860px){
+  .cmp,.typo,.mock{grid-template-columns:1fr}
+  .cmp .col.old{border-right:none;border-bottom:1px solid var(--line)}
+  .hero h1{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="badge">栈</div>
+  <h1>栈知映 · UI 优化效果预览</h1>
+  <p class="sub">基于 ui-ux-pro-max / impeccable / react-bits / karpathy-guidelines 四组 skill 的设计蓝图 · 仅展示，未修改任何原页面</p>
+  <div class="tags">
+    <span class="tag">设计系统</span><span class="tag">新旧对比</span><span class="tag">观影沉浸模式</span><span class="tag">克制动效</span><span class="tag">零第三方依赖</span>
+  </div>
+  <div class="notice">完整方案与落地路线见 <b>docs/UI优化方案.md</b></div>
+</header>
+
+<div class="wrap">
+
+<!-- ============ 01 设计系统 ============ -->
+<section class="sec">
+  <div class="sec-h"><span class="no">01</span><h2>新设计系统</h2><span class="desc">电感蓝紫品牌色 · 全站统一 tokens · 渐变仅 3 处品牌场景</span></div>
+  <div class="panel">
+    <div class="sec-h" style="margin-bottom:14px"><span class="no">COLOR</span><h2 style="font-size:15px">配色板</h2></div>
+    <div class="swatches">
+      <div class="sw"><div class="chipc" style="background:#4F6BF0"></div><div class="meta"><b>--primary</b><span>#4F6BF0 · 品牌主色</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#3B4FE0"></div><div class="meta"><b>--primary-deep</b><span>#3B4FE0 · hover/按压</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#EEF2FF"></div><div class="meta"><b>--primary-soft</b><span>#EEF2FF · 选中/标签底</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#22C3E6"></div><div class="meta"><b>--cyan</b><span>#22C3E6 · 辅助青</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#F59E0B"></div><div class="meta"><b>--accent</b><span>#F59E0B · 成就/点亮</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#16A34A"></div><div class="meta"><b>--success</b><span>#16A34A · 判题正确</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#DC2626"></div><div class="meta"><b>--danger</b><span>#DC2626 · 判题错误</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#F7F9FC;border-bottom:1px solid var(--line)"></div><div class="meta"><b>--bg</b><span>#F7F9FC · 页面底</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#0F172A"></div><div class="meta"><b>--ink</b><span>#0F172A · 主文字</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#475569"></div><div class="meta"><b>--ink-2</b><span>#475569 · 次文字</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#94A3B8"></div><div class="meta"><b>--ink-3</b><span>#94A3B8 · 弱文字</span></div></div>
+      <div class="sw"><div class="chipc" style="background:#0B1220"></div><div class="meta"><b>--bg-dark</b><span>#0B1220 · 观影深色区</span></div></div>
+    </div>
+
+    <div class="sec-h" style="margin:26px 0 14px"><span class="no">TYPE</span><h2 style="font-size:15px">字体排版</h2></div>
+    <div class="typo">
+      <div>
+        <div class="cap">DISPLAY · Noto Sans SC 800 / -0.02em tracking</div>
+        <div class="t1">栈知映 让每个知识点<br>都可视、可听、可测</div>
+      </div>
+      <div>
+        <div class="cap">HEADING · 700</div>
+        <div class="t2">快排的核心是分治</div>
+        <div class="cap" style="margin-top:12px">BODY · 400 / 1.7 行高</div>
+        <div class="t3">搜索任何知识点，AI 自动生成讲解幻灯片、语音旁白与知识测评，并以视频方式播放学习。</div>
+      </div>
+      <div>
+        <div class="cap">CODE / TIME · DM Mono</div>
+        <div class="t4">const mid = (l + r) &gt;&gt; 1 · 0:00 / 2:34</div>
+        <div class="cap" style="margin-top:12px">BRAND · Orbitron（仅品牌场景）</div>
+        <div class="t5">STACKKNOW · 栈知映</div>
+      </div>
+      <div>
+        <div class="mono-note">
+          圆角 8 / 12 / 16 / 20 · 间距 4·8·12·16·24·32·48<br>
+          阴影 sh-1 0 1px 2px · sh-2 0 4px 12px · sh-3 0 12px 32px（无蓝辉光）<br>
+          动效 ease-out cubic-bezier(.23,1,.32,1) · 160 / 250 / 350ms
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 组件对比 ============ -->
+<section class="sec">
+  <div class="sec-h"><span class="no">02</span><h2>组件新旧对比</h2><span class="desc">左：现状（蓝白模板 + 135° 渐变）　右：新系统（纯色 + 层级 + 按压反馈）</span></div>
+
+  <div class="cmp">
+    <div class="col old"><h4>现状</h4>
+      <div class="row"><div class="lbl">按钮 · 135° 渐变 × 蓝辉光</div><button class="btn-old"><span>进入课堂</span></button> <button class="btn-old alt"><span>AI 生成题目</span></button></div>
+      <div class="row"><div class="lbl">chip</div><span class="chip-old">TCP 握手</span> <span class="chip-old">快速排序</span></div>
+      <div class="row"><div class="lbl">卡片 · 蓝色辉光阴影</div><div class="card-old"><b style="font-size:13px">TCP 三次握手</b><br><span style="font-size:11.5px;color:#7a8eb0">SYN → SYN+ACK → ACK</span></div></div>
+      <div class="row"><div class="lbl">聊天气泡</div><div style="text-align:left"><span class="bubble-old">你好，我是栈知映老师</span></div></div>
+      <div class="row"><div class="lbl">侧栏条目 · 无状态区分</div><div class="side-old"><span>职业加点图</span></div><div class="side-old"><span>错题本</span></div></div>
+      <div class="row"><div class="lbl">场景列表</div><div class="scene-old"><span>1 · 什么是快排</span></div><div class="scene-old"><span>2 · 分治思想</span></div></div>
+    </div>
+    <div class="col new"><h4>新系统</h4>
+      <div class="row"><div class="lbl">按钮 · 纯色 + hover 加深 + 按压缩放（试试按住）</div><button class="btn-new cta"><span>进入课堂</span></button> <button class="btn-new"><span>AI 生成题目</span></button> <button class="btn-new ghost"><span>导出笔记</span></button></div>
+      <div class="row"><div class="lbl">chip · 主色浅底（琥珀=成就态）</div><span class="chip-new">TCP 握手</span> <span class="chip-new">快速排序</span> <span class="chip-new amber">已点亮 · 数组</span></div>
+      <div class="row"><div class="lbl">卡片 · 中性阴影 + 清晰层级</div><div class="card-new"><h5>TCP 三次握手</h5><p>SYN → SYN+ACK → ACK · 建立可靠连接</p></div></div>
+      <div class="row"><div class="lbl">聊天气泡 · AI 浅底 / 用户主色</div><div style="text-align:left"><span class="bubble-new">你好，我是栈知映老师</span> <span class="bubble-new user">我想学快速排序</span></div></div>
+      <div class="row"><div class="lbl">侧栏条目 · hover/选中状态</div><div class="side-new on"><span>职业加点图</span></div><div class="side-new"><span>错题本</span></div></div>
+      <div class="row"><div class="lbl">场景列表 · 当前场景高亮</div><div class="scene-new on"><span class="dot"></span><span>1 · 什么是快排</span></div><div class="scene-new"><span class="dot"></span><span>2 · 分治思想</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 页面示意 ============ -->
+<section class="sec">
+  <div class="sec-h"><span class="no">03</span><h2>页面级示意</h2><span class="desc">search 首页（新浅色）与 watch 播放页（深色观影模式）高保真缩略</span></div>
+  <div class="mock">
+    <div class="mk">
+      <div class="mk-head"><b>search.html · 新首页</b><span>浅色 · 明亮现代</span></div>
+      <div class="mk-search">
+        <div class="mk-sb">
+          <div class="entry hot"><span class="ic">Σ</span>职业加点图</div>
+          <div class="entry"><span class="ic c">★</span>错题本</div>
+          <div class="entry"><span class="ic g">◇</span>学情诊断</div>
+          <div class="hist">SEARCH HISTORY</div>
+          <div class="hitem">快速排序</div>
+          <div class="hitem">TCP 三次握手</div>
+          <div class="hitem">进程与线程</div>
+        </div>
+        <div class="mk-main">
+          <div class="mk-brand"><div class="logo">栈</div><div><b>栈知映</b><span>以AI光影，筑程序学习之路</span></div></div>
+          <div class="mk-searchcard">
+            <div class="mk-sc-head">
+              <div class="mk-userchip"><span class="av">学</span>嗨，同学</div>
+              <div class="mk-userchip">准备好一起学习了吗？</div>
+            </div>
+            <div class="mk-msg"><div class="av">AI</div><div class="txt">你好，我是栈知映老师，输入你想学的知识点，即可生成专属教学视频。</div></div>
+            <div class="mk-sc-input"><div class="fake">输入你想学的任何内容，例如：数据结构算法…</div><div class="go">→</div></div>
+            <div class="mk-chips"><span class="chip-new">快速排序</span><span class="chip-new">TCP 握手</span><span class="chip-new">进程线程</span><span class="chip-new">二叉树遍历</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mk">
+      <div class="mk-head"><b>watch.html · 播放学习页</b><span>深色 · 观影沉浸模式</span></div>
+      <div class="mk-watch">
+        <div class="mk-wv">
+          <div class="mk-player">
+            <div class="mid">▶</div>
+            <div class="bar">
+              <div class="pbar"><i></i><b></b></div>
+              <div class="mk-ctrl"><span class="pi">⏮</span><span class="pi">▶</span><span class="pi">⏭</span><span style="margin-left:auto">0:58 / 2:34</span><span class="pi">CC</span><span class="pi">⛶</span></div>
+            </div>
+          </div>
+          <div class="mk-sub"><div class="speak">SPEAKER · 快排讲解</div>把数组分成两部分，小的放左边、大的放右边，然后递归处理……</div>
+        </div>
+        <div class="mk-srail">
+          <div class="t">SCENES</div>
+          <div class="mk-sitem on"><span class="dot"></span>1 · 什么是快排</div>
+          <div class="mk-sitem"><span class="dot"></span>2 · 分治思想</div>
+          <div class="mk-sitem"><span class="dot"></span>3 · 基准选择</div>
+          <div class="mk-sitem"><span class="dot"></span>4 · 复杂度分析</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 动效演示 ============ -->
+<section class="sec">
+  <div class="sec-h"><span class="no">04</span><h2>动效演示</h2><span class="desc">按压反馈 · 弹层入场 · 字幕 cross-fade（react-bits 三件套筛出的高杠杆动效）</span></div>
+  <div class="panel">
+    <div class="sec-h" style="margin-bottom:14px"><span class="no">PRESS</span><h2 style="font-size:15px">按压反馈 · 160ms ease-out</h2></div>
+    <div class="demo-btns">
+      <button class="btn-new" onclick="pressed(this)">按住我试试</button>
+      <button class="btn-new ghost" onclick="pressed(this)">次按钮</button>
+      <button class="btn-new cta" onclick="pressed(this)">主 CTA</button>
+    </div>
+    <div class="sec-h" style="margin:26px 0 14px"><span class="no">DIALOG</span><h2 style="font-size:15px">弹层入场 · scale(.96) + fade 250ms，scrim 200ms</h2></div>
+    <button class="btn-new" onclick="document.getElementById('dlg').classList.add('open')">打开错题本弹层</button>
+    <div class="tip">替代现状的生硬闪现：面板从触发点放大淡入，scrim 同步压暗背景。</div>
+    <div class="sec-h" style="margin:26px 0 14px"><span class="no">SUBTITLE</span><h2 style="font-size:15px">字幕切换 · 150ms cross-fade</h2></div>
+    <div class="sub-demo"><span class="cur" id="subCur">把数组分成两部分，小的放左边、大的放右边……</span><button onclick="swapSub()">切下一句</button></div>
+    <div class="tip">字幕不跳变，以 150ms 透明度过渡衔接，保持阅读连续。</div>
+  </div>
+</section>
+
+<div class="foot">
+  <span>栈知映 · UI 优化预览 · 零第三方依赖</span>
+  <span>确认方向后 → 按 docs/UI优化方案.md 阶段 A→D 落地</span>
+</div>
+
+</div>
+
+<!-- 弹层演示 -->
+<div class="dlg" id="dlg">
+  <div class="scrim" onclick="document.getElementById('dlg').classList.remove('open')"></div>
+  <div class="box">
+    <button class="x" onclick="document.getElementById('dlg').classList.remove('open')">✕</button>
+    <h3>错题本</h3>
+    <p>快速排序的递归终止条件判断有误。<br>原因归类：<b style="color:var(--accent)">概念不清</b> · 建议重做一次「基准选择」场景。</p>
+    <button class="btn-new ok" onclick="document.getElementById('dlg').classList.remove('open')">知道了</button>
+  </div>
+</div>
+
+<script>
+function pressed(el){el.style.transform='scale(.97)';setTimeout(()=>el.style.transform='',160)}
+var subs=['把数组分成两部分，小的放左边、大的放右边……','选一个基准 pivot，小于它的放左边，大于的放右边。','递归地对左右两部分重复这个过程。','最终每个子区间只剩一个元素，数组就有序了。'];
+var si=0;
+function swapSub(){
+  var el=document.getElementById('subCur');
+  el.classList.add('swap');
+  setTimeout(function(){si=(si+1)%subs.length;el.textContent=subs[si];el.classList.remove('swap');},150);
+}
+</script>
+</body>
+</html>

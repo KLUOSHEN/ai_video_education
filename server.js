@@ -850,15 +850,15 @@ async function generateSlides(query, persona) {
 输出格式（必须是合法 JSON，不要任何 JSON 之外的内容）：
 {"slides":[{"title":"深蓝大标题","subtitle":"灰色副标题","text":"120-180 字中文讲解，口语化但信息密集，必须具体到公式、数字和关键步骤，像老师授课一样把公式读出来","layout":"two_col / split / bottom_bar / triple / left_text / default","left":"左侧内容：3-5 个要点或定义，每行一个，要点必须具体（含公式/数字/术语）","right":"右侧内容：图表数据或表格，data 格式见下","bottom":"底部蓝色强调条文字（15 字以内）","visuals":[{"type":"list/table/formula/highlight/quote/badge/code","data":"对应数据，code 类型时 data 为代码文本并配 lang 字段指定语言","caption":"说明文字"}],"diagram":{"type":"line_chart / bar_chart / complexity_curve / array / flow / tree / compare","data":"对应数据","caption":"图表下方说明"}}]}
 
-页面规划（必须覆盖，每页一个核心主题）：
+页面规划（共 6-8 页；第 4、6 页由知识点性质决定，其余各页按顺序覆盖）：
 1. 概述引入：明确定义（含严谨表述）+ 为什么重要（2-3 个理由）+ 2-3 个具体应用场景
 2. 核心概念：关键术语逐一解释 + 通俗类比 + 结构图
 3. 原理推导：深入逻辑链 + 步骤流程图，每一步配一句"为什么这么做"的说明
-4. 算法/公式：给出完整伪代码（含注释）+ 核心公式（明确每个符号的含义与推导来源）+ 逐行解释；是否附带 code 代码块由知识点性质决定（见硬性要求 12）
-5. 实例演示：用具体数值示例（如真实数组、真实输入）分步演算，每一步展示状态变化，务必给出数字和计算结果
-6. 复杂度分析：时间/空间复杂度，写明每个复杂度的含义、适用场景与推导过程 + 复杂度曲线图
-7. 对比辨析：与其他方案/算法的横向对比表，每行注明关键差异
-8. 总结回顾：要点清单（含核心公式与关键数字）+ 面试考点 + 底部蓝色结论条
+4. 【算法/编程类知识点】算法/公式：给出完整伪代码（含注释）+ 核心公式（明确每个符号的含义与推导来源）+ 逐行解释；【理论/概念类知识点】核心机制详解：逐步拆解工作流程/协议步骤/状态转换，配流程图、状态图或时序图
+5. 实例演示：用具体数值或真实场景示例分步演算，每一步展示状态变化，务必给出数字和计算结果
+6. 【算法/编程类知识点】复杂度分析：时间/空间复杂度，写明每个复杂度的含义、适用场景与推导过程 + 复杂度曲线图；【理论/概念类知识点】常见问题与易错点：高频疑问、易混淆概念辨析、典型踩坑案例（用对比表、状态图、FAQ 列表表达，不得生硬套用时间复杂度公式）
+7. 对比辨析：与其他方案/方案的横向对比表，每行注明关键差异
+8. 总结回顾：要点清单（含核心公式与关键数字，如涉及）+ 面试考点 + 底部蓝色结论条
 
 布局使用规则：
 - two_col：左文字要点 + 右 diagram 图表（最常用）
@@ -889,10 +889,10 @@ async function generateSlides(query, persona) {
 3. 配色严格参考样例：深蓝 #1e3a8a 标题、浅蓝 #dbeafe 背景点缀、深灰 #334155 正文、彩色图表
 4. 每页内容密度要高，但排版清晰、留白合理，适合 PPT 演示
 5. 文字简洁有力，避免口语化废话，标题和要点使用术语化表达
-6. 公式必须具体完整（如 T(n)=2T(n/2)+O(n)），并逐项解释每个符号的含义；禁止只写"时间复杂度为 O(n)"这类笼统表述
+6. 涉及算法/公式/复杂度的页面，公式必须具体完整（如 T(n)=2T(n/2)+O(n)），并逐项解释每个符号的含义；禁止只写"时间复杂度为 O(n)"这类笼统表述。纯理论/概念类知识点（如 TCP 握手、进程与线程、数据库事务等）不得生硬套用时间复杂度公式，改用流程图、状态图、对比表、FAQ 表达
 7. 实例演示必须用具体数字逐步演算（如对数组 [5,2,8,1,9] 的每一轮操作都给出中间结果和计算结果）；禁止泛泛描述流程
 8. text 字段必须充实具体（120-180 字），把公式读出来、把演算过程讲出来，涵盖定义、关键公式、数字实例，使讲解像真实课堂一样有内容
-9. 算法/公式、实例演示、复杂度分析页（第 4/5/6 页）必须各包含至少 1 个 formula 类型的 visual 或 diagram；公式用 KaTeX 可渲染的 LaTeX 书写（下标用 _、上标用 ^、分数用 \\frac、根号用 \\sqrt，如 T(n)=2T(n/2)+O(n)、O(n\\log n)、\\frac{n(n-1)}{2}）
+9. 算法/公式、实例演示、复杂度分析页（第 4/5/6 页）必须各包含至少 1 个 formula 类型的 visual 或 diagram（仅当知识点涉及算法/公式/复杂度时；纯理论/概念类页面改用流程/状态/对比图，不强求 formula）；公式用 KaTeX 可渲染的 LaTeX 书写（下标用 _、上标用 ^、分数用 \\frac、根号用 \\sqrt，如 T(n)=2T(n/2)+O(n)、O(n\\log n)、\\frac{n(n-1)}{2}）
 10. 涉及公式的页面，text 讲解中必须把公式完整读一遍（如"由递推式 T(n)=2T(n/2)+O(n) 解得 T(n)=O(n log n)"），并在 visuals 中用公式卡片呈现推导过程
 11. 代码是否生成取决于知识点本身的性质：若知识点与编程实现相关（算法、数据结构、编程语言、代码语法、排序、查找、遍历等），则算法/公式页与实例演示页应包含带注释的 code 代码块（配 lang 字段），并与公式、实例一一对应；若知识点是纯理论或概念类（如 TCP 三次握手、进程与线程、数据库事务、网络协议等），则不强求代码，改用流程图、对比表、状态图表达核心逻辑`;
     const personaNote = persona
@@ -1356,9 +1356,9 @@ async function qwenTtsBuffer(text) {
 
 // 讲稿分块：按标点切分，每段 ≤ 130 字符（单次合成约 20 秒，安全低于超时）；
 // 总长上限 400 字符（约 1 分钟语音），控制语音时长与生成耗时
-function splitScript(script) {
+function splitScript(script, maxTotal = 400) {
   const CHUNK_MAX = 130;
-  const MAX_TOTAL = 400;
+  const MAX_TOTAL = maxTotal;
   const sentences = script.split(/(?<=[。！？；;!?\n])/);
   const chunks = [];
   let current = "";
@@ -1413,6 +1413,50 @@ async function createTTS(script) {
   const file = path.join("audio", safeFileName("qwen-tts", ".mp3"));
   await fs.writeFile(path.join(STORAGE_DIR, file), Buffer.concat(buffers));
   return publicAsset(file);
+}
+
+// 逐页合成语音：每页「标题+正文」独立生成一段 mp3，语音与 PPT 文字严格一致；
+// 并发合成（3 路）缩短总等待时间，避免前端轮询超时
+async function createSlideTTS(slides) {
+  const out = new Array(slides.length);
+  const MAX_CONCURRENCY = 3;
+  let cursor = 0;
+  async function worker() {
+    while (true) {
+      const i = cursor++;
+      if (i >= slides.length) break;
+      const s = slides[i] || {};
+      const pageText = `${s.title || ""}。${s.text || ""}`.trim();
+      if (!pageText || pageText === "。") {
+        out[i] = { index: i, url: null };
+        continue;
+      }
+      try {
+        // 单页文字一般 ≤ 210 字，放宽总长限制保证整页完整朗读
+        const file = path.join("audio", safeFileName(`qwen-tts-slide-${i}`, ".mp3"));
+        const chunks = splitScript(pageText, 1200);
+        const buffers = [];
+        for (const chunk of chunks) {
+          buffers.push(await qwenTtsBuffer(chunk));
+        }
+        if (!buffers.length) {
+          out[i] = { index: i, url: null };
+          continue;
+        }
+        await fs.writeFile(path.join(STORAGE_DIR, file), Buffer.concat(buffers));
+        out[i] = { index: i, url: publicAsset(file) };
+      } catch (e) {
+        log("qwen.tts.slide_failed", { index: i, message: e.message });
+        out[i] = { index: i, url: null };
+      }
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(MAX_CONCURRENCY, Math.max(slides.length, 1)) },
+    () => worker(),
+  );
+  await Promise.all(workers);
+  return out.filter(Boolean);
 }
 
 async function createPoster(text, topic, lessonPlan) {
@@ -1689,9 +1733,11 @@ async function api(req, res, url, id) {
           progress: 50,
           status: "generating_tts",
         });
-        audioUrl = await createTTS(fullText);
+        // 逐页合成语音：每页一段音频，语音与 PPT 文字逐页严格一致
+        const slideAudio = await createSlideTTS(slides);
         await store.update("videoTasks", taskId, {
-          audioUrl,
+          slideAudio,
+          audioUrl: null,
           progress: 100,
           status: "slides_ready",
         });
@@ -1739,6 +1785,7 @@ async function api(req, res, url, id) {
         data: {
           status: videoTask.status,
           audio_url: videoTask.audioUrl,
+          slide_audio: videoTask.slideAudio || [],
           slides: videoTask.slides,
           query: videoTask.query,
           progress: videoTask.progress || 0,
