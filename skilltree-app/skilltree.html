@@ -460,7 +460,7 @@
         cls += ' ' + sourceNode.status;
         cls += ' animated';
       }
-      svgParts.push('<path class="' + cls + '" d="' + edgePath(sx, sy, tx, ty) + '"/>');
+      svgParts.push('<path class="' + cls + '" data-eid="' + e.id + '" d="' + edgePath(sx, sy, tx, ty) + '"/>');
     });
     edgeSvg.setAttribute('viewBox', ox + ' ' + oy + ' ' + vbW + ' ' + vbH);
     edgeSvg.setAttribute('width', vbW);
@@ -588,6 +588,12 @@
     if (isCurrent) {
       if (!badge) { badge = document.createElement('span'); badge.className = 'node-current-badge'; badge.textContent = '当前'; el.appendChild(badge); }
     } else if (badge) { badge.remove(); }
+    var isDone = node.status === 'completed' || node.status === 'mastered';
+    state.edges.forEach(function (e) {
+      if (e.source !== nodeId) return;
+      var path = edgeSvg.querySelector('path[data-eid="' + e.id + '"]');
+      if (path) path.setAttribute('class', 'edge' + (isDone ? ' ' + node.status + ' animated' : ''));
+    });
   }
 
   function setNodeStatus(nodeId, status) {

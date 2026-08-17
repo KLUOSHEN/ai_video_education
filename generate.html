@@ -422,7 +422,7 @@ function render() {
     var sx = sp.x + NODE_W / 2, sy = sp.y + NODE_H, tx = tp.x + NODE_W / 2, ty = tp.y;
     var cls = 'edge', src = nodes.filter(function (n) { return n.id === e.source; })[0];
     if (src && (src.status === 'completed' || src.status === 'mastered')) { cls += ' ' + src.status + ' animated'; }
-    svgParts.push('<path class="' + cls + '" d="' + edgePath(sx, sy, tx, ty) + '"/>');
+    svgParts.push('<path class="' + cls + '" data-eid="' + e.id + '" d="' + edgePath(sx, sy, tx, ty) + '"/>');
   });
   edgeSvg.setAttribute('viewBox', ox + ' ' + oy + ' ' + vbW + ' ' + vbH);
   edgeSvg.setAttribute('width', vbW); edgeSvg.setAttribute('height', vbH);
@@ -521,6 +521,12 @@ function refreshNodeVisual(nodeId) {
     if (!flagEl) { flagEl = document.createElement('span'); flagEl.className = 'node-flag'; el.querySelector('.node-head').appendChild(flagEl); }
     flagEl.textContent = flag;
   } else if (flagEl) { flagEl.remove(); }
+  var isDone = node.status === 'completed' || node.status === 'mastered';
+  state.edges.forEach(function (e) {
+    if (e.source !== nodeId) return;
+    var path = edgeSvg.querySelector('path[data-eid="' + e.id + '"]');
+    if (path) path.setAttribute('class', 'edge' + (isDone ? ' ' + node.status + ' animated' : ''));
+  });
 }
 
 function setNodeStatus(nodeId, status) {
