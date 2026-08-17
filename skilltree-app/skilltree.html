@@ -209,6 +209,8 @@
   .detail-section.evidence li .bullet { color: var(--emerald); }
   .detail-section.rationale p { font-size: 13px; line-height: 1.65; color: var(--text-dim);
     padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); border: 1px solid rgba(79,107,240,0.2); }
+  .detail-section.content p { font-size: 13.5px; line-height: 1.75; color: var(--text);
+    padding: 12px 14px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); }
   .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { font-size: 11.5px; padding: 4px 10px; border-radius: 8px; background: var(--panel-2);
     border: 1px solid var(--border); color: var(--text-dim); }
@@ -363,12 +365,22 @@
   var nodeCountEl = document.getElementById('nodeCount');
   var edgeCountEl = document.getElementById('edgeCount');
 
-  /* ── 初始化下拉框 ── */
-  Object.keys(TREES).forEach(function (key) {
-    var opt = document.createElement('option');
-    opt.value = key;
-    opt.textContent = TREES[key].tree.topic;
-    select.appendChild(opt);
+  /* ── 初始化下拉框(分组:编程方向 / 高数) ── */
+  var groups = {
+    '编程方向': ['frontend', 'backend', 'algorithm', 'ai-agent'],
+    '高数': Object.keys(TREES).filter(function (k) { return k.indexOf('ch') === 0; })
+  };
+  Object.keys(groups).forEach(function (label) {
+    var og = document.createElement('optgroup');
+    og.label = label;
+    groups[label].forEach(function (key) {
+      if (!TREES[key]) return;
+      var opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = TREES[key].tree.topic;
+      og.appendChild(opt);
+    });
+    select.appendChild(og);
   });
 
   /* ── 布局算法：Kahn 拓扑 + 最长路径分层 + barycenter 层内排序 ── */
@@ -522,6 +534,7 @@
         '</div>' +
       '</div>' +
       statusActionsHtml(node) +
+      (node.content ? '<section class="detail-section content"><h3>知识点内容</h3><p>' + node.content + '</p></section>' : '') +
       (node.description ? '<p class="detail-desc">' + node.description + '</p>' : '') +
       (node.depth_rationale ? '<section class="detail-section rationale"><h3>目标深度</h3><p>' + node.depth_rationale + '</p></section>' : '') +
       (objList ? '<section class="detail-section objective"><h3>学习目标</h3><ul>' + objList + '</ul></section>' : '') +
