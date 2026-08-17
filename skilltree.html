@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>栈知映 · 技能树</title>
+<style>
+  :root {
+    --bg: #020617;
+    --panel: #0b1220;
+    --panel-2: #0f172a;
+    --border: #1e293b;
+    --border-soft: #334155;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --cyan: #22d3ee;
+    --cyan-soft: rgba(34,211,238,0.12);
+    --amber: #fbbf24;
+    --emerald: #34d399;
+    --yellow: #facc15;
+    --ease: cubic-bezier(.23,1,.32,1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── 顶栏 ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    height: 68px;
+    padding: 0 20px;
+    flex-shrink: 0;
+    background: rgba(2,6,23,0.9);
+    backdrop-filter: blur(12px) saturate(160%);
+    border-bottom: 1px solid var(--border);
+    z-index: 50;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .back {
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px; border-radius: 10px;
+    color: var(--text-dim); text-decoration: none; font-size: 13px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    transition: .2s var(--ease);
+  }
+  .back:hover { color: var(--cyan); border-color: var(--cyan); background: rgba(34,211,238,0.08); }
+  .title-wrap { min-width: 0; }
+  .title-wrap h1 {
+    font-size: 17px; font-weight: 700; letter-spacing: -.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .title-wrap p { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+
+  .controls { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
+  .controls select {
+    appearance: none; -webkit-appearance: none;
+    padding: 8px 34px 8px 14px; border-radius: 10px;
+    background: var(--panel-2) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>') no-repeat right 12px center;
+    border: 1px solid var(--border); color: var(--text);
+    font-size: 13.5px; font-family: inherit; cursor: pointer; outline: none;
+    transition: .2s var(--ease);
+  }
+  .controls select:hover { border-color: var(--border-soft); }
+  .controls select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(34,211,238,0.15); }
+
+  .legend { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--text-dim); }
+  .legend-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot.not_started { background: #334155; }
+  .dot.in_progress { background: var(--amber); box-shadow: 0 0 8px rgba(251,191,36,0.8); }
+  .dot.completed  { background: var(--emerald); box-shadow: 0 0 8px rgba(52,211,153,0.7); }
+  .dot.mastered   { background: var(--yellow); box-shadow: 0 0 8px rgba(250,204,21,0.8); }
+
+  /* ── 主区 ── */
+  .main { flex: 1; min-height: 0; display: flex; }
+  .canvas-wrap { flex: 1; min-width: 0; position: relative; overflow: hidden;
+    background: radial-gradient(circle at 50% 0%, rgba(8,145,178,0.08), transparent 40%), var(--bg);
+    cursor: grab;
+  }
+  .canvas-wrap.dragging { cursor: grabbing; }
+  .viewport { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+  .edge-svg { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+
+  .node {
+    position: absolute;
+    width: 190px; min-height: 76px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 2px solid var(--border-soft);
+    background: rgba(15,23,42,0.92);
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow .35s var(--ease), border-color .35s var(--ease), background .35s var(--ease), transform .18s var(--ease);
+  }
+  .node:hover { z-index: 10; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+  .node.selected { transform: scale(1.05); z-index: 20; box-shadow: 0 0 0 2px rgba(34,211,238,0.7), 0 8px 34px rgba(0,0,0,0.6); }
+
+  .node.not_started { border-color: #334155; background: rgba(15,23,42,0.85); color: #94a3b8; }
+  .node.in_progress { border-color: #fcd34d; background: rgba(69,26,3,0.82); color: #fef3c7;
+    animation: pulse 2.2s ease-in-out infinite; }
+  .node.completed  { border-color: #a7f3d0; background: rgba(52,211,153,0.16); color: #052e1b;
+    box-shadow: 0 0 26px rgba(52,211,153,0.35); }
+  .node.mastered   { border-color: #fef08a; background: rgba(250,204,21,0.18); color: #4a2c00;
+    box-shadow: 0 0 30px rgba(250,204,21,0.4); }
+  .node.is-current { box-shadow: 0 0 0 2px var(--cyan), 0 0 22px rgba(34,211,238,0.5); }
+
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 18px rgba(251,191,36,0.35); }
+    50%     { box-shadow: 0 0 32px rgba(251,191,36,0.65); }
+  }
+
+  .node-head { display: flex; align-items: flex-start; gap: 8px; }
+  .node-icon { font-size: 20px; line-height: 1.2; flex-shrink: 0; }
+  .node-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.25; word-break: break-word; }
+  .node-flag { flex-shrink: 0; font-size: 16px; font-weight: 900; }
+  .node-meta { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .node-meta span {
+    font-size: 10px; padding: 2px 7px; border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.35); color: var(--text-dim);
+  }
+  .node.not_started .node-meta span { border-color: #334155; color: #64748b; }
+  .node.completed .node-meta span, .node.mastered .node-meta span { border-color: currentColor; opacity: .75; }
+  .node-cat { font-weight: 600; }
+  .node-current-badge {
+    position: absolute; top: -11px; left: 12px;
+    padding: 2px 9px; border-radius: 999px;
+    background: var(--cyan); color: #052e2b;
+    font-size: 10px; font-weight: 800;
+  }
+  .handle { position: absolute; left: 50%; width: 8px; height: 8px; border-radius: 50%;
+    background: #64748b; transform: translateX(-50%); }
+  .handle.top { top: -5px; } .handle.bottom { bottom: -5px; }
+
+  /* ── 详情面板 ── */
+  .detail {
+    width: 300px; flex-shrink: 0; overflow-y: auto;
+    background: var(--panel); border-left: 1px solid var(--border);
+    padding: 20px 18px;
+  }
+  .detail-empty { height: 100%; display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: 13px; text-align: center; }
+  .detail-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .detail-head .big-icon { font-size: 32px; line-height: 1; }
+  .detail-head h2 { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .detail-tags span { font-size: 10.5px; padding: 3px 9px; border-radius: 999px; background: var(--panel-2);
+    border: 1px solid var(--border); color: var(--text-dim); }
+  .detail-tags .tag-depth { color: var(--cyan); border-color: rgba(34,211,238,0.35); background: rgba(34,211,238,0.08); }
+  .detail-desc { font-size: 13px; line-height: 1.7; color: var(--text-dim); margin-bottom: 18px; }
+  .detail-section { margin-bottom: 18px; }
+  .detail-section h3 { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 9px; }
+  .detail-section ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .detail-section li { font-size: 13px; line-height: 1.6; color: var(--text-dim); display: flex; gap: 8px; }
+  .detail-section li .bullet { flex-shrink: 0; }
+  .detail-section.objective li .bullet { color: var(--cyan); }
+  .detail-section.evidence li .bullet { color: var(--emerald); }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11.5px; padding: 4px 10px; border-radius: 8px; background: var(--panel-2);
+    border: 1px solid var(--border); color: var(--text-dim); }
+  .status-pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 999px; }
+  .status-pill.not_started { background: var(--panel-2); color: var(--text-muted); border: 1px solid var(--border); }
+  .status-pill.in_progress { background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.4); }
+  .status-pill.completed  { background: rgba(52,211,153,0.15); color: var(--emerald); border: 1px solid rgba(52,211,153,0.4); }
+  .status-pill.mastered   { background: rgba(250,204,21,0.15); color: var(--yellow); border: 1px solid rgba(250,204,21,0.4); }
+  .prereq-list { display: flex; flex-direction: column; gap: 7px; }
+  .prereq { font-size: 12.5px; padding: 8px 11px; border-radius: 9px; background: var(--panel-2);
+    border: 1px solid var(--border); color: var(--text-dim); }
+
+  /* ── 画布工具 ── */
+  .canvas-tools { position: absolute; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 40; }
+  .canvas-tools button {
+    width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text-dim); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: .18s var(--ease);
+  }
+  .canvas-tools button:hover { color: var(--cyan); border-color: var(--cyan); }
+  .hint { position: absolute; left: 16px; bottom: 16px; font-size: 11.5px; color: var(--text-muted);
+    background: rgba(2,6,23,0.7); padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border); z-index: 40; }
+
+  /* ── 底部进度 ── */
+  .progressbar {
+    height: 46px; flex-shrink: 0; display: flex; align-items: center; gap: 16px;
+    padding: 0 20px; background: var(--panel); border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-dim);
+  }
+  .progressbar strong { color: var(--text); font-size: 12.5px; }
+  .progress-track { flex: 1; height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; display: flex; }
+  .progress-track .seg { height: 100%; transition: width .4s var(--ease); }
+  .seg.completed { background: var(--emerald); }
+  .seg.mastered  { background: var(--yellow); }
+  .seg.current   { background: var(--amber); }
+  .stat { white-space: nowrap; }
+  .stat b { font-weight: 700; }
+
+  /* ── 边 ── */
+  .edge { fill: none; stroke: #334155; stroke-width: 1.4; }
+  .edge.completed { stroke: var(--emerald); stroke-width: 2; }
+  .edge.mastered  { stroke: var(--yellow); stroke-width: 2; }
+  .edge.animated { stroke-dasharray: 6 6; animation: dashflow 0.8s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -12; } }
+
+  @media (max-width: 860px) {
+    .legend { display: none; }
+    .detail { width: 260px; }
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a class="back" href="/search.html">← 栈知映</a>
+      <div class="title-wrap">
+        <h1 id="treeTitle">技能树</h1>
+        <p id="treeSubtitle">技能依赖图 · 拖拽平移 · 滚轮缩放 · 点击节点看详情</p>
+      </div>
+    </div>
+    <div class="controls">
+      <select id="treeSelect" aria-label="切换技能树"></select>
+      <div class="legend">
+        <span class="legend-item"><i class="dot not_started"></i>未学习</span>
+        <span class="legend-item"><i class="dot in_progress"></i>当前</span>
+        <span class="legend-item"><i class="dot completed"></i>完成</span>
+        <span class="legend-item"><i class="dot mastered"></i>掌握</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="canvas-wrap" id="canvasWrap">
+      <div class="viewport" id="viewport">
+        <svg class="edge-svg" id="edgeSvg"></svg>
+      </div>
+      <div class="hint">共 <b id="nodeCount">0</b> 个技能节点 · <b id="edgeCount">0</b> 条依赖</div>
+      <div class="canvas-tools">
+        <button id="zoomIn" title="放大">+</button>
+        <button id="zoomOut" title="缩小">−</button>
+        <button id="fitView" title="适应画布" style="font-size:15px">⤢</button>
+      </div>
+    </section>
+    <aside class="detail" id="detailPanel">
+      <div class="detail-empty">点击左侧节点<br>查看学习目标与掌握证据</div>
+    </aside>
+  </main>
+
+  <footer class="progressbar" id="progressbar"></footer>
+
+<script>
+/* ============================================================
+ * 技能树数据 —— 4 个方向：前端 / 后端 / 算法 / AI Agent
+ * 每个节点含学习目标、关键概念、通过标准；边为前置依赖
+ * ============================================================ */
+function N(id, title, icon, cat, depth, rd, status, order, obj, concepts, ev, desc) {
+  return { id: id, title: title, icon: icon, category: cat, depth_level: depth,
+    recommended_depth: rd, status: status, order: order,
+    learning_objectives: obj, key_concepts: concepts, observable_evidence: ev, description: desc || null };
+}
+function E(s, t) { return { id: s + '>' + t, source: s, target: t }; }
+
+var TREES = {
+
+  frontend: {
+    tree: { id: 'frontend', topic: '前端开发', title: '前端开发工程师技能树',
+      description: '从 HTML/CSS/JS 基础到框架、工程化与性能优化的完整前端进阶路线。' },
+    current: 'ts',
+    nodes: [
+      N('html','HTML 语义化','📄','基础',1,'Understand','mastered',0,
+        ['理解语义化标签对可访问性与 SEO 的价值','能搭建结构清晰的页面骨架'],
+        ['语义化','可访问性'],['口述各语义标签的使用场景','页面通过无障碍审查']),
+      N('css','CSS 盒模型与选择器','🎨','基础',1,'Understand','mastered',1,
+        ['掌握盒模型与选择器优先级规则','理解层叠与继承'],
+        ['盒模型','选择器特异性'],['解释 margin 塌陷原因','正确预测选择器生效顺序']),
+      N('js','JavaScript 语言基础','⚙️','基础',1,'Understand','mastered',2,
+        ['掌握作用域、闭包、原型链与 this 指向'],
+        ['闭包','原型链'],['手写节流防抖','解释 this 绑定规则']),
+      N('flex','Flex / Grid 布局','📐','基础',2,'Use','mastered',0,
+        ['熟练使用 Flex 与 Grid 完成常见布局'],
+        ['Flexbox','Grid'],['复刻一个典型后台三栏布局']),
+      N('es6','ES6+ 现代特性','✨','基础',2,'Use','mastered',1,
+        ['掌握解构、展开、箭头函数、模块化','理解 Promise 语义'],
+        ['解构','模块化'],['用解构与箭头函数重构一段旧代码']),
+      N('resp','响应式设计','📱','基础',3,'Use','completed',0,
+        ['实现多端自适应的响应式页面','掌握媒体查询与移动优先'],
+        ['媒体查询','移动优先'],['让同一页面在手机/平板/桌面正确显示']),
+      N('dom','DOM 与浏览器 API','🧩','核心',3,'Use','completed',0,
+        ['熟练操作 DOM 与事件模型','掌握本地存储与定时器'],
+        ['事件委托','localStorage'],['实现一个无框架的待办清单']),
+      N('http','网络请求与 HTTP','🌐','核心',3,'Understand','completed',1,
+        ['理解 HTTP 方法、状态码、缓存与跨域'],
+        ['REST','CORS'],['解释 304 与 401 的区别','排查一次跨域问题']),
+      N('browser','浏览器工作原理','🖥️','核心',3,'Understand','completed',2,
+        ['理解渲染管线、重排重绘与事件循环'],
+        ['渲染管线','事件循环'],['解释从输入 URL 到页面展示的全过程']),
+      N('async','异步编程','⏳','核心',4,'Use','completed',0,
+        ['熟练使用 async/await 与错误处理','理解并发与竞态'],
+        ['async/await','竞态'],['封装一个带超时与重试的请求函数']),
+      N('ts','TypeScript','🔷','核心',4,'Use','in_progress',0,
+        ['掌握类型注解、泛型与类型守卫','给现有 JS 项目渐进式加类型'],
+        ['泛型','类型收窄'],['为一段 JS 补齐类型并消除报错']),
+      N('framework','前端框架核心概念','🧭','核心',5,'Use','in_progress',0,
+        ['理解组件化、虚拟 DOM、单向数据流','明白框架解决什么问题'],
+        ['组件化','单向数据流'],['用自己的话解释虚拟 DOM 的取舍']),
+      N('csseng','CSS 工程化','🎨','工程',5,'Use','not_started',0,
+        ['掌握预处理器或 Tailwind 等原子化方案'],
+        ['Tailwind','CSS 变量'],['用设计令牌重构一套主题样式']),
+      N('pkg','包管理与依赖','📦','工程',5,'Understand','not_started',1,
+        ['理解 semver、锁文件与依赖树','能处理依赖冲突'],
+        ['semver','锁文件'],['解释 package-lock 的作用并解决一次冲突']),
+      N('react','React 组件化','⚛️','框架',6,'Use','not_started',0,
+        ['掌握函数组件、Hooks 与渲染优化'],
+        ['Hooks','memo'],['拆解一个页面为可复用的函数组件']),
+      N('state','状态管理','🗃️','框架',6,'Use','not_started',1,
+        ['理解全局状态与局部状态的边界','能选型状态方案'],
+        ['Context','状态提升'],['为跨组件共享数据选择合适方案并落地']),
+      N('router','前端路由','🔀','框架',6,'Use','not_started',2,
+        ['掌握路由匹配、懒加载与导航守卫'],
+        ['懒加载','路由守卫'],['实现带权限拦截的路由']),
+      N('vite','构建工具 Vite','🛠️','工程',6,'Use','not_started',0,
+        ['理解构建、打包与 HMR 原理','能配置常见构建场景'],
+        ['HMR','代码分割'],['配置一次按需加载与分包']),
+      N('perf','性能优化','🚀','进阶',7,'Use','not_started',0,
+        ['掌握首屏、交互与运行时性能优化手段'],
+        ['首屏','缓存'],['把某页面 LCP 显著降低并说明手段']),
+      N('sec','前端安全','🛡️','进阶',7,'Understand','not_started',1,
+        ['理解 XSS、CSRF 与依赖安全','能写出防御性代码'],
+        ['XSS','CSRF'],['指出一段代码的安全隐患并修复']),
+      N('test','单元测试','✅','进阶',7,'Use','not_started',2,
+        ['掌握组件测试与关键逻辑测试','理解测试金字塔'],
+        ['Jest','组件测试'],['为一个组件补齐关键路径测试']),
+      N('deploy','部署与工程化','🚢','进阶',8,'Use','not_started',0,
+        ['理解 CI/CD、静态托管与监控','能把项目交付上线'],
+        ['CI/CD','监控'],['把项目自动化部署并接入基础监控'])
+    ],
+    edges: [
+      E('css','flex'), E('flex','resp'), E('js','es6'), E('es6','dom'),
+      E('es6','async'), E('async','http'), E('dom','browser'), E('es6','ts'),
+      E('ts','framework'), E('dom','framework'), E('framework','react'),
+      E('react','state'), E('react','router'), E('flex','csseng'),
+      E('es6','vite'), E('vite','pkg'), E('react','perf'), E('browser','perf'),
+      E('http','sec'), E('framework','sec'), E('react','test'),
+      E('vite','deploy'), E('test','deploy'), E('perf','deploy')
+    ]
+  },
+
+  backend: {
+    tree: { id: 'backend', topic: '后端开发', title: '后端开发工程师技能树',
+      description: '从语言与网络基础到数据库、缓存、分布式与部署的完整后端路线。' },
+    current: 'framework',
+    nodes: [
+      N('lang','编程语言基础','💻','基础',1,'Understand','mastered',0,
+        ['扎实掌握一门后端语言的核心语法与范式'],
+        ['类型系统','异常处理'],['独立完成一个命令行小工具']),
+      N('os','操作系统基础','🧠','基础',2,'Understand','mastered',0,
+        ['理解进程、线程、内存与文件系统'],
+        ['进程线程','虚拟内存'],['解释进程与线程的区别']),
+      N('linux','Linux 与命令行','🐧','基础',2,'Use','mastered',1,
+        ['熟练使用常用命令与 shell 脚本','能排查线上问题'],
+        ['shell','管道'],['用一条命令完成日志过滤统计']),
+      N('net','计算机网络','🕸️','基础',3,'Understand','completed',0,
+        ['理解 TCP/UDP、握手挥手与拥塞控制'],
+        ['TCP','三次握手'],['解释 TIME_WAIT 状态']),
+      N('http','HTTP 协议','🌐','基础',3,'Use','completed',1,
+        ['掌握方法、状态码、报文与缓存','理解 HTTPS 与证书'],
+        ['HTTPS','缓存'],['用抓包工具分析一次请求']),
+      N('sql','SQL 与关系型数据库','🗄️','数据',3,'Use','completed',0,
+        ['熟练编写查询与事务','理解索引与锁'],
+        ['索引','事务'],['优化一条慢查询并说明索引选择']),
+      N('nosql','NoSQL 与 Redis','🧊','数据',4,'Use','completed',0,
+        ['掌握 Redis 数据结构与缓存模式','理解过期与持久化'],
+        ['缓存穿透','持久化'],['设计一个防击穿的缓存方案']),
+      N('framework','后端框架','🏗️','框架',4,'Use','in_progress',0,
+        ['掌握 MVC/分层与中间件机制','理解请求生命周期'],
+        ['中间件','依赖注入'],['用框架实现一个含鉴权的 CRUD 模块']),
+      N('api','RESTful API 设计','🔌','框架',5,'Use','in_progress',0,
+        ['设计规范、可演进的接口','掌握版本化与错误码'],
+        ['版本化','错误码'],['设计一套资源接口并给出文档']),
+      N('auth','认证与授权','🔐','框架',5,'Use','not_started',0,
+        ['掌握 JWT、OAuth 与权限模型','能防常见攻击'],
+        ['JWT','RBAC'],['实现带角色权限的登录鉴权']),
+      N('mq','消息队列','📮','进阶',6,'Understand','not_started',0,
+        ['理解异步解耦、削峰与可靠性投递'],
+        ['削峰','幂等'],['设计一个下单-扣库存的解耦方案']),
+      N('cache','缓存策略','⚡','进阶',6,'Use','not_started',1,
+        ['掌握缓存一致性、更新策略与失效'],
+        ['一致性','穿透'],['解决一次缓存与 DB 不一致的问题']),
+      N('concurrency','并发编程','🌀','进阶',6,'Understand','not_started',2,
+        ['理解并发模型、锁与竞态','能写线程安全的代码'],
+        ['锁','竞态'],['定位并修复一个并发 bug']),
+      N('log','日志与监控','📊','进阶',7,'Use','not_started',0,
+        ['建立结构化日志、指标与告警体系'],
+        ['结构化日志','告警'],['为服务接入关键指标与告警']),
+      N('docker','容器化 Docker','🐳','部署',6,'Use','not_started',0,
+        ['编写 Dockerfile 与编排配置','理解镜像分层'],
+        ['镜像','编排'],['把一个服务打包为可复现的容器']),
+      N('cicd','CI/CD 流水线','🔄','部署',7,'Use','not_started',0,
+        ['搭建自动化构建、测试与发布流水线'],
+        ['流水线','灰度'],['实现提交后自动构建部署']),
+      N('microservice','微服务架构','🧩','进阶',7,'Understand','not_started',0,
+        ['理解服务拆分、注册发现与治理','能权衡单体与微服务'],
+        ['服务发现','熔断'],['说明何时该拆微服务的判断依据']),
+      N('distributed','分布式系统','🌍','进阶',8,'Understand','not_started',0,
+        ['理解一致性、分区与分布式事务的取舍'],
+        ['CAP','分布式事务'],['解释 CAP 理论并给出权衡']),
+      N('deploy','部署与运维','🚀','部署',8,'Use','not_started',0,
+        ['掌握反向代理、负载均衡与高可用'],
+        ['反向代理','高可用'],['部署一套带负载均衡的服务'])
+    ],
+    edges: [
+      E('lang','os'), E('lang','linux'), E('os','net'), E('linux','net'),
+      E('net','http'), E('sql','framework'), E('http','framework'),
+      E('framework','api'), E('api','auth'), E('sql','nosql'),
+      E('framework','mq'), E('nosql','cache'), E('os','concurrency'),
+      E('framework','log'), E('framework','docker'), E('docker','cicd'),
+      E('auth','microservice'), E('mq','microservice'), E('microservice','distributed'),
+      E('cicd','deploy'), E('log','deploy'), E('cache','distributed')
+    ]
+  },
+
+  algorithm: {
+    tree: { id: 'algorithm', topic: '算法', title: '算法与数据结构技能树',
+      description: '从复杂度与基础结构到图论、动态规划与高级算法的刷题进阶路线。' },
+    current: 'graph',
+    nodes: [
+      N('complexity','复杂度分析','⏱️','入门',1,'Understand','mastered',0,
+        ['掌握时间/空间复杂度的推导与比较'],
+        ['大O','均摊'],['推导一段代码的复杂度并说明最坏情况']),
+      N('array','数组与链表','🔗','基础',2,'Use','mastered',0,
+        ['掌握两种线性结构的操作与取舍','理解虚拟头结点等技巧'],
+        ['指针','虚拟头结点'],['手写链表反转与合并']),
+      N('stack','栈与队列','📚','基础',2,'Use','mastered',1,
+        ['掌握栈队列特性与单调栈/单调队列应用'],
+        ['单调栈','单调队列'],['用单调栈解决接雨水问题']),
+      N('hash','哈希表','🗃️','基础',3,'Use','mastered',0,
+        ['理解哈希函数、冲突与查找均摊复杂度'],
+        ['冲突','均摊'],['实现两数之和并说明哈希为何高效']),
+      N('tree','树与二叉树','🌳','基础',3,'Use','completed',0,
+        ['掌握树的遍历与递归思想','理解 BST 性质'],
+        ['遍历','BST'],['写出三种遍历的递归与迭代版本']),
+      N('sort','排序算法','↕️','基础',3,'Use','completed',1,
+        ['掌握快排、归并与堆排序','理解稳定性与复杂度'],
+        ['快排','归并'],['手写快排并说明最坏复杂度']),
+      N('binary','二分查找','🎯','基础',3,'Use','completed',2,
+        ['掌握二分模板与边界处理','能解决变体问题'],
+        ['边界','变体'],['实现寻找旋转数组的最小值']),
+      N('twoptr','双指针','👣','技巧',4,'Use','completed',0,
+        ['掌握同向/对撞双指针与滑动窗口'],
+        ['滑动窗口','对撞'],['用滑动窗口求最长无重复子串']),
+      N('heap','堆与优先队列','⛰️','基础',4,'Use','completed',1,
+        ['理解堆结构与 Top-K 问题','能手写堆'],
+        ['堆化','Top-K'],['用堆求前 K 大元素']),
+      N('graph','图基础与遍历','🕸️','图论',4,'Understand','in_progress',0,
+        ['理解图的表示、DFS/BFS 与连通性'],
+        ['邻接表','BFS'],['用 BFS 求无权图最短路']),
+      N('backtrack','递归与回溯','🔙','技巧',5,'Use','in_progress',0,
+        ['掌握回溯模板与剪枝','能解组合排列问题'],
+        ['剪枝','排列'],['解决 N 皇后或全排列']),
+      N('dfs','深度优先搜索','🧗','图论',5,'Use','not_started',0,
+        ['掌握 DFS 解决路径、岛屿与连通分量'],
+        ['连通分量','回溯'],['解决岛屿数量问题']),
+      N('bfs','广度优先搜索','🌊','图论',5,'Use','not_started',1,
+        ['掌握 BFS 分层与最短路径应用'],
+        ['分层','最短路'],['求网格中的最短路径']),
+      N('greedy','贪心算法','🍬','进阶',5,'Use','not_started',0,
+        ['理解贪心适用条件与正确性证明思路'],
+        ['区间调度','最优子结构'],['解决区间合并问题']),
+      N('dp1','动态规划入门','🧩','DP',6,'Use','not_started',0,
+        ['掌握状态定义与转移方程','理解记忆化搜索'],
+        ['状态转移','记忆化'],['解决爬楼梯与打家劫舍']),
+      N('unionfind','并查集','🔗','图论',6,'Use','not_started',1,
+        ['掌握并查集的查找与合并优化','解决连通性问题'],
+        ['路径压缩','按秩合并'],['解决朋友圈/省份数量问题']),
+      N('shortest','最短路算法','🛣️','图论',6,'Use','not_started',2,
+        ['掌握 Dijkstra 与适用场景','理解负权边的处理'],
+        ['Dijkstra','优先队列'],['实现带权图的单源最短路']),
+      N('dp2','动态规划进阶','🧠','DP',7,'Use','not_started',0,
+        ['掌握背包、区间与状态压缩 DP','能分析状态设计'],
+        ['背包','状态压缩'],['解决经典背包与最长公共子序列']),
+      N('string','字符串算法','🔤','进阶',7,'Understand','not_started',0,
+        ['理解 KMP、哈希与常用字符串技巧'],
+        ['KMP','滚动哈希'],['实现字符串匹配并说明复杂度']),
+      N('bit','位运算','💡','技巧',7,'Use','not_started',1,
+        ['掌握常见位运算技巧与状态压缩表示'],
+        ['掩码','异或'],['用位运算解决只出现一次的数字'])
+    ],
+    edges: [
+      E('complexity','array'), E('array','stack'), E('array','hash'),
+      E('array','tree'), E('tree','sort'), E('stack','sort'),
+      E('sort','binary'), E('array','twoptr'), E('tree','heap'),
+      E('heap','graph'), E('tree','graph'), E('graph','dfs'), E('graph','bfs'),
+      E('backtrack','dfs'), E('tree','backtrack'), E('greedy','dp1'),
+      E('graph','unionfind'), E('graph','shortest'), E('bfs','shortest'),
+      E('dp1','dp2'), E('array','string'), E('sort','string'),
+      E('array','bit'), E('dp1','bit')
+    ]
+  },
+
+  'ai-agent': {
+    tree: { id: 'ai-agent', topic: 'AI Agent', title: 'AI Agent 开发技能树',
+      description: '从 Python 与机器学习基础到 LLM、RAG、Agent 框架与生产化的完整路线。' },
+    current: 'rag',
+    nodes: [
+      N('py','Python 语法','🐍','基础',1,'Understand','mastered',0,
+        ['掌握 Python 语法、内置类型与标准库','能读懂改写脚本'],
+        ['缩进','标准库'],['把一段 JS 逻辑改写为等价 Python']),
+      N('oop','面向对象与工程','🏛️','基础',2,'Use','mastered',0,
+        ['掌握类、继承与包结构','能组织可维护的模块'],
+        ['类','包'],['组织一个多模块的小项目']),
+      N('math','线性代数与微积分','📐','数学',2,'Understand','mastered',1,
+        ['理解向量、矩阵运算与梯度','支撑后续模型理解'],
+        ['矩阵','梯度'],['手算一个矩阵乘法并解释梯度下降']),
+      N('prob','概率与统计','🎲','数学',3,'Understand','completed',0,
+        ['理解分布、期望与最大似然','支撑模型评估'],
+        ['分布','似然'],['解释交叉熵与最大似然的关系']),
+      N('numpy','NumPy / Pandas','📊','数据',3,'Use','completed',0,
+        ['熟练用 NumPy/Pandas 处理与分析数据'],
+        ['向量化','DataFrame'],['清洗并聚合一份真实数据']),
+      N('ml','机器学习基础','🤖','ML',4,'Understand','completed',0,
+        ['理解监督/无监督、过拟合与评估指标'],
+        ['过拟合','评估'],['训练一个分类器并正确评估']),
+      N('nn','神经网络基础','🧠','DL',5,'Understand','completed',0,
+        ['理解前向/反向传播、激活与优化器'],
+        ['反向传播','优化器'],['手写一个单层网络并训练']),
+      N('dl','深度学习框架','🔥','DL',5,'Use','in_progress',0,
+        ['熟练使用 PyTorch 等框架建模与训练'],
+        ['PyTorch','自动求导'],['用框架复现一个经典模型']),
+      N('llm','大模型原理','🧬','LLM',5,'Understand','in_progress',0,
+        ['理解语言建模、预训练与指令微调','理解模型能力边界'],
+        ['预训练','微调'],['解释 LLM 为何会幻觉']),
+      N('transformer','Transformer 架构','⚙️','LLM',6,'Understand','not_started',0,
+        ['理解自注意力、位置编码与多头注意力'],
+        ['自注意力','位置编码'],['画出 Transformer 结构并解释注意力']),
+      N('prompt','Prompt 工程','✍️','LLM',6,'Use','not_started',0,
+        ['掌握少样本、思维链与结构化输出技巧'],
+        ['CoT','结构化输出'],['为一个任务设计稳定可复用的提示词']),
+      N('embedding','向量与 Embedding','🧭','RAG',6,'Use','not_started',0,
+        ['理解向量表征、相似度与向量检索'],
+        ['向量检索','相似度'],['实现一个语义相似度检索']),
+      N('rag','RAG 检索增强','📚','RAG',7,'Use','in_progress',0,
+        ['掌握切分、召回、重排与引用溯源','能搭建 RAG 流程'],
+        ['召回','重排'],['搭建一个可溯源的问答 RAG 系统']),
+      N('functioncall','Function Calling','🔧','Agent',7,'Use','not_started',0,
+        ['掌握工具调用与结构化参数传递','理解循环与终止'],
+        ['工具调用','参数 Schema'],['让模型稳定调用一个自定义工具']),
+      N('agent','Agent 基础','🕹️','Agent',7,'Understand','not_started',0,
+        ['理解感知-规划-行动循环与记忆机制'],
+        ['ReAct','记忆'],['解释 Agent 与普通 LLM 的区别']),
+      N('langchain','Agent 框架','🧩','Agent',8,'Use','not_started',0,
+        ['熟练用 LangChain 等框架编排工具与链'],
+        ['编排','链'],['用框架搭建一个多工具 Agent']),
+      N('langgraph','LangGraph 与状态机','🕸️','Agent',8,'Use','not_started',1,
+        ['掌握图式流程、状态与条件分支','能编排多步工作流'],
+        ['状态图','条件边'],['用图编排一个多步 Agent 工作流']),
+      N('mcp','MCP 协议','🔌','Agent',8,'Understand','not_started',0,
+        ['理解 MCP 的工具/资源/提示抽象','能接入外部能力'],
+        ['工具抽象','资源'],['接入一个 MCP 服务并调用其工具']),
+      N('multiagent','多 Agent 协作','👥','Agent',9,'Understand','not_started',0,
+        ['理解角色分工、通信与编排模式','能设计协作方案'],
+        ['角色分工','通信'],['设计一个多 Agent 协作的流程']),
+      N('eval','评估与测试','📏','生产',9,'Use','not_started',0,
+        ['建立 Agent 的评测集与回归','能衡量回答质量'],
+        ['评测集','回归'],['为一组任务建立可复现的评测']),
+      N('prod','生产化部署','🚀','生产',9,'Use','not_started',0,
+        ['掌握流式、缓存、限流与可观测性','能上线 Agent 服务'],
+        ['流式','可观测'],['把一个 Agent 部署为可监控的服务']),
+      N('safety','安全与对齐','🛡️','生产',9,'Understand','not_started',0,
+        ['理解提示注入、越狱与内容安全','能加防护'],
+        ['提示注入','对齐'],['识别并防护一次提示注入攻击'])
+    ],
+    edges: [
+      E('py','oop'), E('math','prob'), E('oop','numpy'), E('prob','numpy'),
+      E('numpy','ml'), E('math','ml'), E('ml','nn'), E('nn','dl'),
+      E('prob','llm'), E('nn','llm'), E('llm','transformer'), E('llm','prompt'),
+      E('dl','embedding'), E('embedding','rag'), E('prompt','rag'),
+      E('prompt','functioncall'), E('llm','agent'), E('functioncall','agent'),
+      E('agent','langchain'), E('langchain','langgraph'), E('langgraph','mcp'),
+      E('langgraph','multiagent'), E('rag','eval'), E('multiagent','eval'),
+      E('eval','prod'), E('functioncall','safety'), E('multiagent','safety')
+    ]
+  }
+};
+
+var DEPTH_LABELS = { Recognize:'认识', Understand:'理解', Use:'应用', Transfer:'迁移', DeepMastery:'深度掌握' };
+var STATUS_LABELS = { not_started:'未学习', in_progress:'正在学习', completed:'已完成', mastered:'已掌握' };
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var NODE_W = 190, NODE_H = 88, HGAP = 34, VGAP = 58;
+  var state = { key: null, selected: null, scale: 1, tx: 0, ty: 0, nodes: [], edges: [], positions: {} };
+
+  var canvasWrap = document.getElementById('canvasWrap');
+  var viewport = document.getElementById('viewport');
+  var edgeSvg = document.getElementById('edgeSvg');
+  var detailPanel = document.getElementById('detailPanel');
+  var progressbar = document.getElementById('progressbar');
+  var select = document.getElementById('treeSelect');
+  var titleEl = document.getElementById('treeTitle');
+  var subtitleEl = document.getElementById('treeSubtitle');
+  var nodeCountEl = document.getElementById('nodeCount');
+  var edgeCountEl = document.getElementById('edgeCount');
+
+  /* ── 初始化下拉框 ── */
+  Object.keys(TREES).forEach(function (key) {
+    var opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = TREES[key].tree.topic;
+    select.appendChild(opt);
+  });
+
+  /* ── 布局算法：Kahn 拓扑 + 最长路径分层 + barycenter 层内排序 ── */
+  function computeLayout(nodes, edges) {
+    var children = {}, parents = {}, depth = {}, span = {};
+    nodes.forEach(function (n) { children[n.id] = []; parents[n.id] = []; depth[n.id] = n.depth_level || 1; });
+    edges.forEach(function (e) {
+      children[e.source].push(e.target);
+      parents[e.target].push(e.source);
+      span[e.source + '>' + e.target] = Math.max(1, (depth[e.target] || 1) - (depth[e.source] || 1));
+    });
+    var indegree = {}, layer = {};
+    nodes.forEach(function (n) { indegree[n.id] = parents[n.id].length; layer[n.id] = 0; });
+    var queue = nodes.filter(function (n) { return parents[n.id].length === 0; }).map(function (n) { return n.id; });
+    while (queue.length) {
+      var u = queue.shift();
+      children[u].forEach(function (v) {
+        layer[v] = Math.max(layer[v] || 0, (layer[u] || 0) + (span[u + '>' + v] || 1));
+        indegree[v]--;
+        if (indegree[v] === 0) queue.push(v);
+      });
+    }
+    var levels = {};
+    nodes.forEach(function (n) { var l = layer[n.id] || 0; (levels[l] = levels[l] || []).push(n); });
+    var ordered = Object.keys(levels).map(Number).sort(function (a, b) { return a - b; });
+    var colStep = NODE_W + HGAP, rowStep = NODE_H + VGAP;
+    var orderInLayer = {}, positions = {};
+    ordered.forEach(function (lvl) {
+      var levelNodes = levels[lvl];
+      var sorted = levelNodes.slice().sort(function (a, b) {
+        if (lvl === 0) return (a.order || 0) - (b.order || 0);
+        function avg(id) {
+          var ps = parents[id] || [];
+          if (!ps.length) return 0;
+          return ps.reduce(function (s, p) { return s + (orderInLayer[p] || 0); }, 0) / ps.length;
+        }
+        return avg(a.id) - avg(b.id);
+      });
+      var levelWidth = sorted.length * colStep - HGAP;
+      var startX = -levelWidth / 2;
+      sorted.forEach(function (n, i) {
+        orderInLayer[n.id] = i;
+        positions[n.id] = { x: startX + i * colStep, y: lvl * rowStep };
+      });
+    });
+    return positions;
+  }
+
+  /* ── 渲染 ── */
+  function edgePath(sx, sy, tx, ty) {
+    var midY = (sy + ty) / 2;
+    return 'M ' + sx + ' ' + sy + ' C ' + sx + ' ' + midY + ' ' + tx + ' ' + midY + ' ' + tx + ' ' + ty;
+  }
+
+  function render() {
+    var tree = TREES[state.key];
+    if (!tree) return;
+    var nodes = tree.nodes, edges = tree.edges;
+    state.nodes = nodes; state.edges = edges;
+    state.positions = computeLayout(nodes, edges);
+    state.selected = null;
+
+    titleEl.textContent = tree.tree.title;
+    subtitleEl.textContent = tree.tree.description;
+    nodeCountEl.textContent = nodes.length;
+    edgeCountEl.textContent = edges.length;
+
+    // 边(SVG)
+    var svgParts = [];
+    var maxX = -1e9, maxY = -1e9, minX = 1e9, minY = 1e9;
+    nodes.forEach(function (n) {
+      var p = state.positions[n.id];
+      minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x + NODE_W); maxY = Math.max(maxY, p.y + NODE_H);
+    });
+    var pad = 60;
+    var vbW = (maxX - minX) + pad * 2, vbH = (maxY - minY) + pad * 2;
+    var ox = minX - pad, oy = minY - pad;
+
+    edges.forEach(function (e) {
+      var sp = state.positions[e.source], tp = state.positions[e.target];
+      var sx = sp.x + NODE_W / 2, sy = sp.y + NODE_H;
+      var tx = tp.x + NODE_W / 2, ty = tp.y;
+      var cls = 'edge';
+      var sourceNode = nodes.find(function (n) { return n.id === e.source; });
+      if (sourceNode && (sourceNode.status === 'completed' || sourceNode.status === 'mastered')) {
+        cls += ' ' + sourceNode.status;
+        cls += ' animated';
+      }
+      svgParts.push('<path class="' + cls + '" d="' + edgePath(sx, sy, tx, ty) + '"/>');
+    });
+    edgeSvg.setAttribute('viewBox', ox + ' ' + oy + ' ' + vbW + ' ' + vbH);
+    edgeSvg.setAttribute('width', vbW);
+    edgeSvg.setAttribute('height', vbH);
+    edgeSvg.style.left = ox + 'px';
+    edgeSvg.style.top = oy + 'px';
+    edgeSvg.innerHTML = svgParts.join('');
+
+    // 节点(HTML)
+    var nodeHtml = nodes.map(function (n) {
+      var p = state.positions[n.id];
+      var isCurrent = n.id === tree.current;
+      var flag = n.status === 'mastered' ? '★' : (n.status === 'completed' ? '✓' : '');
+      return '<div class="node ' + n.status + (isCurrent ? ' is-current' : '') + '" data-id="' + n.id + '"' +
+        ' style="left:' + p.x + 'px; top:' + p.y + 'px;">' +
+        (isCurrent ? '<span class="node-current-badge">当前</span>' : '') +
+        '<span class="handle top"></span><span class="handle bottom"></span>' +
+        '<div class="node-head">' +
+        '<span class="node-icon">' + n.icon + '</span>' +
+        '<span class="node-title">' + n.title + '</span>' +
+        (flag ? '<span class="node-flag">' + flag + '</span>' : '') +
+        '</div>' +
+        '<div class="node-meta">' +
+        '<span class="node-cat">' + n.category + '</span>' +
+        '<span>' + (DEPTH_LABELS[n.recommended_depth] || n.recommended_depth) + ' · ' + n.recommended_depth + '</span>' +
+        '</div></div>';
+    }).join('');
+    // 清除旧节点,保留 SVG
+    viewport.querySelectorAll('.node').forEach(function (el) { el.remove(); });
+    var holder = document.createElement('div');
+    holder.innerHTML = nodeHtml;
+    while (holder.firstChild) viewport.appendChild(holder.firstChild);
+
+    renderDetailEmpty();
+    renderProgress();
+    fitView();
+  }
+
+  function renderDetail(node) {
+    if (!node) { renderDetailEmpty(); return; }
+    var status = node.status;
+    var prereqs = state.edges.filter(function (e) { return e.target === node.id; })
+      .map(function (e) { return state.nodes.find(function (n) { return n.id === e.source; }); })
+      .filter(Boolean).slice(0, 6);
+    var objList = (node.learning_objectives || []).map(function (o) { return '<li><span class="bullet">•</span>' + o + '</li>'; }).join('');
+    var evList = (node.observable_evidence || []).map(function (o) { return '<li><span class="bullet">✓</span>' + o + '</li>'; }).join('');
+    var chipHtml = (node.key_concepts || []).map(function (c) { return '<span class="chip">' + c + '</span>'; }).join('');
+    var prereqHtml = prereqs.map(function (p) { return '<div class="prereq">' + p.icon + ' ' + p.title + '</div>'; }).join('');
+
+    detailPanel.innerHTML =
+      '<div class="detail-head">' +
+        '<span class="big-icon">' + node.icon + '</span>' +
+        '<div><h2>' + node.title + '</h2>' +
+          '<div class="detail-tags">' +
+            '<span>' + node.category + '</span>' +
+            '<span class="tag-depth">' + (DEPTH_LABELS[node.recommended_depth] || '') + ' · ' + node.recommended_depth + '</span>' +
+            '<span class="status-pill ' + status + '">' + STATUS_LABELS[status] + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      (node.description ? '<p class="detail-desc">' + node.description + '</p>' : '') +
+      (objList ? '<section class="detail-section objective"><h3>学习目标</h3><ul>' + objList + '</ul></section>' : '') +
+      (chipHtml ? '<section class="detail-section"><h3>关键概念</h3><div class="chip-row">' + chipHtml + '</div></section>' : '') +
+      (evList ? '<section class="detail-section evidence"><h3>通过标准</h3><ul>' + evList + '</ul></section>' : '') +
+      (prereqHtml ? '<section class="detail-section"><h3>直接前置节点</h3><div class="prereq-list">' + prereqHtml + '</div></section>' : '');
+  }
+
+  function renderDetailEmpty() {
+    detailPanel.innerHTML = '<div class="detail-empty">点击左侧节点<br>查看学习目标与掌握证据</div>';
+  }
+
+  function renderProgress() {
+    var nodes = state.nodes;
+    var completed = nodes.filter(function (n) { return n.status === 'completed'; }).length;
+    var mastered = nodes.filter(function (n) { return n.status === 'mastered'; }).length;
+    var current = nodes.filter(function (n) { return n.status === 'in_progress'; }).length;
+    var untouched = nodes.length - completed - mastered - current;
+    var total = nodes.length;
+    var pct = total ? Math.round((completed + mastered) / total * 100) : 0;
+    var pc = total ? (completed / total * 100) : 0;
+    var pm = total ? (mastered / total * 100) : 0;
+    var pu = total ? (current / total * 100) : 0;
+    progressbar.innerHTML =
+      '<strong>总进度 ' + pct + '%</strong>' +
+      '<div class="progress-track">' +
+        '<div class="seg completed" style="width:' + pc + '%"></div>' +
+        '<div class="seg mastered" style="width:' + pm + '%"></div>' +
+        '<div class="seg current" style="width:' + pu + '%"></div>' +
+      '</div>' +
+      '<span class="stat">完成 <b style="color:var(--emerald)">' + completed + '</b></span>' +
+      '<span class="stat">掌握 <b style="color:var(--yellow)">' + mastered + '</b></span>' +
+      '<span class="stat">当前 <b style="color:var(--amber)">' + current + '</b></span>' +
+      '<span class="stat">未学习 <b>' + untouched + '</b></span>' +
+      '<span class="stat">共 <b>' + total + '</b></span>';
+  }
+
+  /* ── 视图变换 ── */
+  function applyTransform() {
+    viewport.style.transform = 'translate(' + state.tx + 'px,' + state.ty + 'px) scale(' + state.scale + ')';
+  }
+
+  function fitView() {
+    if (!state.nodes.length) return;
+    var wrapW = canvasWrap.clientWidth, wrapH = canvasWrap.clientHeight;
+    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    state.nodes.forEach(function (n) {
+      var p = state.positions[n.id];
+      minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x + NODE_W); maxY = Math.max(maxY, p.y + NODE_H);
+    });
+    var bw = maxX - minX, bh = maxY - minY;
+    var scale = Math.min(wrapW / bw, wrapH / bh) * 0.9;
+    scale = Math.max(0.1, Math.min(2.2, scale));
+    var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    state.scale = scale;
+    state.tx = wrapW / 2 - cx * scale;
+    state.ty = wrapH / 2 - cy * scale;
+    applyTransform();
+  }
+
+  function zoomBy(factor, mx, my) {
+    var newScale = Math.max(0.1, Math.min(2.5, state.scale * factor));
+    if (mx != null) {
+      var wx = (mx - state.tx) / state.scale, wy = (my - state.ty) / state.scale;
+      state.tx = mx - wx * newScale;
+      state.ty = my - wy * newScale;
+    }
+    state.scale = newScale;
+    applyTransform();
+  }
+
+  /* ── 交互 ── */
+  select.addEventListener('change', function () {
+    state.key = select.value;
+    render();
+  });
+
+  canvasWrap.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var rect = canvasWrap.getBoundingClientRect();
+    zoomBy(e.deltaY < 0 ? 1.12 : 0.89, e.clientX - rect.left, e.clientY - rect.top);
+  }, { passive: false });
+
+  var dragging = false, lastX = 0, lastY = 0;
+  canvasWrap.addEventListener('mousedown', function (e) {
+    if (e.target.closest('.node')) return;
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    canvasWrap.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    state.tx += e.clientX - lastX; state.ty += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    applyTransform();
+  });
+  window.addEventListener('mouseup', function () {
+    dragging = false; canvasWrap.classList.remove('dragging');
+  });
+
+  viewport.addEventListener('click', function (e) {
+    var el = e.target.closest('.node');
+    if (!el) return;
+    var id = el.getAttribute('data-id');
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (!node) return;
+    state.selected = id;
+    viewport.querySelectorAll('.node').forEach(function (n) { n.classList.toggle('selected', n.getAttribute('data-id') === id); });
+    renderDetail(node);
+  });
+
+  document.getElementById('zoomIn').addEventListener('click', function () {
+    var rect = canvasWrap.getBoundingClientRect();
+    zoomBy(1.25, rect.width / 2, rect.height / 2);
+  });
+  document.getElementById('zoomOut').addEventListener('click', function () {
+    var rect = canvasWrap.getBoundingClientRect();
+    zoomBy(0.8, rect.width / 2, rect.height / 2);
+  });
+  document.getElementById('fitView').addEventListener('click', fitView);
+  window.addEventListener('resize', fitView);
+
+  /* ── 启动 ── */
+  state.key = Object.keys(TREES)[0];
+  select.value = state.key;
+  render();
+})();
+</script>
+</body>
+</html>
