@@ -78,7 +78,7 @@
       linear-gradient(90deg, rgba(79,107,240,.08) 1px, transparent 1px),
       var(--bg);
     background-size: auto, 24px 24px, 24px 24px, auto;
-    cursor: grab; }
+    cursor: grab; user-select: none; -webkit-user-select: none; }
   .canvas-wrap.dragging { cursor: grabbing; }
   .viewport { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
   .edge-svg { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
@@ -529,9 +529,11 @@ canvasWrap.addEventListener('wheel', function (e) {
 var dragging = false, lastX = 0, lastY = 0, velHist = [], momentumId = null;
 canvasWrap.addEventListener('pointerdown', function (e) {
   if (e.target.closest('.node')) return;
+  e.preventDefault();
   dragging = true; lastX = e.clientX; lastY = e.clientY;
   velHist = [{ t: performance.now(), x: e.clientX, y: e.clientY }];
   try { canvasWrap.setPointerCapture(e.pointerId); } catch (err) {}
+  document.body.style.userSelect = 'none';
   canvasWrap.classList.add('dragging');
 });
 canvasWrap.addEventListener('pointermove', function (e) {
@@ -541,8 +543,8 @@ canvasWrap.addEventListener('pointermove', function (e) {
   if (velHist.length > 5) velHist.shift();
   applyTransform();
 });
-canvasWrap.addEventListener('pointerup', function () { dragging = false; canvasWrap.classList.remove('dragging'); releaseMomentum(); });
-canvasWrap.addEventListener('pointercancel', function () { dragging = false; canvasWrap.classList.remove('dragging'); });
+canvasWrap.addEventListener('pointerup', function () { dragging = false; canvasWrap.classList.remove('dragging'); document.body.style.userSelect = ''; releaseMomentum(); });
+canvasWrap.addEventListener('pointercancel', function () { dragging = false; canvasWrap.classList.remove('dragging'); document.body.style.userSelect = ''; });
 function releaseMomentum() {
   if (velHist.length < 2) return;
   var a = velHist[0], b = velHist[velHist.length - 1];

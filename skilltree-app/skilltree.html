@@ -125,6 +125,7 @@
       var(--bg);
     background-size: auto, 24px 24px, 24px 24px, auto;
     cursor: grab;
+    user-select: none; -webkit-user-select: none;
   }
   .canvas-wrap.dragging { cursor: grabbing; }
   .viewport { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
@@ -583,9 +584,11 @@
   var dragging = false, lastX = 0, lastY = 0, velHist = [], momentumId = null;
   canvasWrap.addEventListener('pointerdown', function (e) {
     if (e.target.closest('.node')) return;
+    e.preventDefault();
     dragging = true; lastX = e.clientX; lastY = e.clientY;
     velHist = [{ t: performance.now(), x: e.clientX, y: e.clientY }];
     try { canvasWrap.setPointerCapture(e.pointerId); } catch (err) {}
+    document.body.style.userSelect = 'none';
     canvasWrap.classList.add('dragging');
   });
   canvasWrap.addEventListener('pointermove', function (e) {
@@ -598,10 +601,12 @@
   });
   canvasWrap.addEventListener('pointerup', function () {
     dragging = false; canvasWrap.classList.remove('dragging');
+    document.body.style.userSelect = '';
     releaseMomentum();
   });
   canvasWrap.addEventListener('pointercancel', function () {
     dragging = false; canvasWrap.classList.remove('dragging');
+    document.body.style.userSelect = '';
   });
 
   function releaseMomentum() {
