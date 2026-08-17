@@ -92,10 +92,6 @@
   .title-wrap p { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
 
   .controls { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
-  .gen-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px;
-    color: #FFFFFF; text-decoration: none; font-size: 13px; font-weight: 700;
-    background: linear-gradient(135deg, var(--primary), var(--primary-light)); transition: box-shadow var(--dur-base) var(--ease-out); white-space: nowrap; }
-  .gen-link:hover { box-shadow: 0 4px 18px rgba(79,107,240,0.35); }
   .controls select {
     appearance: none; -webkit-appearance: none;
     padding: 8px 34px 8px 14px; border-radius: 10px;
@@ -295,7 +291,6 @@
     .title-wrap p { display: none; }
     .controls { gap: 8px; }
     .controls select { padding: 6px 28px 6px 10px; font-size: 12px; }
-    .gen-link { padding: 7px 11px; font-size: 12px; }
     .legend { display: none; }
     .main { flex-direction: column; }
     .canvas-wrap { flex: 1; min-height: 55vh; }
@@ -332,8 +327,7 @@
       </div>
     </div>
     <div class="controls">
-      <a class="gen-link" href="/generate.html">⚡ AI 生成</a>
-      <select id="treeSelect" aria-label="切换技能树"></select>
+      <select id="treeSelect" aria-label="切换章节"></select>
       <div class="legend">
         <span class="legend-item"><i class="dot not_started"></i>未学习</span>
         <span class="legend-item"><i class="dot in_progress"></i>当前</span>
