@@ -219,6 +219,31 @@
   .prereq { font-size: 12.5px; padding: 8px 11px; border-radius: 9px; background: var(--bg);
     border: 1px solid var(--border); color: var(--text-dim); }
 
+  /* ── 状态操作按钮 ── */
+  .status-actions { display: flex; gap: 6px; margin-bottom: 14px; }
+  .status-btn { flex: 1; min-width: 0; padding: 7px 4px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text-dim); font-size: 11.5px; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    transition: border-color var(--dur-fast) var(--ease-snap), background var(--dur-fast) var(--ease-snap), color var(--dur-fast) var(--ease-snap); }
+  .status-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-btn:hover { border-color: var(--primary); }
+  .status-btn.on { font-weight: 700; }
+  .status-btn.on[data-s="not_started"] { color: #64748B; border-color: #CBD5E1; background: #F1F5F9; }
+  .status-btn.on[data-s="in_progress"] { color: #92400E; border-color: #F59E0B; background: #FEF3C7; }
+  .status-btn.on[data-s="completed"] { color: #14532D; border-color: #16A34A; background: #DCFCE7; }
+  .status-btn.on[data-s="mastered"] { color: #713F12; border-color: #EAB308; background: #FEF9C3; }
+
+  /* ── 右键菜单 ── */
+  .ctx-menu { position: fixed; z-index: 400; display: none; min-width: 132px;
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15,23,42,.16); padding: 5px; }
+  .ctx-menu.show { display: block; }
+  .ctx-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px;
+    border: none; background: transparent; border-radius: 7px; font-size: 12.5px; color: var(--text-dim);
+    cursor: pointer; font-family: inherit; text-align: left; }
+  .ctx-menu button:hover { background: var(--primary-soft); color: var(--text); }
+  .ctx-menu button .dot { width: 9px; height: 9px; border-radius: 50%; }
+
   /* ── 画布工具 ── */
   .canvas-tools { position: absolute; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 40; }
   .canvas-tools button {
@@ -315,6 +340,8 @@
 
   <footer class="progressbar" id="progressbar"></footer>
 
+<div class="ctx-menu" id="ctxMenu"></div>
+
 <script src="skilltree-data.js"></script>
 
 <script>
@@ -397,8 +424,10 @@
   function render() {
     var tree = TREES[state.key];
     if (!tree) return;
-    var nodes = tree.nodes, edges = tree.edges;
+    var nodes = tree.nodes.map(function (n) { return Object.assign({}, n); });
+    var edges = tree.edges;
     state.nodes = nodes; state.edges = edges;
+    applySavedProgress();
     state.positions = computeLayout(nodes, edges);
     state.selected = null;
 
@@ -441,7 +470,7 @@
     // 节点(HTML)
     var nodeHtml = nodes.map(function (n) {
       var p = state.positions[n.id];
-      var isCurrent = n.id === tree.current;
+      var isCurrent = n.status === 'in_progress';
       var flag = n.status === 'mastered' ? '★' : (n.status === 'completed' ? '✓' : '');
       return '<div class="node ' + n.status + (isCurrent ? ' is-current' : '') + '" data-id="' + n.id + '"' +
         ' style="left:' + p.x + 'px; top:' + p.y + 'px;">' +
@@ -490,6 +519,7 @@
           '</div>' +
         '</div>' +
       '</div>' +
+      statusActionsHtml(node) +
       (node.description ? '<p class="detail-desc">' + node.description + '</p>' : '') +
       (objList ? '<section class="detail-section objective"><h3>学习目标</h3><ul>' + objList + '</ul></section>' : '') +
       (chipHtml ? '<section class="detail-section"><h3>关键概念</h3><div class="chip-row">' + chipHtml + '</div></section>' : '') +
@@ -500,6 +530,91 @@
   function renderDetailEmpty() {
     detailPanel.innerHTML = '<div class="detail-empty">点击左侧节点<br>查看学习目标与掌握证据</div>';
   }
+
+  /* ── 状态管理 ── */
+  var PROGRESS_KEY = 'dsh.skilltree.progress';
+  var STATUS_OPTIONS = [
+    { s: 'not_started', label: '未学习', color: '#CBD5E1' },
+    { s: 'in_progress', label: '学习中', color: '#F59E0B' },
+    { s: 'completed', label: '完成', color: '#16A34A' },
+    { s: 'mastered', label: '掌握', color: '#EAB308' }
+  ];
+
+  function loadProgress() {
+    try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function saveProgress() {
+    var all = loadProgress();
+    var treeProgress = {};
+    state.nodes.forEach(function (n) { treeProgress[n.id] = n.status; });
+    all[state.key] = treeProgress;
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+  function applySavedProgress() {
+    var all = loadProgress();
+    var treeProgress = all[state.key];
+    if (!treeProgress) return;
+    state.nodes.forEach(function (n) { if (treeProgress[n.id]) n.status = treeProgress[n.id]; });
+  }
+
+  function markPrereqsCompleted(nodeId) {
+    state.edges.filter(function (e) { return e.target === nodeId; }).forEach(function (e) {
+      var src = state.nodes.find(function (n) { return n.id === e.source; });
+      if (src && src.status !== 'completed' && src.status !== 'mastered') {
+        src.status = 'completed';
+        refreshNodeVisual(src.id);
+        markPrereqsCompleted(src.id);
+      }
+    });
+  }
+
+  function refreshNodeVisual(nodeId) {
+    var node = state.nodes.find(function (n) { return n.id === nodeId; });
+    if (!node) return;
+    var el = viewport.querySelector('.node[data-id="' + nodeId + '"]');
+    if (!el) return;
+    var isCurrent = node.status === 'in_progress';
+    el.className = 'node ' + node.status + (isCurrent ? ' is-current' : '') + (state.selected === nodeId ? ' selected' : '');
+    var flag = node.status === 'mastered' ? '★' : (node.status === 'completed' ? '✓' : '');
+    var flagEl = el.querySelector('.node-flag');
+    if (flag) {
+      if (!flagEl) { flagEl = document.createElement('span'); flagEl.className = 'node-flag'; el.querySelector('.node-head').appendChild(flagEl); }
+      flagEl.textContent = flag;
+    } else if (flagEl) { flagEl.remove(); }
+    var badge = el.querySelector('.node-current-badge');
+    if (isCurrent) {
+      if (!badge) { badge = document.createElement('span'); badge.className = 'node-current-badge'; badge.textContent = '当前'; el.appendChild(badge); }
+    } else if (badge) { badge.remove(); }
+  }
+
+  function setNodeStatus(nodeId, status) {
+    var node = state.nodes.find(function (n) { return n.id === nodeId; });
+    if (!node) return;
+    if (status === 'completed') markPrereqsCompleted(nodeId);
+    if (status === 'in_progress') {
+      state.nodes.forEach(function (n) {
+        if (n.id !== nodeId && n.status === 'in_progress') { n.status = 'not_started'; refreshNodeVisual(n.id); }
+      });
+    }
+    node.status = status;
+    refreshNodeVisual(nodeId);
+    renderProgress();
+    if (state.selected === nodeId) renderDetail(node);
+    saveProgress();
+  }
+
+  function statusActionsHtml(node) {
+    return '<div class="status-actions">' + STATUS_OPTIONS.map(function (o) {
+      return '<button class="status-btn' + (node.status === o.s ? ' on' : '') + '" data-id="' + node.id + '" data-s="' + o.s + '">' +
+        '<span class="dot" style="background:' + o.color + '"></span>' + o.label + '</button>';
+    }).join('') + '</div>';
+  }
+
+  detailPanel.addEventListener('click', function (e) {
+    var btn = e.target.closest('.status-btn');
+    if (!btn) return;
+    setNodeStatus(btn.getAttribute('data-id'), btn.getAttribute('data-s'));
+  });
 
   function renderProgress() {
     var nodes = state.nodes;
@@ -653,6 +768,42 @@
   });
   document.getElementById('fitView').addEventListener('click', function () { fitView(true); });
   window.addEventListener('resize', function () { fitView(true); });
+
+  /* ── 右键菜单 ── */
+  var ctxMenu = document.getElementById('ctxMenu');
+  var ctxNodeId = null;
+
+  viewport.addEventListener('contextmenu', function (e) {
+    var el = e.target.closest('.node');
+    if (!el) return;
+    e.preventDefault();
+    ctxNodeId = el.getAttribute('data-id');
+    var node = state.nodes.find(function (n) { return n.id === ctxNodeId; });
+    if (!node) return;
+    ctxMenu.innerHTML = STATUS_OPTIONS.map(function (o) {
+      return '<button data-s="' + o.s + '"><span class="dot" style="background:' + o.color + '"></span>' + o.label + (node.status === o.s ? ' ✓' : '') + '</button>';
+    }).join('');
+    ctxMenu.classList.add('show');
+    var mw = ctxMenu.offsetWidth, mh = ctxMenu.offsetHeight;
+    var x = e.clientX, y = e.clientY;
+    if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
+    if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+    ctxMenu.style.left = x + 'px';
+    ctxMenu.style.top = y + 'px';
+  });
+
+  ctxMenu.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn || !ctxNodeId) return;
+    setNodeStatus(ctxNodeId, btn.getAttribute('data-s'));
+    hideCtxMenu();
+  });
+
+  function hideCtxMenu() { ctxMenu.classList.remove('show'); ctxNodeId = null; }
+
+  document.addEventListener('click', function (e) { if (!e.target.closest('.ctx-menu')) hideCtxMenu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideCtxMenu(); });
+  window.addEventListener('scroll', hideCtxMenu);
 
   /* ── 启动 ── */
   state.key = Object.keys(TREES)[0];
