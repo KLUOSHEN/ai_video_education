@@ -483,7 +483,7 @@ function renderDetail(node) {
     '</div></div></div>' +
     statusActionsHtml(node) +
     (node.description ? '<p class="detail-desc">' + node.description + '</p>' : '') +
-    (node.depth_rationale ? '<section class="detail-section rationale"><h3>目标深度理由</h3><p>' + node.depth_rationale + '</p></section>' : '') +
+    (node.depth_rationale ? '<section class="detail-section rationale"><h3>目标深度</h3><p>' + node.depth_rationale + '</p></section>' : '') +
     (objList ? '<section class="detail-section objective"><h3>学习目标</h3><ul>' + objList + '</ul></section>' : '') +
     (chipHtml ? '<section class="detail-section"><h3>关键概念</h3><div class="chip-row">' + chipHtml + '</div></section>' : '') +
     (evList ? '<section class="detail-section evidence"><h3>通过标准</h3><ul>' + evList + '</ul></section>' : '');
