@@ -19,15 +19,25 @@
 - 四色学习状态:未学习 / 当前 / 完成 / 掌握
 - 缩放平移、点击查看详情、底部总进度条
 - 每个节点含严格的学习目标、关键概念与通过标准
+- AI 生成技能树:输入学习方向,调用 deepseek-v4-flash 自动生成一棵由浅入深的知识树(见 generate.html)
 
 ## 目录结构
 
     skilltree-app/
     ├── server.js          # 精简后端(零依赖静态服务器)
-    ├── skilltree.html     # 前端页面
+    ├── skilltree.html     # 前端页面(内置 4 棵演示树)
+    ├── generate.html     # AI 生成技能树页面
     ├── skilltree-data.js  # 技能树数据(可自行扩充/替换)
     ├── package.json
     └── README.md
+
+## AI 生成技能树
+
+打开 http://localhost:3000/generate.html,输入学习方向(如「Go 后端开发」)和目标,点击「生成技能树」,后端会调用 DeepSeek(deepseek-v4-flash)按 skill-tree-generator 规范生成一棵完整知识树。
+
+API Key 与模型已内置,可用环境变量覆盖:
+
+    DEEPSEEK_API_KEY=... DEEPSEEK_MODEL=... DEEPSEEK_BASE_URL=... node server.js
 
 ## 自定义技能树
 

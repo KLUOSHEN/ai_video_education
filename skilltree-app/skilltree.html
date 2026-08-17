@@ -63,6 +63,10 @@
   .title-wrap p { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
 
   .controls { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
+  .gen-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px;
+    color: #052e2b; text-decoration: none; font-size: 13px; font-weight: 700;
+    background: linear-gradient(135deg, #22d3ee, #0891b2); transition: .2s var(--ease); white-space: nowrap; }
+  .gen-link:hover { box-shadow: 0 4px 18px rgba(34,211,238,0.4); }
   .controls select {
     appearance: none; -webkit-appearance: none;
     padding: 8px 34px 8px 14px; border-radius: 10px;
@@ -227,6 +231,7 @@
       </div>
     </div>
     <div class="controls">
+      <a class="gen-link" href="/generate.html">⚡ AI 生成</a>
       <select id="treeSelect" aria-label="切换技能树"></select>
       <div class="legend">
         <span class="legend-item"><i class="dot not_started"></i>未学习</span>
