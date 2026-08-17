@@ -1,0 +1,14 @@
+{
+  "name": "专升本高数技能树",
+  "short_name": "高数技能树",
+  "description": "专升本高数学习技能树:10 章由浅入深,覆盖整个高数知识点",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F9FC",
+  "theme_color": "#4F6BF0",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

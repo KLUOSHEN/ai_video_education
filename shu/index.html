@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4F6BF0">
 <title>专升本高数 · 技能树</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
 <style>
   :root {
     /* primitive —— 对齐主页面 */
@@ -836,6 +839,11 @@
   select.value = state.key;
   render();
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function () {});
+}
 </script>
 </body>
 </html>
