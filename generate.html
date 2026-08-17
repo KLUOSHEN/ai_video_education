@@ -139,10 +139,41 @@
   </header>
 
   <div class="gen-bar">
-    <input id="topicInput" placeholder="学习方向,如:Go 后端开发" value="">
-    <input id="goalInput" placeholder="目标(可选),如:进大厂做高并发服务">
+    <input id="topicInput" placeholder="学习方向:输入或下拉选择" value="" list="topicOptions">
+    <input id="goalInput" placeholder="目标(可选):输入或下拉选择" list="goalOptions">
     <button class="gen-btn" id="genBtn" onclick="generate()">⚡ 生成技能树</button>
     <span class="gen-hint">调用 deepseek-v4-flash,约 10~60 秒</span>
+    <datalist id="topicOptions">
+      <option value="前端开发">
+      <option value="后端开发(Java/Spring)">
+      <option value="后端开发(Go)">
+      <option value="后端开发(Node.js)">
+      <option value="算法与数据结构">
+      <option value="AI Agent 开发">
+      <option value="Python 数据分析">
+      <option value="Python 爬虫开发">
+      <option value="机器学习">
+      <option value="深度学习">
+      <option value="数据库原理与优化">
+      <option value="网络安全">
+      <option value="云原生与 Kubernetes">
+      <option value="移动端开发">
+      <option value="DevOps 运维">
+      <option value="大模型应用开发">
+      <option value="系统设计">
+    </datalist>
+    <datalist id="goalOptions">
+      <option value="进大厂做工程师">
+      <option value="转行做数据分析师">
+      <option value="独立开发一个产品">
+      <option value="通过技术面试">
+      <option value="系统打好基础">
+      <option value="做 AI 应用/Agent">
+      <option value="职业晋升(初级到高级)">
+      <option value="兴趣学习、搞懂原理">
+      <option value="接外包/副业">
+      <option value="考取技术认证">
+    </datalist>
   </div>
 
   <main class="main">
