@@ -1,0 +1,9 @@
+{
+  "name": "shu",
+  "version": "1.0.0",
+  "description": "专升本高数学习技能树 —— 10 章,由浅入深,覆盖整个高数知识点",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  }
+}
