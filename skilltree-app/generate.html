@@ -20,11 +20,20 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; }
   body { font-family: 'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
-    background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    background:
+      radial-gradient(1100px 560px at 12% -10%, rgba(79,107,240,.10), transparent 60%),
+      radial-gradient(900px 520px at 92% -5%, rgba(109,131,245,.08), transparent 55%),
+      radial-gradient(1000px 640px at 50% 115%, rgba(34,195,230,.06), transparent 60%),
+      var(--bg);
+    color: var(--text); display: flex; flex-direction: column; }
+  body::after { content: ''; position: fixed; left: -10%; width: 120%; height: 26vh; top: -36vh;
+    background: linear-gradient(180deg, transparent, rgba(109,131,245,.05), transparent);
+    pointer-events: none; z-index: 0; animation: scanLine 18s linear infinite; }
+  @keyframes scanLine { to { transform: translateY(175vh); } }
 
   .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px;
     height: 60px; padding: 0 18px; flex-shrink: 0; background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(12px) saturate(180%); border-bottom: 1px solid var(--border); z-index: 50; }
+    backdrop-filter: blur(12px) saturate(180%); border-bottom: 1px solid var(--border); z-index: 50; position: relative; }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .back { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
     border-radius: 10px; color: var(--text-dim); text-decoration: none; font-size: 13px;
@@ -33,7 +42,7 @@
   .brand h1 { font-size: 16px; font-weight: 700; }
 
   .gen-bar { display: flex; align-items: center; gap: 10px; padding: 12px 18px; flex-shrink: 0;
-    background: var(--panel); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    background: var(--panel); border-bottom: 1px solid var(--border); flex-wrap: wrap; position: relative; z-index: 1; }
   .gen-bar input { height: 38px; padding: 0 14px; border-radius: 10px; background: var(--bg);
     border: 1px solid var(--border); color: var(--text); font-size: 13.5px; outline: none;
     font-family: inherit; transition: border-color var(--dur-fast) var(--ease-snap), box-shadow var(--dur-fast) var(--ease-snap); }
@@ -61,9 +70,14 @@
   .dd-option .opt-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
   .dd-empty { padding: 10px 12px; font-size: 12px; color: var(--text-muted); text-align: center; }
 
-  .main { flex: 1; min-height: 0; display: flex; }
+  .main { flex: 1; min-height: 0; display: flex; position: relative; z-index: 1; }
   .canvas-wrap { flex: 1; min-width: 0; position: relative; overflow: hidden;
-    background: radial-gradient(circle at 50% 0%, rgba(79,107,240,0.06), transparent 40%), var(--bg);
+    background:
+      radial-gradient(circle at 50% 0%, rgba(79,107,240,0.06), transparent 40%),
+      linear-gradient(rgba(79,107,240,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,107,240,.03) 1px, transparent 1px),
+      var(--bg);
+    background-size: auto, 24px 24px, 24px 24px, auto;
     cursor: grab; }
   .canvas-wrap.dragging { cursor: grabbing; }
   .viewport { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
@@ -71,7 +85,7 @@
 
   .node { position: absolute; width: 190px; min-height: 76px; padding: 10px 12px; border-radius: 14px;
     border: 2px solid var(--border-soft); background: #FFFFFF; color: var(--text-dim);
-    cursor: pointer; user-select: none; box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+    cursor: pointer; user-select: none; box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 6px 20px rgba(79,107,240,.08);
     transition: box-shadow var(--dur-fast) var(--ease-snap), border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-spring); }
   .node:active { transform: scale(0.97); }
   .node.selected { transform: scale(1.03); z-index: 20; box-shadow: 0 0 0 2px rgba(79,107,240,0.7), 0 8px 28px rgba(15,23,42,0.18); }
@@ -125,7 +139,7 @@
   .canvas-tools button:active { transform: scale(0.94); }
 
   .progressbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 16px;
-    padding: 0 18px; background: var(--panel); border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); }
+    padding: 0 18px; background: var(--panel); border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); position: relative; z-index: 1; }
   .progressbar strong { color: var(--text); font-size: 12.5px; }
   .progress-track { flex: 1; height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; display: flex; }
   .progress-track .seg { height: 100%; transition: width var(--dur-base) var(--ease-snap); }
@@ -158,7 +172,7 @@
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }
   @media (hover: hover) and (pointer: fine) {
-    .node:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 6px 20px rgba(15,23,42,0.12); }
+    .node:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 2px 4px rgba(15,23,42,.08), 0 12px 32px rgba(79,107,240,.16); }
   }
 </style>
 </head>
