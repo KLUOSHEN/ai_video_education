@@ -33,8 +33,8 @@
     border: 1px solid var(--border); color: var(--text); font-size: 13.5px; outline: none;
     font-family: inherit; transition: .2s var(--ease); }
   .gen-bar input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(34,211,238,0.15); }
-  #topicInput { flex: 1; min-width: 200px; max-width: 420px; }
-  #goalInput { flex: 1; min-width: 200px; max-width: 420px; }
+  .dropdown { position: relative; flex: 1; min-width: 200px; max-width: 420px; }
+  .dropdown input { width: 100%; }
   .gen-bar input::placeholder { color: var(--text-muted); }
   .gen-btn { height: 38px; padding: 0 20px; border-radius: 10px; border: none; cursor: pointer;
     background: linear-gradient(135deg, #22d3ee, #0891b2); color: #052e2b; font-size: 14px;
@@ -42,6 +42,16 @@
   .gen-btn:hover { box-shadow: 0 4px 20px rgba(34,211,238,0.4); }
   .gen-btn:disabled { opacity: .5; cursor: not-allowed; }
   .gen-hint { font-size: 11.5px; color: var(--text-muted); }
+  .dd-panel { position: absolute; top: 44px; left: 0; right: 0; max-height: 320px; overflow-y: auto;
+    background: #0f172a; border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.6); z-index: 200; display: none; padding: 6px; }
+  .dd-panel.open { display: block; }
+  .dd-option { display: flex; align-items: baseline; gap: 10px; padding: 9px 12px; border-radius: 8px;
+    cursor: pointer; transition: background .12s var(--ease); }
+  .dd-option:hover { background: rgba(34,211,238,0.12); }
+  .dd-option .opt-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+  .dd-option .opt-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+  .dd-empty { padding: 10px 12px; font-size: 12px; color: var(--text-muted); text-align: center; }
 
   .main { flex: 1; min-height: 0; display: flex; }
   .canvas-wrap { flex: 1; min-width: 0; position: relative; overflow: hidden;
@@ -139,41 +149,16 @@
   </header>
 
   <div class="gen-bar">
-    <input id="topicInput" placeholder="学习方向:输入或下拉选择" value="" list="topicOptions">
-    <input id="goalInput" placeholder="目标(可选):输入或下拉选择" list="goalOptions">
+    <div class="dropdown">
+      <input id="topicInput" placeholder="学习方向:输入或下拉选择" autocomplete="off">
+      <div class="dd-panel" id="topicPanel"></div>
+    </div>
+    <div class="dropdown">
+      <input id="goalInput" placeholder="目标(可选):输入或下拉选择" autocomplete="off">
+      <div class="dd-panel" id="goalPanel"></div>
+    </div>
     <button class="gen-btn" id="genBtn" onclick="generate()">⚡ 生成技能树</button>
     <span class="gen-hint">调用 deepseek-v4-flash,约 10~60 秒</span>
-    <datalist id="topicOptions">
-      <option value="前端开发">
-      <option value="后端开发(Java/Spring)">
-      <option value="后端开发(Go)">
-      <option value="后端开发(Node.js)">
-      <option value="算法与数据结构">
-      <option value="AI Agent 开发">
-      <option value="Python 数据分析">
-      <option value="Python 爬虫开发">
-      <option value="机器学习">
-      <option value="深度学习">
-      <option value="数据库原理与优化">
-      <option value="网络安全">
-      <option value="云原生与 Kubernetes">
-      <option value="移动端开发">
-      <option value="DevOps 运维">
-      <option value="大模型应用开发">
-      <option value="系统设计">
-    </datalist>
-    <datalist id="goalOptions">
-      <option value="进大厂做工程师">
-      <option value="转行做数据分析师">
-      <option value="独立开发一个产品">
-      <option value="通过技术面试">
-      <option value="系统打好基础">
-      <option value="做 AI 应用/Agent">
-      <option value="职业晋升(初级到高级)">
-      <option value="兴趣学习、搞懂原理">
-      <option value="接外包/副业">
-      <option value="考取技术认证">
-    </datalist>
   </div>
 
   <main class="main">
@@ -201,6 +186,69 @@
   <footer class="progressbar" id="progressbar"><strong>尚未生成</strong><div class="progress-track" style="flex:1"></div><span class="stat">输入方向后点击生成</span></footer>
 
 <script>
+var TOPIC_OPTIONS = [
+  { v: '前端开发', d: 'HTML/CSS/JS → 框架、工程化与性能优化' },
+  { v: '后端开发(Java/Spring)', d: 'Java 语法 → Spring、分布式与高并发' },
+  { v: '后端开发(Go)', d: 'Go 语法 → 微服务、高并发与云原生' },
+  { v: '后端开发(Node.js)', d: 'JS → NestJS、服务端工程化' },
+  { v: '算法与数据结构', d: '复杂度 → 图论、动态规划与高级结构' },
+  { v: 'AI Agent 开发', d: 'Python → LLM、RAG 与 Agent 框架' },
+  { v: 'Python 数据分析', d: 'Python → NumPy/Pandas 与可视化' },
+  { v: 'Python 爬虫开发', d: '请求库 → 反爬、分布式采集' },
+  { v: '机器学习', d: '数学基础 → 经典算法与模型调优' },
+  { v: '深度学习', d: '神经网络 → CNN/RNN 与训练优化' },
+  { v: '数据库原理与优化', d: 'SQL → 索引、事务与分库分表' },
+  { v: '网络安全', d: '攻防基础 → Web 安全与渗透测试' },
+  { v: '云原生与 Kubernetes', d: '容器 → 编排、服务网格与 CI/CD' },
+  { v: '移动端开发', d: '原生/跨端框架 → 性能与发布' },
+  { v: 'DevOps 运维', d: 'Linux → CI/CD、监控与自动化' },
+  { v: '大模型应用开发', d: 'LLM 原理 → 微调、部署与产品化' },
+  { v: '系统设计', d: '分布式 → 高可用、缓存与消息队列' }
+];
+var GOAL_OPTIONS = [
+  { v: '进大厂做工程师', d: '对标岗位 JD,补齐面试与实战能力' },
+  { v: '转行做数据分析师', d: '从零建立数据分析技能栈' },
+  { v: '独立开发一个产品', d: '覆盖从设计到上线部署的全流程' },
+  { v: '通过技术面试', d: '高频考点 + 算法 + 系统设计' },
+  { v: '系统打好基础', d: '循序渐进构建完整知识体系' },
+  { v: '做 AI 应用/Agent', d: '聚焦 LLM 应用与智能体开发' },
+  { v: '职业晋升(初级到高级)', d: '架构、性能与工程化进阶' },
+  { v: '兴趣学习、搞懂原理', d: '深入原理,不追求应试' },
+  { v: '接外包/副业', d: '快速交付可用的完整项目' },
+  { v: '考取技术认证', d: '对标认证考纲系统备考' }
+];
+
+function renderOptions(panelId, options, filter) {
+  var panel = document.getElementById(panelId);
+  var filtered = options.filter(function (o) { return !filter || o.v.indexOf(filter) >= 0 || o.d.indexOf(filter) >= 0; });
+  if (!filtered.length) { panel.innerHTML = '<div class="dd-empty">无匹配,直接输入即可</div>'; return; }
+  panel.innerHTML = filtered.map(function (o) {
+    return '<div class="dd-option" data-value="' + o.v + '"><span class="opt-name">' + o.v + '</span><span class="opt-desc">' + o.d + '</span></div>';
+  }).join('');
+  panel.querySelectorAll('.dd-option').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var inputId = panelId === 'topicPanel' ? 'topicInput' : 'goalInput';
+      document.getElementById(inputId).value = el.getAttribute('data-value');
+      closePanel(panelId);
+    });
+  });
+}
+function openPanel(panelId, options) {
+  closePanel('topicPanel'); closePanel('goalPanel');
+  var inputId = panelId === 'topicPanel' ? 'topicInput' : 'goalInput';
+  renderOptions(panelId, options, document.getElementById(inputId).value.trim());
+  document.getElementById(panelId).classList.add('open');
+}
+function closePanel(panelId) { document.getElementById(panelId).classList.remove('open'); }
+
+renderOptions('topicPanel', TOPIC_OPTIONS, '');
+renderOptions('goalPanel', GOAL_OPTIONS, '');
+document.getElementById('topicInput').addEventListener('focus', function () { openPanel('topicPanel', TOPIC_OPTIONS); });
+document.getElementById('goalInput').addEventListener('focus', function () { openPanel('goalPanel', GOAL_OPTIONS); });
+document.getElementById('topicInput').addEventListener('input', function () { renderOptions('topicPanel', TOPIC_OPTIONS, this.value.trim()); document.getElementById('topicPanel').classList.add('open'); });
+document.getElementById('goalInput').addEventListener('input', function () { renderOptions('goalPanel', GOAL_OPTIONS, this.value.trim()); document.getElementById('goalPanel').classList.add('open'); });
+document.addEventListener('click', function (e) { if (!e.target.closest('.dropdown')) { closePanel('topicPanel'); closePanel('goalPanel'); } });
+
 var ICON_EMOJI = {
   activity:'📈', book:'📖', brain:'🧠', bug:'🐛', cloud:'☁️', compass:'🧭',
   code:'⌨️', cube:'🧊', database:'🗄️', edit:'✏️', gauge:'📊', history:'🕘',
