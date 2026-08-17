@@ -207,6 +207,8 @@
   .detail-section li .bullet { flex-shrink: 0; }
   .detail-section.objective li .bullet { color: var(--primary); }
   .detail-section.evidence li .bullet { color: var(--emerald); }
+  .detail-section.rationale p { font-size: 13px; line-height: 1.65; color: var(--text-dim);
+    padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); border: 1px solid rgba(79,107,240,0.2); }
   .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { font-size: 11.5px; padding: 4px 10px; border-radius: 8px; background: var(--panel-2);
     border: 1px solid var(--border); color: var(--text-dim); }
@@ -521,6 +523,7 @@
       '</div>' +
       statusActionsHtml(node) +
       (node.description ? '<p class="detail-desc">' + node.description + '</p>' : '') +
+      (node.depth_rationale ? '<section class="detail-section rationale"><h3>目标深度</h3><p>' + node.depth_rationale + '</p></section>' : '') +
       (objList ? '<section class="detail-section objective"><h3>学习目标</h3><ul>' + objList + '</ul></section>' : '') +
       (chipHtml ? '<section class="detail-section"><h3>关键概念</h3><div class="chip-row">' + chipHtml + '</div></section>' : '') +
       (evList ? '<section class="detail-section evidence"><h3>通过标准</h3><ul>' + evList + '</ul></section>' : '') +
