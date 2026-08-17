@@ -1,0 +1,9 @@
+{
+  "name": "skilltree-app",
+  "version": "1.0.0",
+  "description": "栈知映 · 技能树 —— 前端/后端/算法/AI Agent 技能依赖图可视化(零依赖)",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  }
+}
