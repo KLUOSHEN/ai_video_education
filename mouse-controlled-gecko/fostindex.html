@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>鼠标控制壁虎转向</title>
+    <style>
+      :root { color-scheme: light; }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        background: #e8e8e8;
+      }
+
+      body {
+        min-height: 100svh;
+        padding: clamp(0.75rem, 2vw, 2rem);
+        overflow-x: hidden;
+        font-family: "Microsoft YaHei", system-ui, sans-serif;
+      }
+
+      .page-shell {
+        width: min(100%, 1480px);
+        margin: 0 auto;
+      }
+
+      /* 主视觉容器固定为 16:9；视频不会被拉伸或裁切。 */
+      .visual-stage {
+        position: relative;
+        width: min(100%, 177.7778svh);
+        margin: 0 auto;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        background: #e8e8e8;
+      }
+
+      video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        pointer-events: none;
+      }
+
+      /* 置于画面左侧留白的项目介绍，保持信息轻量而不遮挡主体。 */
+      .project-intro {
+        position: absolute;
+        top: 50%;
+        left: clamp(1.25rem, 6vw, 7rem);
+        z-index: 1;
+        width: min(22rem, 31vw);
+        transform: translateY(-50%);
+        padding-left: 1rem;
+        border-left: 1px solid rgb(79 107 240 / 45%);
+        color: #26324a;
+        text-shadow: 0 1px 12px rgb(255 255 255 / 58%);
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .project-kicker {
+        margin: 0 0 0.75rem;
+        color: rgb(55 78 163 / 78%);
+        font-size: clamp(0.58rem, 0.7vw, 0.72rem);
+        font-weight: 700;
+        letter-spacing: 0.18em;
+      }
+
+      .project-title {
+        margin: 0;
+        color: #17233e;
+        font-size: clamp(1.8rem, 3vw, 3.45rem);
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -0.055em;
+      }
+
+      .project-tagline {
+        margin: 0.8rem 0 0;
+        color: #3f5277;
+        font-size: clamp(0.78rem, 1vw, 0.98rem);
+        font-weight: 500;
+        letter-spacing: 0.03em;
+      }
+
+      .project-copy {
+        max-width: 19rem;
+        margin: 1.2rem 0 0;
+        color: rgb(38 50 74 / 76%);
+        font-size: clamp(0.68rem, 0.82vw, 0.82rem);
+        line-height: 1.8;
+      }
+
+      .project-modules {
+        margin: 1.15rem 0 0;
+        color: rgb(55 78 163 / 75%);
+        font-size: clamp(0.57rem, 0.66vw, 0.68rem);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        line-height: 1.7;
+      }
+
+      .core-features {
+        width: min(100%, 1160px);
+        margin: clamp(4.25rem, 8vw, 8rem) auto clamp(4rem, 7vw, 7rem);
+        color: #0f172a;
+      }
+
+      .features-heading {
+        max-width: 34rem;
+        margin: 0 auto 2.25rem;
+        text-align: center;
+      }
+
+      .features-kicker {
+        margin: 0 0 0.7rem;
+        color: #4f6bf0;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+      }
+
+      .features-heading h2 {
+        margin: 0;
+        font-size: clamp(1.7rem, 3vw, 2.7rem);
+        letter-spacing: -0.045em;
+        line-height: 1.18;
+      }
+
+      .features-heading p:last-child {
+        margin: 0.8rem 0 0;
+        color: #64748b;
+        font-size: clamp(0.82rem, 1vw, 0.96rem);
+        line-height: 1.75;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.9rem;
+      }
+
+      .feature-card {
+        min-height: 13.5rem;
+        padding: 1.45rem;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #d7dce7;
+        border-radius: 1rem;
+        background: rgb(255 255 255 / 54%);
+        color: inherit;
+        text-decoration: none;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+        transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+
+      .feature-card:hover {
+        border-color: rgb(79 107 240 / 52%);
+        background: rgb(255 255 255 / 78%);
+        box-shadow: 0 10px 25px rgb(15 23 42 / 8%);
+        transform: translateY(-3px);
+      }
+
+      .feature-card:focus-visible {
+        outline: 3px solid rgb(79 107 240 / 28%);
+        outline-offset: 3px;
+      }
+
+      .feature-icon {
+        width: 2.55rem;
+        height: 2.55rem;
+        display: grid;
+        place-items: center;
+        border-radius: 0.75rem;
+        background: #eef2ff;
+        color: #4f6bf0;
+      }
+
+      .feature-icon svg {
+        width: 1.25rem;
+        height: 1.25rem;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .feature-card h3 {
+        margin: 1.35rem 0 0;
+        font-size: 1.02rem;
+        letter-spacing: -0.02em;
+      }
+
+      .feature-card p {
+        margin: 0.52rem 0 0;
+        color: #64748b;
+        font-size: 0.78rem;
+        line-height: 1.7;
+      }
+
+      .feature-arrow {
+        margin-top: auto;
+        padding-top: 1rem;
+        color: #4f6bf0;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+      }
+
+      @media (max-width: 680px) {
+        .project-intro {
+          top: auto;
+          bottom: 1.25rem;
+          width: min(20rem, 70vw);
+          transform: none;
+        }
+
+        .project-copy,
+        .project-modules {
+          display: none;
+        }
+
+        .features-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .feature-card {
+          min-height: 11.5rem;
+          padding: 1.15rem;
+        }
+      }
+
+      @media (max-width: 430px) {
+        .features-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* 单屏构图：介绍与功能区共同停留在视频左侧留白。 */
+      body {
+        display: grid;
+        place-items: center;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .page-shell {
+        width: 100%;
+      }
+
+      .visual-stage {
+        width: min(100vw, 177.7778svh);
+      }
+
+      .left-panel {
+        position: absolute;
+        top: 50%;
+        left: clamp(1.5rem, 5.2vw, 6rem);
+        z-index: 1;
+        width: 46vw;
+        transform: translateY(-50%);
+      }
+
+      .project-intro {
+        position: static;
+        width: auto;
+        transform: none;
+        padding-left: clamp(1rem, 1.5vw, 1.45rem);
+      }
+
+      .project-kicker {
+        margin-bottom: 0.8rem;
+        font-size: clamp(0.64rem, 0.78vw, 0.76rem);
+      }
+
+      .project-title {
+        font-size: clamp(2.25rem, 4.7vw, 5rem);
+        line-height: 0.93;
+      }
+
+      .project-tagline {
+        margin-top: 0.95rem;
+        font-size: clamp(0.88rem, 1.15vw, 1.08rem);
+      }
+
+      .project-copy {
+        max-width: 36rem;
+        margin-top: 1.1rem;
+        font-size: clamp(0.76rem, 0.95vw, 0.94rem);
+        line-height: 1.85;
+      }
+
+      .project-modules {
+        margin-top: 0.95rem;
+        font-size: clamp(0.62rem, 0.72vw, 0.7rem);
+      }
+
+      .try-button {
+        width: fit-content;
+        margin-top: 1.25rem;
+        padding: 0.72rem 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        border-radius: 0.7rem;
+        background: #4f6bf0;
+        color: #fff;
+        font-size: clamp(0.7rem, 0.82vw, 0.82rem);
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-decoration: none;
+        box-shadow: 0 6px 16px rgb(79 107 240 / 20%);
+        pointer-events: auto;
+        transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+      }
+
+      .try-button:hover {
+        background: #3b4fe0;
+        box-shadow: 0 9px 21px rgb(59 79 224 / 28%);
+        transform: translateY(-1px);
+      }
+
+      .try-button:focus-visible {
+        outline: 3px solid rgb(79 107 240 / 35%);
+        outline-offset: 3px;
+      }
+
+      .core-features {
+        width: 100%;
+        margin: 1.9rem 0 0;
+        padding-top: 1.35rem;
+        border-top: 1px solid rgb(79 107 240 / 22%);
+      }
+
+      .features-heading {
+        margin: 0 0 1rem;
+        text-align: left;
+      }
+
+      .features-kicker {
+        margin-bottom: 0.5rem;
+        font-size: 0.62rem;
+      }
+
+      .features-heading h2 {
+        font-size: clamp(1.05rem, 1.42vw, 1.38rem);
+        letter-spacing: -0.035em;
+      }
+
+      .features-heading p:last-child {
+        display: none;
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+      }
+
+      .feature-card {
+        min-height: 8.55rem;
+        padding: 1.1rem;
+        border-radius: 0.9rem;
+        background: rgb(255 255 255 / 43%);
+      }
+
+      .feature-icon {
+        width: 2.15rem;
+        height: 2.15rem;
+        border-radius: 0.65rem;
+      }
+
+      .feature-icon svg {
+        width: 1.1rem;
+        height: 1.1rem;
+      }
+
+      .feature-card h3 {
+        margin-top: 0.78rem;
+        font-size: clamp(0.78rem, 1vw, 0.98rem);
+      }
+
+      .feature-card p {
+        margin-top: 0.35rem;
+        font-size: clamp(0.62rem, 0.75vw, 0.74rem);
+        line-height: 1.65;
+      }
+
+      .feature-arrow {
+        padding-top: 0.62rem;
+        font-size: 0.66rem;
+      }
+
+      @media (max-width: 680px) {
+        .left-panel {
+          top: auto;
+          bottom: 0.85rem;
+          left: 1rem;
+          width: min(20rem, calc(100% - 2rem));
+          transform: none;
+        }
+
+        .project-intro {
+          bottom: auto;
+          width: auto;
+        }
+
+        .project-kicker {
+          margin-bottom: 0.3rem;
+        }
+
+        .project-title {
+          font-size: 1.45rem;
+        }
+
+        .project-tagline {
+          margin-top: 0.35rem;
+          font-size: 0.65rem;
+        }
+
+        .try-button {
+          margin-top: 0.65rem;
+          padding: 0.42rem 0.62rem;
+          border-radius: 0.5rem;
+          font-size: 0.58rem;
+        }
+
+        .core-features {
+          margin-top: 0.75rem;
+        }
+
+        .features-heading {
+          margin-bottom: 0.5rem;
+        }
+
+        .features-kicker {
+          display: none;
+        }
+
+        .features-heading h2 {
+          font-size: 0.75rem;
+        }
+
+        .feature-card {
+          min-height: 3.95rem;
+          padding: 0.45rem 0.55rem;
+        }
+
+        .feature-icon {
+          width: 1.3rem;
+          height: 1.3rem;
+          border-radius: 0.38rem;
+        }
+
+        .feature-icon svg {
+          width: 0.76rem;
+          height: 0.76rem;
+        }
+
+        .feature-card h3 {
+          margin-top: 0.32rem;
+          font-size: 0.62rem;
+        }
+
+        .feature-card p,
+        .feature-arrow {
+          display: none;
+        }
+      }
+
+      @media (max-width: 430px) {
+        .features-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+    </style>
+      <script defer src="https://unpkg.com/lucide@1.21.0/dist/umd/lucide.min.js"></script>
+    <script defer src="../lucide-unify.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <main class="visual-stage" aria-label="鼠标控制壁虎头部转向">
+      <video
+        id="geckoVideo"
+        muted
+        playsinline
+        preload="auto"
+        aria-label="壁虎头部转向主视觉"
+      >
+        <source src="kjs.mp4" type="video/mp4" />
+        您的浏览器不支持 HTML5 视频。
+      </video>
+      <div class="left-panel">
+        <aside class="project-intro" aria-label="栈知映项目介绍">
+        <p class="project-kicker">AI LEARNING STUDIO</p>
+        <h1 class="project-title">栈知映</h1>
+        <p class="project-tagline">以 AI 光影，筑程序学习之路</p>
+        <p class="project-copy">
+          从知识搜索出发，生成可观看的 AI 视频课堂；再以测评、学习诊断、职业技能树与学习论坛，让每一次探索沉淀为清晰的成长路径。
+        </p>
+        <p class="project-modules">搜索 · 生成 · 测评 · 技能树 · 社区</p>
+        <a class="try-button" href="../search.html">立即试用 <span aria-hidden="true">→</span></a>
+        </aside>
+
+        <section class="core-features" aria-labelledby="coreFeaturesTitle">
+        <header class="features-heading">
+          <p class="features-kicker">CORE FEATURES</p>
+          <h2 id="coreFeaturesTitle">四大核心功能</h2>
+          <p>围绕主站已有的学习工具，构建探索、规划、巩固与交流的完整体验。</p>
+        </header>
+
+        <div class="features-grid">
+          <a class="feature-card" href="../skill/index.html">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8.1 7.5 2.4 7.1M15.9 7.5l-2.4 7.1"/></svg></span>
+            <h3>职业加点图</h3>
+            <p>点亮技能，查看与目标职业的实时匹配，规划下一步学习方向。</p>
+            <span class="feature-arrow">01 →</span>
+          </a>
+          <a class="feature-card" href="../forum/index.html">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11.5a7.4 7.4 0 0 1-8 7.4 8.7 8.7 0 0 1-3.1-.6L4 20l1.5-4.1A7.2 7.2 0 0 1 4 11.5 7.4 7.4 0 0 1 12 4a7.4 7.4 0 0 1 8 7.5Z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg></span>
+            <h3>学习论坛</h3>
+            <p>围绕真实问题发帖讨论、每日打卡，并记录自己的学习进度。</p>
+            <span class="feature-arrow">02 →</span>
+          </a>
+          <a class="feature-card" href="../skilltree.html">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4v16M12 7H6v5M12 7h6v5M6 12v5M18 12v5"/><rect x="3.5" y="17" width="5" height="3.5" rx="1"/><rect x="15.5" y="17" width="5" height="3.5" rx="1"/><rect x="9.5" y="3" width="5" height="3.5" rx="1"/></svg></span>
+            <h3>技能树</h3>
+            <p>从前端、后端到算法与 AI Agent，整理知识结构与学习脉络。</p>
+            <span class="feature-arrow">03 →</span>
+          </a>
+          <a class="feature-card" href="../search.html">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.5h9l3 3V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/><path d="M14.5 3.5V7H18M8.5 11h7M8.5 15h5"/></svg></span>
+            <h3>错题本</h3>
+            <p>自动收录错题，完成错误归因与复习巩固，把薄弱点变成进步。</p>
+            <span class="feature-arrow">04 →</span>
+          </a>
+        </div>
+        </section>
+      </div>
+      </main>
+    </div>
+
+    <script>
+      const video = document.querySelector('#geckoVideo');
+
+      let previousX = null;
+      let targetTime = 0;
+      let isSeeking = false;
+      const SEEK_EPSILON = 0.002;
+
+      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+      function seekToLatestTarget() {
+        if (!Number.isFinite(video.duration) || isSeeking) return;
+
+        const nextTime = clamp(targetTime, 0, video.duration);
+        if (Math.abs(video.currentTime - nextTime) <= SEEK_EPSILON) return;
+
+        isSeeking = true;
+        video.currentTime = nextTime;
+      }
+
+      document.addEventListener('mousemove', (event) => {
+        const currentX = event.clientX;
+
+        if (previousX === null) {
+          previousX = currentX;
+          return;
+        }
+
+        const delta = currentX - previousX;
+        previousX = currentX;
+
+        if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+
+        const timeOffset = (delta / window.innerWidth) * 0.8 * video.duration;
+        // 首帧朝右、尾帧朝左：向左移动（delta 为负）会让时间轴前进。
+        targetTime = clamp(targetTime - timeOffset, 0, video.duration);
+
+        // 未在 seek 时立即执行；seek 期间只保留最新的 targetTime。
+        seekToLatestTarget();
+      });
+
+      video.addEventListener('loadedmetadata', () => {
+        // 显式停在首帧；视频始终由时间轴定位。
+        targetTime = 0;
+        video.currentTime = 0;
+      });
+
+      video.addEventListener('seeked', () => {
+        isSeeking = false;
+
+        // 如果 seek 期间鼠标继续移动，则仅再跳转到最新目标位置。
+        if (Math.abs(video.currentTime - targetTime) > SEEK_EPSILON) {
+          seekToLatestTarget();
+        }
+      });
+    </script>
+  </body>
+</html>
