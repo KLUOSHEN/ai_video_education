@@ -6,6 +6,10 @@ storage/video/*
 storage/poster/*
 **/desktop.ini
 
+# ── 外部下载的参考项目（独立 git 仓库，不入库） ──
+skills/
+MapFlow/
+
 # ── GitHub 仓库初始化模板（远程提供） ──
 .vscode/
 .alcache/
