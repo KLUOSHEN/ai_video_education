@@ -13,7 +13,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
 
 // DeepSeek API 配置(可用环境变量覆盖)
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-1f66972771c14d0f82a9a7507f62e190';
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
 const DEEPSEEK_BASE = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
 const DEEPSEEK_ENDPOINT = DEEPSEEK_BASE + '/chat/completions';
