@@ -134,23 +134,43 @@
             transition: 0.2s;
         }
         .topbar-nav button:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+        .topbar-nav button.active { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 2px rgba(79,107,240,.25); }
 
         /* ── 主布局 ── */
         .main-layout {
             display: flex;
             gap: 0;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px 24px;
+            max-width: none;
+            margin: 0;
+            padding: 16px 20px 16px 0;
         }
+        /* 整页不滚；左右两栏各自内部滚动 */
+        body { overflow: hidden; }
+        #mainLayout { height: calc(100vh - 64px); overflow: hidden; }
+        #sidebarCol { height: 100%; overflow-y: auto; }
+        #playerPanel { max-width: 1200px; margin: 0 auto; width: 100%; }
+        /* 隐藏左右滚动条（保留滚动） */
+        #sidebarCol, .player-col { scrollbar-width: none; }
+        #sidebarCol::-webkit-scrollbar, .player-col::-webkit-scrollbar { width: 0; height: 0; display: none; }
         .player-col {
             flex: 1;
             min-width: 0;
         }
         .sidebar-col {
-            width: 340px;
+            order: -1;
+            width: 220px;
             flex-shrink: 0;
-            padding-left: 24px;
+            padding-left: 0;
+            padding-right: 16px;
+        }
+        .player-col {
+            flex: 1;
+            min-width: 0;
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
         }
 
         /* ── 视频播放器区域 ── */
@@ -173,122 +193,18 @@
             background: radial-gradient(800px 400px at 50% 0%, rgba(79,107,240,.30), transparent 70%), linear-gradient(160deg, #0B1220 0%, #12203C 55%, #0B1220 100%);
             position: relative;
         }
-        .player-poster-inner {
-            text-align: center;
-            z-index: 1;
+        /* PPT 展示页右下角全屏按钮 */
+        .deck-fullscreen-btn {
+            position: absolute; right: 16px; bottom: 16px; z-index: 900;
+            width: 44px; height: 44px; border: none; border-radius: 12px; cursor: pointer;
+            background: rgba(15,23,42,.55); color: #fff; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            transition: background .2s, transform .2s;
         }
-        .player-poster-inner i {
-            font-size: 80px;
-            color: rgba(230,237,247,0.25);
-            transition: 0.3s;
-        }
-        .player-container:hover .player-poster-inner i { color: rgba(230,237,247,0.85); transform: scale(1.1); }
-        .player-poster-inner p {
-            margin-top: 16px;
-            font-size: 15px;
-            color: var(--ink-dim);
-            letter-spacing: 0.5px;
-        }
+        .deck-fullscreen-btn:hover { background: rgba(79,107,240,.85); transform: scale(1.05); }
 
-        /* 播放覆盖层 */
-        .player-overlay {
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            padding: 60px 20px 16px;
-            background: linear-gradient(transparent, rgba(0,0,0,0.85));
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .player-progress {
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-            cursor: pointer;
-            position: relative;
-            touch-action: none;          /* 触摸拖动 */
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        /* 用伪元素扩大点击/拖拽热区，不改变进度条自身尺寸 */
-        .player-progress::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            bottom: -10px;
-            left: 0;
-            right: 0;
-        }
-        .player-progress.dragging { cursor: grabbing; }
-        .player-progress.dragging .player-progress-fill { transition: none; }
-        .player-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--cyan));
-            border-radius: 2px;
-            width: 0%;
-            transition: width 0.3s;
-            position: relative;
-        }
-        .player-progress-fill::after {
-            content: '';
-            position: absolute;
-            right: -6px;
-            top: -4px;
-            width: 14px;
-            height: 14px;
-            background: var(--primary);
-            border-radius: 50%;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .player-container:hover .player-progress-fill::after { opacity: 1; }
-        .player-controls {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .player-controls-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .player-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-        .player-btn:hover { background: rgba(255,255,255,0.1); }
-        .player-btn.play-btn {
-            width: 44px;
-            height: 44px;
-            font-size: 22px;
-            background: rgba(255,255,255,0.15);
-        }
-        .player-time {
-            font-size: 13px;
-            color: rgba(255,255,255,0.75);
-            font-variant-numeric: tabular-nums;
-        }
-        .player-controls-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .player-volume {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        /* 播放器底部进度条/控制条（.player-overlay 等）已删除，相关 CSS 一并移除 */
 
         /* ── 视频信息 ── */
         .video-info-section {
@@ -635,8 +551,6 @@
         /* ── 参赛增强：播放器光晕 ── */
         .player-container { transition: box-shadow .3s, transform .3s; }
         .player-container:hover { box-shadow: 0 6px 44px rgba(79,107,240,.35); transform: translateY(-2px); }
-        .player-btn.play-btn { transition: box-shadow .25s, transform .25s, background .25s; }
-        .player-btn.play-btn:hover { box-shadow: 0 0 26px rgba(79,107,240,.5); transform: scale(1.06); }
 
         /* ── 参赛增强：卡片 hover 上浮 ── */
         .scene-item { position: relative; }
@@ -1127,9 +1041,306 @@
         .diag-trend { display: flex; align-items: flex-end; gap: 10px; padding: 12px 4px 0; overflow-x: auto; }
         .diag-trend-day { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
         .diag-trend-bar { width: 22px; background: linear-gradient(180deg, var(--primary), var(--primary-light)); border-radius: 4px 4px 0 0; min-height: 4px; }
+
+        /* ===========================================
+           FRONTEND-SLIDES 固定 16:9 演示舞台（作用域：仅播放器内）
+           参照 _frontend-slides-tmp/viewport-base.css，整份引入并作用域化
+           =========================================== */
+        #playerPoster .deck-viewport {
+            position: absolute; inset: 0; overflow: hidden;
+            background: var(--dk-bg-deep, #0b1220);
+        }
+        #playerPoster .deck-stage {
+            position: absolute; left: 0; top: 0;
+            width: 1920px; height: 1080px;
+            transform-origin: 0 0;
+            overflow: hidden;
+            background: var(--dk-bg, #fff);
+            will-change: transform;
+        }
+        #playerPoster .slide {
+            position: absolute; inset: 0;
+            width: 1920px; height: 1080px;
+            overflow: hidden;
+            display: block;
+            visibility: hidden; opacity: 0; pointer-events: none;
+            background: var(--dk-bg, #fff);
+        }
+        #playerPoster .slide.active,
+        #playerPoster .slide.visible {
+            visibility: visible; opacity: 1; pointer-events: auto; z-index: 1;
+        }
+        #playerPoster img, #playerPoster video, #playerPoster canvas, #playerPoster svg {
+            max-width: 100%; max-height: 100%;
+        }
+        /* ===========================================
+           Chart animations (lieflat-charts)
+           当 slide 进入 active 时触发
+           =========================================== */
+        @keyframes chartGrowBar {
+            from { transform: scaleY(0); }
+            to { transform: scaleY(1); }
+        }
+        @keyframes chartDrawLine {
+            from { stroke-dashoffset: var(--line-len, 800); }
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes chartFadeInUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes chartScaleIn {
+            from { opacity: 0; transform: scale(0); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes chartFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes chartDrawArc {
+            from { stroke-dashoffset: var(--arc-len, 280); }
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes chartSwing {
+            from { transform: rotate(var(--swing-from, -90deg)); }
+            to { transform: rotate(0deg); }
+        }
+        @keyframes chartSlideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        /* 图表动画触发：slide 进入 active 时播放 */
+        .slide.active .ca-bar { animation: chartGrowBar 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; transform-origin: var(--bar-origin, bottom); }
+        .slide.active .ca-line { animation: chartDrawLine 0.7s ease-out both; }
+        .slide.active .ca-area { animation: chartFadeInUp 0.5s ease-out both; }
+        .slide.active .ca-pie { animation: chartScaleIn 0.4s ease-out both; }
+        .slide.active .ca-point { animation: chartScaleIn 0.35s ease-out both; }
+        .slide.active .ca-fade { animation: chartFadeIn 0.4s ease-out both; }
+        .slide.active .ca-arc { animation: chartDrawArc 0.7s ease-out both; }
+        .slide.active .ca-needle { animation: chartSwing 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        .slide.active .ca-text { animation: chartFadeIn 0.3s ease-out both; }
+        .slide.active .ca-slide { animation: chartSlideIn 0.4s ease-out both; }
+        .slide.active .ca-grow { animation: chartFadeInUp 0.5s ease-out both; }
+        /* 舞台外控件（页码提示） */
+        .deck-controls {
+            position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+            z-index: 1000; display: none;
+        }
+        .deck-page-flash {
+            position: fixed; left: 50%; bottom: 88px; transform: translateX(-50%);
+            z-index: 1001; background: rgba(10,15,28,.9); color: #fff;
+            padding: 10px 22px; border-radius: 30px; font-size: 15px; letter-spacing: 2px;
+            opacity: 0; transition: opacity .32s; pointer-events: none;
+            font-family: var(--dk-font-display), 'Segoe UI', sans-serif;
+        }
+        .deck-page-flash.show { opacity: 1; }
+        /* AI 修改本页工具条（仅编辑模式显示，固定在舞台下方，不遮挡正文） */
+        .ai-edit-bar {
+            position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 10002;
+            display: none; align-items: center; gap: 8px;
+            background: #0d1b33; border: 1px solid rgba(255,255,255,.14); border-radius: 14px;
+            padding: 8px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+        }
+        .ai-edit-bar.show { display: flex; }
+        .ai-edit-bar .ai-page-tag { color: #93b4e8; font-size: 12px; white-space: nowrap; }
+        .ai-edit-bar input {
+            width: 300px; border: 1px solid rgba(255,255,255,.18); border-radius: 9px;
+            background: #12233f; color: #fff; font-size: 13px; padding: 7px 10px; outline: none;
+        }
+        .ai-edit-bar input:focus { border-color: #4F6BF0; }
+        .ai-edit-bar button {
+            border: none; border-radius: 9px; padding: 7px 12px; font-size: 13px; cursor: pointer;
+            background: #4F6BF0; color: #fff; white-space: nowrap;
+        }
+        .ai-edit-bar button.ghost { background: transparent; border: 1px solid rgba(255,255,255,.22); color: #cfd9ee; }
+        .ai-edit-bar button:disabled { opacity: .5; cursor: not-allowed; }
+        .ai-edit-bar .ai-status { color: #ffd666; font-size: 12px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media print {
+            #playerPoster .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+            #playerPoster .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: .2s !important; }
+        }
+
+        /* ===========================================
+           演示主题变量（挂在 deck 根容器，不污染全局 :root）
+           =========================================== */
+        #playerPoster .deck-viewport {
+            --dk-bg-deep:#0b1220; --dk-bg:#0f1626; --dk-text:#e8edf5; --dk-text-sub:#8ea0b8;
+            --dk-accent:#0891b2; --dk-accent-soft:#062a3a; --dk-card:#12203c; --dk-card-border:#1c2f4d;
+            --dk-subtitle:#94a3b8;
+            --dk-font-display:'Space Grotesk','Manrope','Segoe UI',sans-serif;
+            --dk-font-body:'Manrope','Segoe UI',sans-serif;
+            --dk-title-size:96px; --dk-body-size:28px; --dk-pad:72px;
+            --dk-ease:cubic-bezier(.16,1,.3,1);
+        }
+        #playerPoster .dk-theme-fresh  { --dk-bg-deep:#eef3fb; --dk-bg:#ffffff; --dk-text:#1e293b; --dk-text-sub:#5b6b84; --dk-accent:#1e40af; --dk-accent-soft:#dbeafe; --dk-card:#ffffff; --dk-card-border:#dbe3ef; --dk-subtitle:#5b6b84; }
+        #playerPoster .dk-theme-minimal { --dk-bg-deep:#f7f9fd; --dk-bg:#ffffff; --dk-text:#0f172a; --dk-text-sub:#64748b; --dk-accent:#2563eb; --dk-accent-soft:#eff6ff; --dk-card:#ffffff; --dk-card-border:#e2e8f0; --dk-subtitle:#64748b; }
+        #playerPoster .dk-theme-tech   { --dk-bg-deep:#0b1220; --dk-bg:#0f1626; --dk-text:#e8edf5; --dk-text-sub:#8ea0b8; --dk-accent:#0891b2; --dk-accent-soft:#062a3a; --dk-card:#12203c; --dk-card-border:#1c2f4d; --dk-subtitle:#94a3b8; }
+        #playerPoster .dk-theme-biz    { --dk-bg-deep:#0a1220; --dk-bg:#0f1a2e; --dk-text:#eef2f9; --dk-text-sub:#8fa2bf; --dk-accent:#1d4ed8; --dk-accent-soft:#0b1b3a; --dk-card:#13223c; --dk-card-border:#1e3356; --dk-subtitle:#94a3b8; }
+        #playerPoster .dk-theme-color  { --dk-bg-deep:#fdf3f6; --dk-bg:#ffffff; --dk-text:#1e293b; --dk-text-sub:#7a6a70; --dk-accent:#e11d48; --dk-accent-soft:#ffe1e8; --dk-card:#ffffff; --dk-card-border:#f3d3da; --dk-subtitle:#7a6a70; }
+        /* —— frontend-slides 预置风格主题（含字体）——
+           studio(电子演播室) editorial(复古编辑) split(分栏粉彩)
+           geometry(粉彩几何) notebook(笔记本标签) voltage(创意电压) */
+        #playerPoster .dk-theme-studio     { --dk-bg-deep:#eef2ff; --dk-bg:#ffffff; --dk-text:#0a0a0a; --dk-text-sub:#525a72; --dk-accent:#4361ee; --dk-accent-soft:#e9edff; --dk-card:#ffffff; --dk-card-border:#d8def5; --dk-subtitle:#525a72; --dk-font-display:'Manrope',sans-serif; --dk-font-body:'Manrope',sans-serif; }
+        #playerPoster .dk-theme-editorial  { --dk-bg-deep:#f5f3ee; --dk-bg:#fbfaf6; --dk-text:#1a1a1a; --dk-text-sub:#6b6158; --dk-accent:#a45a3a; --dk-accent-soft:#e8d4c0; --dk-card:#fdfcf8; --dk-card-border:#e6dccb; --dk-subtitle:#6b6158; --dk-font-display:'Fraunces','Georgia',serif; --dk-font-body:'Work Sans',sans-serif; }
+        #playerPoster .dk-theme-split      { --dk-bg-deep:#e4dff0; --dk-bg:#f7efeb; --dk-text:#221f2a; --dk-text-sub:#6a5f70; --dk-accent:#7b5ea7; --dk-accent-soft:#e6ddf3; --dk-card:#fdfbf9; --dk-card-border:#e3d6ea; --dk-subtitle:#6a5f70; --dk-font-display:'Outfit',sans-serif; --dk-font-body:'Outfit',sans-serif; }
+        #playerPoster .dk-theme-geometry   { --dk-bg-deep:#c8d9e6; --dk-bg:#eaf2f8; --dk-text:#1f2733; --dk-text-sub:#5c6b7a; --dk-accent:#7c6aad; --dk-accent-soft:#e2dcf2; --dk-card:#faf9f7; --dk-card-border:#dce7f2; --dk-subtitle:#5c6b7a; --dk-font-display:'Plus Jakarta Sans',sans-serif; --dk-font-body:'Plus Jakarta Sans',sans-serif; }
+        #playerPoster .dk-theme-notebook   { --dk-bg-deep:#2d2d2d; --dk-bg:#f8f6f1; --dk-text:#1a1a1a; --dk-text-sub:#6a6a60; --dk-accent:#4a8a6f; --dk-accent-soft:#98d4bb; --dk-card:#fefdf9; --dk-card-border:#e3e0d4; --dk-subtitle:#6a6a60; --dk-font-display:'Bodoni Moda','Georgia',serif; --dk-font-body:'DM Sans',sans-serif; }
+        #playerPoster .dk-theme-voltage    { --dk-bg-deep:#0066ff; --dk-bg:#f0f6ff; --dk-text:#101728; --dk-text-sub:#4a5a78; --dk-accent:#0066ff; --dk-accent-soft:#e3f0ff; --dk-card:#ffffff; --dk-card-border:#c9ddff; --dk-subtitle:#4a5a78; --dk-font-display:'Syne',sans-serif; --dk-font-body:'Manrope',sans-serif; }
+        /* ── 布局体系(完整引擎,来自 bold-template-pack) ── */
+        #playerPoster .dk-area{ flex:1; min-height:0; align-content:start; margin-top:26px; }
+        #playerPoster .dk-panel{ padding:18px 20px; }
+        #playerPoster .dk-pan-txt{ font-size:35px; line-height:1.55; }
+        #playerPoster .dk-pan-label{ font-weight:600; margin-bottom:12px; font-size:26px; letter-spacing:.04em; }
+        /* Blue Professional：奶油底 + 电蓝描边圆角卡片(consulting) */
+        #playerPoster .dk-layout-blue .dk-panel{ background:transparent; border:none; }
+        #playerPoster .dk-layout-blue .dk-pan-label{ color:var(--dk-accent,#4361ee); }
+        #playerPoster .dk-layout-blue .dk-pan-txt{ margin-top:14px; }
+        /* Raw Grid：3px 黑边框即版式、硬阴影、方角、黑底白字标签 */
+        #playerPoster .dk-layout-rawgrid .dk-panel{ background:var(--dk-card,#fff); border:3px solid #0a0a0a; border-radius:0; box-shadow:6px 6px 0 #0a0a0a; padding:20px 22px; }
+        #playerPoster .dk-layout-rawgrid .dk-pan-label{ display:inline-block; background:#0a0a0a; color:#fff; font-weight:800; letter-spacing:.08em; padding:4px 12px; }
+        #playerPoster .dk-layout-rawgrid .dk-pan-txt{ margin-top:14px; }
+        #playerPoster .dk-layout-rawgrid .dk-bottom{ border-top:3px solid #0a0a0a; }
+        /* Neo-Grid Bold：纸/墨/柠檬色块面板、大写标题、高密度色块 */
+        #playerPoster .dk-layout-neogrid .dk-title,
+        #playerPoster .dk-layout-neogrid .dk-subtitle{ text-transform:uppercase; letter-spacing:-.02em; }
+        #playerPoster .dk-layout-neogrid .dk-panel{ border-radius:0; padding:20px 22px; background:#F5F4EF; color:#0a0a0a; }
+        #playerPoster .dk-layout-neogrid .dk-pan-pts{ background:#E6FF3D; color:#0a0a0a; }
+        #playerPoster .dk-layout-neogrid .dk-pan-txt{ background:#F5F4EF; color:#0a0a0a; }
+        #playerPoster .dk-layout-neogrid .dk-pan-vis{ background:#ECECE8; color:#0a0a0a; }
+        #playerPoster .dk-layout-neogrid .dk-pan-label{ display:inline-block; background:#0a0a0a; color:#F5F4EF; padding:6px 12px; font-weight:700; }
+
+        /* ===========================================
+           剧场式排版类 .dk-*（每张 slide 内部）
+           =========================================== */
+        .dk-pad-area { position: absolute; left: 40px; top: 40px; right: 40px; bottom: 40px; display: flex; flex-direction: column; }
+        .dk-kicker { font-size: 20px; letter-spacing: .2em; text-transform: uppercase; color: var(--dk-accent); font-weight: 700; }
+        .dk-title { font-family: var(--dk-font-display); font-size: var(--dk-title-size); font-weight: 800; line-height: 1.04; color: var(--dk-text); margin: 10px 0 6px; }
+        .dk-subtitle { font-size: 30px; color: var(--dk-subtitle); font-family: var(--dk-font-body); line-height: 1.5; }
+        .dk-pageno { position: absolute; right: 52px; bottom: -40px; font-family: var(--dk-font-display); font-size: 300px; font-weight: 800; line-height: 1; color: var(--dk-accent); opacity: .09; pointer-events: none; }
+        .dk-region { margin-top: 18px; font-size: 17px; color: var(--dk-accent); font-weight: 700; border-left: 4px solid var(--dk-accent); padding-left: 14px; }
+        .dk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; margin-top: 26px; flex: 1; min-height: 0; }
+        .dk-col { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; }
+        .dk-card { border-radius: 14px; padding: 20px; background: var(--dk-card); border: 1px solid var(--dk-card-border); }
+        .dk-chart { margin-top: 6px; border-radius: 14px; overflow: hidden; background: var(--dk-card); border: 1px solid var(--dk-card-border); padding: 12px; }
+        .dk-art { max-height: 250px; max-width: 100%; border-radius: 14px; object-fit: contain; margin: 0 auto; box-shadow: 0 8px 26px rgba(0,0,0,.22); }
+        .dk-bottom { margin-top: auto; padding: 16px 24px; background: var(--dk-accent); color: #fff; font-weight: 600; font-size: 22px; text-align: center; border-radius: 10px; }
+        .dk-reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s var(--dk-ease), transform .6s var(--dk-ease); }
+        #playerPoster .slide.visible .dk-reveal { opacity: 1; transform: none; }
+        #playerPoster .slide.visible .dk-reveal:nth-child(1) { transition-delay: .1s; }
+        #playerPoster .slide.visible .dk-reveal:nth-child(2) { transition-delay: .2s; }
+        #playerPoster .slide.visible .dk-reveal:nth-child(3) { transition-delay: .3s; }
+        #playerPoster .slide.visible .dk-reveal:nth-child(4) { transition-delay: .4s; }
+        /* 让现有色值信息卡在深色舞台上保持可读（亮底） */
+        #playerPoster .dk-col .vcard,
+        #playerPoster .dk-col table,
+        #playerPoster .dk-col .chart-box,
+        #playerPoster .dk-col .math,
+        #playerPoster .dk-col > div { color: var(--dk-text); }
+        /* 放大演示正文与图表字号，铺满画面 */
+        #playerPoster .dk-col { font-size: 35px; line-height: 1.5; color: var(--dk-text); }
+        #playerPoster .dk-col p { font-size: 35px !important; line-height: 1.55; }
+        #playerPoster .dk-col .vcard li { font-size: 40px !important; line-height: 1.55; }
+        #playerPoster .dk-col table th,
+        #playerPoster .dk-col table td { font-size: 33px !important; padding: 8px 12px; }
+        #playerPoster .dk-col .chart-box { padding: 14px; }
+        #playerPoster .dk-card { min-height: 120px; }
+        /* 放大「核心要点」区文字（renderContentBlock 生成的列表/纯文本/代码）*/
+        #playerPoster .dk-col .dk-card ul { font-size: 16px !important; line-height: 1.5; padding-left: 22px; }
+        #playerPoster .dk-col .dk-card ul li { font-size: 16px !important; line-height: 1.5; }
+        #playerPoster .dk-col .dk-card > div { font-size: 22px !important; line-height: 1.5; }
+        #playerPoster .dk-col .dk-card pre { font-size: 16px !important; line-height: 1.5; }
+        /* ── 随堂测验（演示舞台最后一页） ── */
+        #playerPoster .quiz-slide{position:relative;width:1920px;height:1080px;overflow:hidden;display:flex;flex-direction:column;background:#fff;font-family:'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
+        /* ── 讲义笔记抽屉（参考 OpenMAIC lecture-notes） ── */
+        .cw-notes-drawer{position:fixed;top:0;right:0;width:360px;height:100%;background:#fff;border-left:1px solid #f3e8ff;box-shadow:-8px 0 28px rgba(88,28,135,.14);z-index:999;display:none;flex-direction:column;font-family:'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
+        .cw-notes-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid #f3e8ff;background:linear-gradient(135deg,#faf5ff,#f3e8ff);flex-shrink:0}
+        .cw-notes-title{font-size:14px;font-weight:800;color:#6b21a8}
+        .cw-notes-close{font-size:22px;line-height:1;color:#a855f7;cursor:pointer;padding:0 6px;user-select:none}
+        .cw-notes-close:hover{color:#7c3aed}
+        .cw-notes-body{flex:1;overflow-y:auto;padding:12px}
+        .cw-notes-page{margin-bottom:12px;padding:10px 12px;border-radius:10px;background:#faf5ff;transition:background .2s,box-shadow .2s}
+        .cw-notes-page.current{background:#f3e8ff;box-shadow:inset 3px 0 0 #a855f7}
+        .cw-notes-page-head{display:flex;gap:8px;align-items:baseline;margin-bottom:6px}
+        .cw-notes-page-num{font-size:10px;font-weight:800;color:#7c3aed;white-space:nowrap}
+        .cw-notes-page-title{font-size:12px;font-weight:700;color:#4c1d95;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .cw-note-sent{display:flex;gap:6px;align-items:flex-start;padding:4px 6px;border-radius:6px;font-size:12px;line-height:1.7;color:#4a5568;cursor:pointer;transition:background .15s}
+        .cw-note-sent:hover{background:#ede9fe}
+        .cw-note-sent.active{background:#7c3aed;color:#fff}
+        .cw-note-ic{flex-shrink:0;font-size:11px;line-height:1.9}
+        .cw-note-tx{flex:1}
+        #playerPoster .quiz-slide .quiz-cover{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 60px}
+        #playerPoster .quiz-slide .quiz-cover-icon{width:52px;height:52px;border-radius:50%;background:conic-gradient(#A78BFA 0 72%,#E9D5FF 72% 100%);-webkit-mask:radial-gradient(circle,transparent 0 15px,#000 16px);mask:radial-gradient(circle,transparent 0 15px,#000 16px);margin-bottom:26px}
+        #playerPoster .quiz-slide .quiz-cover h2{font-size:28px;font-weight:800;color:#1e293b;margin:0 0 10px}
+        #playerPoster .quiz-slide .quiz-cover .qsub{font-size:15px;color:#94a3b8;margin:0 0 22px}
+        #playerPoster .quiz-slide .quiz-cover .qmeta{display:flex;align-items:center;gap:22px;font-size:14px;color:#64748b;margin-bottom:26px}
+        #playerPoster .quiz-slide .quiz-cover .qmeta i{color:#A78BFA;margin-right:5px}
+        #playerPoster .quiz-slide .quiz-cover .qmeta svg{vertical-align:-2px;margin-right:4px}
+        #playerPoster .quiz-start-btn{border:none;cursor:pointer;background:linear-gradient(135deg,#A78BFA,#F472B6);color:#fff;font-size:16px;font-weight:700;padding:14px 38px;border-radius:999px;box-shadow:0 8px 22px rgba(196,120,240,.35);transition:transform .15s,box-shadow .15s;font-family:inherit}
+        #playerPoster .quiz-start-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(196,120,240,.45)}
+        #playerPoster .quiz-start-btn:disabled{opacity:.6;cursor:default;transform:none}
+        #playerPoster .quiz-top{display:flex;align-items:center;justify-content:space-between;padding:18px 36px;background:#fff;border-bottom:1px solid #e2e8f0;font-size:15px;color:#334155}
+        #playerPoster .quiz-top .qt-left{display:flex;align-items:center;gap:10px}
+        #playerPoster .quiz-submit-btn{border:none;cursor:pointer;background:#eef1f6;color:#9aa5b5;font-size:14px;font-weight:600;padding:9px 20px;border-radius:8px;transition:all .2s;font-family:inherit}
+        #playerPoster .quiz-submit-btn.ready{background:linear-gradient(135deg,#A78BFA,#F472B6);color:#fff;box-shadow:0 4px 14px rgba(196,120,240,.35)}
+        #playerPoster .quiz-body{position:relative;flex:1;padding:30px 36px 0;overflow-y:auto}
+        #playerPoster .quiz-body .quiz-wm{position:absolute;right:30px;top:14px;font-size:48px;font-weight:800;color:rgba(139,92,246,.08);pointer-events:none}
+        #playerPoster .quiz-body .qq{background:#fff;border:1px solid #ece5fb;border-radius:14px;box-shadow:0 6px 20px rgba(15,23,42,.06);padding:20px 22px 18px 26px;margin:0 0 22px;position:relative;overflow:hidden}
+        #playerPoster .quiz-body .qq::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#A78BFA,#F472B6);border-radius:4px 0 0 4px}
+        #playerPoster .quiz-body .qq-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+        #playerPoster .quiz-body .qq-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#F3EEFF;color:#7C5CF0;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+        #playerPoster .quiz-body .qq-title{font-size:15px;font-weight:700;color:#1e293b;line-height:1.5}
+        #playerPoster .quiz-body .qq-meta{font-size:12px;color:#94a3b8;margin-top:3px}
+        #playerPoster .quiz-body .qq-opt{display:flex;align-items:center;gap:12px;border:1.5px solid #e6eaf2;border-radius:12px;padding:13px 16px;margin:0 0 10px;cursor:pointer;font-size:14px;color:#1e293b;transition:all .15s;background:#fff}
+        #playerPoster .quiz-body .qq-opt:hover{border-color:#C7BDF2;background:#faf8ff}
+        #playerPoster .quiz-body .qq-opt.sel{border-color:#8B5CF6;background:#F3EEFF;box-shadow:0 2px 10px rgba(124,92,240,.14)}
+        #playerPoster .quiz-body .qq-opt .qq-label{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#f1f5f9;color:#64748b;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+        #playerPoster .quiz-body .qq-opt.sel .qq-label{background:#8B5CF6;color:#fff}
+        #playerPoster .quiz-body .qq-opt.right{border-color:#16A34A;background:#f0fdf4}
+        #playerPoster .quiz-body .qq-opt.right .qq-label{background:#16A34A;color:#fff}
+        #playerPoster .quiz-body .qq-opt.bad{border-color:#DC2626;background:#fef2f2}
+        #playerPoster .quiz-body .qq-opt.bad .qq-label{background:#DC2626;color:#fff}
+        #playerPoster .quiz-body .qq-fb{display:none;margin-top:4px;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.7}
+        #playerPoster .quiz-body .qq-fb.show{display:block}
+        #playerPoster .quiz-body .qq-fb.ok{background:#f0fdf4;color:#166534}
+        #playerPoster .quiz-body .qq-fb.no{background:#fef2f2;color:#991b1b}
+        #playerPoster .quiz-body .qq-fb .qq-exp{display:block;margin-top:4px;color:#475569}
+        #playerPoster .quiz-body .quiz-done{display:none;text-align:center;padding:18px 0 4px}
+        #playerPoster .quiz-body .quiz-done.show{display:block}
+        #playerPoster .quiz-body .quiz-done .qd-score{font-size:30px;font-weight:800;background:linear-gradient(135deg,#8B5CF6,#EC4899);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:6px}
+        #playerPoster .quiz-body .quiz-done .qd-tip{font-size:13px;color:#64748b}
+        #playerPoster .quiz-body .quiz-err{color:#e0555a;font-size:13px;margin-top:14px}
+        /* ══ 真课件 v2：spotlight 聚光 / 元素特效 / 交互场景 / 音色选择 ══ */
+        .cw-spot{position:fixed;z-index:9999;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .35s ease, left .3s cubic-bezier(.4,0,.2,1), top .3s cubic-bezier(.4,0,.2,1), width .3s cubic-bezier(.4,0,.2,1), height .3s cubic-bezier(.4,0,.2,1);box-shadow:0 0 0 9999px rgba(2,6,23,.82), 0 0 0 2px rgba(99,102,241,.95), 0 0 20px 4px rgba(99,102,241,.55)}
+        .cw-spot.on{opacity:1}
+        @keyframes cwPulse{0%,100%{box-shadow:0 0 0 2px rgba(99,102,241,.85)}50%{box-shadow:0 0 0 7px rgba(99,102,241,.25)}}
+        .cw-fx-pulse{animation:cwPulse 1.4s ease-in-out infinite;border-radius:10px}
+        .cw-fx-underline{box-shadow:inset 0 -6px 0 rgba(245,158,11,.85);border-radius:4px;transition:box-shadow .3s}
+        .cw-fx-zoom{transform:scale(1.04);filter:brightness(1.12);transition:transform .5s cubic-bezier(.34,1.56,.64,1), filter .5s;transform-origin:center}
+        .dk-pan-scene{display:flex;flex-direction:column}
+        .cw-scene-host{position:relative;flex:1;min-height:420px;border-radius:10px;overflow:hidden;background:#0b1222}
+        .cw-scene-host canvas{display:block}
+        .cw-scene-ctl{display:flex;flex-wrap:wrap;gap:10px 18px;padding:8px 10px;background:rgba(15,23,42,.9);border-radius:8px;margin-top:8px}
+        .cw-ctl-row{display:flex;align-items:center;gap:6px;font-size:13px;color:#cbd5e1}
+        .cw-ctl-row select{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:2px 6px;font-size:13px}
+        .cw-ctl-row input[type=range]{width:90px;accent-color:#6366f1}
+        .cw-ctl-val{min-width:22px;text-align:right;color:#a5b4fc;font-weight:600}
+        .cw-scene-transport{display:flex;gap:8px;margin-top:8px}
+        .cw-scene-transport button{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:4px 12px;font-size:13px;cursor:pointer}
+        .cw-scene-transport button:hover{background:#334155}
+        .cw-scene-transport select{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:3px 6px;font-size:13px}
+        .cw-voice-box{display:flex;align-items:center;gap:6px;margin-right:10px}
+        .cw-voice-box select{background:rgba(30,41,59,.9);color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer}
+        .cw-voice-tip{font-size:12px;color:#a5b4fc;white-space:nowrap}
+        .cw-caption{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;max-width:80%;text-align:center;font-size:15px;color:#f1f5f9;background:rgba(2,6,23,.72);padding:6px 16px;border-radius:20px;pointer-events:none}
     </style>
     <script defer src="https://unpkg.com/lucide@1.21.0/dist/umd/lucide.min.js"></script>
     <script defer src="lucide-unify.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Work+Sans:wght@400;500;600;700&family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,700&family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
   </head>
 <body>
 
@@ -1144,6 +1355,8 @@
             <button onclick="doTopSearch()"><i class="fas fa-search"></i></button>
         </div>
         <div class="topbar-nav">
+            <button id="deckEditBtn" onclick="window.toggleDeckEdit&&window.toggleDeckEdit()" title="编辑当前课件（或按 E 键）"><i class="fas fa-pen"></i></button>
+            <button onclick="toggleCwNotes()" title="讲义笔记" id="notesToggleBtn" style="display:none;"><i class="fas fa-book"></i></button>
             <button onclick="location.href='search.html'" title="主页"><i class="fas fa-home"></i></button>
         </div>
     </div>
@@ -1174,34 +1387,11 @@
             <div id="playerPanel" style="display:none;">
 
                 <!-- 视频播放器 -->
-                <div class="player-container" id="playerContainer" onclick="togglePlay()">
+                <div class="player-container" id="playerContainer">
                     <div class="player-poster" id="playerPoster">
-                        <div class="player-poster-inner">
-                            <i class="fas fa-play-circle" id="playIcon"></i>
-                            <p>点击播放</p>
-                        </div>
                     </div>
-                    <div class="player-overlay">
-                        <div class="player-progress" onclick="event.stopPropagation()">
-                            <div class="player-progress-fill" id="progressFill"></div>
-                        </div>
-                        <div class="player-controls">
-                            <div class="player-controls-left">
-                                <button class="player-btn" onclick="event.stopPropagation();skipTime(-10)" title="后退 10 秒"><i class="fas fa-rotate-left"></i></button>
-                                <button class="player-btn play-btn" id="playPauseBtn" onclick="event.stopPropagation();togglePlay()"><i class="fas fa-play"></i></button>
-                                <button class="player-btn" onclick="event.stopPropagation();skipTime(10)" title="前进 10 秒"><i class="fas fa-rotate-right"></i></button>
-                                <div class="player-volume" onclick="event.stopPropagation()">
-                                    <button class="player-btn" id="muteBtn" onclick="toggleMute()"><i class="fas fa-volume-high"></i></button>
-                                </div>
-                                <span class="player-time"><span id="currentTime">0:00</span> / <span id="totalTime">2:34</span></span>
-                            </div>
-                            <div class="player-controls-right">
-                                <button class="player-btn" onclick="event.stopPropagation();toggleSubtitle()" title="字幕"><i class="fas fa-closed-captioning"></i></button>
-                                <button class="player-btn" onclick="event.stopPropagation();toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
-                            </div>
-                        </div>
+                    <button class="deck-fullscreen-btn" onclick="toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
                     </div>
-                </div>
 
                 <!-- 字幕 -->
                 <div class="subtitle-bar" id="subtitleBar" style="display:none;">
@@ -1220,29 +1410,8 @@
                     <div class="video-desc" id="videoDesc">
                         本视频详细讲解了一元二次方程求根公式（判别式法）的完整推导过程，从配方法入手，逐步展开，适合初中数学学习者。
                     </div>
-                    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
-                        <button class="quiz-reset" onclick="exportNote('md')" title="将当前讲解导出为 Markdown 笔记文件"><i class="fas fa-file-lines"></i>&nbsp;导出笔记</button>
-                        <button class="quiz-reset" onclick="exportNote('print')" title="打开打印版页面，可打印或另存为 PDF"><i class="fas fa-print"></i>&nbsp;打印 / PDF</button>
-                    </div>
                 </div>
 
-                <!-- 知识测评 -->
-                <div class="quiz-section" id="quizSection">
-                    <div class="sidebar-title">知识测评</div>
-                    <div class="quiz-header-row">
-                        <div class="quiz-score">
-                            <span>得分：</span><span class="quiz-score-val" id="quizScore">—</span>
-                            <span id="quizSummary"></span>
-                        </div>
-                        <div class="quiz-actions">
-                            <button class="quiz-reset" onclick="openMistakes()" title="查看错题本"><i class="fas fa-book-medical"></i>&nbsp;错题本</button>
-                            <button class="quiz-reset" onclick="openDiagnostics()" title="查看学情诊断"><i class="fas fa-chart-line"></i>&nbsp;学情诊断</button>
-                            <button class="quiz-reset" id="aiQuizBtn" onclick="generateAIQuiz()"><i class="fas fa-sparkles"></i>&nbsp;AI 生成题目</button>
-                            <button class="quiz-reset" onclick="resetQuiz()"><i class="fas fa-rotate-right"></i>&nbsp;重新答题</button>
-                        </div>
-                    </div>
-                    <div id="quizContainer"></div>
-                </div>
             </div>
         </div>
 
@@ -1254,6 +1423,20 @@
     </div>
 
     <script>
+        // 播放器底部进度条（.player-overlay）已删除，移除元素统一走空值安全助手，避免 DOM 更新报错
+        function _noopEl() {
+            return {
+                style: {},
+                innerHTML: '', textContent: '', className: '',
+                classList: { add: function () {}, remove: function () {} },
+                addEventListener: function () {}, removeEventListener: function () {},
+                getBoundingClientRect: function () { return { left: 0, top: 0, width: 1, height: 1 }; },
+                setPointerCapture: function () {}, releasePointerCapture: function () {},
+                onclick: null, dataset: {}
+            };
+        }
+        function _elOr(id) { var e = document.getElementById(id); return e || _noopEl(); }
+        function el_by_sel(sel) { var e = document.querySelector(sel); return e || _noopEl(); }
         // ===== 视频数据 =====
         const videoDB = {
             '快速排序算法详解与复杂度分析': {
@@ -1510,7 +1693,8 @@
             document.getElementById('videoTitle').textContent = query;
             document.getElementById('videoDesc').textContent = message;
             document.getElementById('playerPoster').style.backgroundImage = 'linear-gradient(135deg, #152a52, var(--primary))';
-            document.getElementById('quizContainer').innerHTML = '<div style="padding:18px;color:var(--text-muted)">正在生成教学测评，请稍候…</div>';
+            const quizContainerEl = document.getElementById('quizContainer');
+            if (quizContainerEl) quizContainerEl.innerHTML = '<div style="padding:18px;color:var(--text-muted)">正在生成教学测评，请稍候…</div>';
         }
 
         async function pollGeneration(task) {
@@ -1601,7 +1785,7 @@
             document.getElementById('videoScenes').textContent = v.scenes + ' 个场景';
             document.getElementById('videoViews').textContent = v.views + ' 次观看';
             document.getElementById('videoDesc').textContent = v.desc;
-            document.getElementById('totalTime').textContent = v.duration;
+            _elOr('totalTime').textContent = v.duration;
 
             // 更新顶栏搜索
             document.getElementById('topSearch').value = v.title;
@@ -1619,8 +1803,8 @@
 
             // 停止之前的播放
             stopPlayback();
-            document.getElementById('playIcon').className = 'fas fa-play-circle';
-            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+            _elOr('playIcon').className = 'fas fa-play-circle';
+            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
             document.getElementById('subtitleBar').style.display = 'none';
             subtitleVisible = false;
         }
@@ -1641,6 +1825,7 @@
         function renderQuiz() {
             if (!currentQuiz) return;
             const container = document.getElementById('quizContainer');
+            if (!container) return;
             const key = quizKey();
             const state = quizState[key] || { answered: new Set(), score: 0, selections: {}, correctness: {} };
             const answered = state.answered;
@@ -2120,95 +2305,17 @@
             }
         }
 
-        // ===== 导出学习笔记 =====
-        async function exportNote(mode) {
-            const taskId = window._currentTaskId;
-            if (!taskId) { alert('暂无讲解内容可导出，请先搜索生成一个讲解。'); return; }
-            const btn = document.activeElement;
-            const original = btn && btn.tagName === 'BUTTON' ? btn.innerHTML : null;
-            if (btn && btn.tagName === 'BUTTON') { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;生成中…'; }
-            try {
-                const res = await fetch('/api/v1/video/export?task_id=' + encodeURIComponent(taskId));
-                const payload = await res.json();
-                if (!res.ok) throw new Error(payload.error?.message || '导出失败');
-                const { markdown, filename, query } = payload.data;
-                if (mode === 'print') {
-                    openPrintView(markdown, query || '学习笔记');
-                } else {
-                    downloadFile(filename, markdown, 'text/markdown;charset=utf-8');
-                }
-            } catch (e) {
-                console.warn('导出笔记失败：', e);
-                alert('导出笔记失败：' + e.message);
-            } finally {
-                if (btn && btn.tagName === 'BUTTON') { btn.disabled = false; btn.innerHTML = original; }
-            }
-        }
-
-        function downloadFile(name, content, mimeType) {
-            const blob = new Blob([content], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = name;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 600);
-        }
-
-        function openPrintView(markdown, title) {
-            const safeTitle = String(title || '学习笔记').replace(/[<>&"]/g, '');
-            const mdJson = JSON.stringify(markdown);
-            const html = `<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${safeTitle} - 打印版</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-<style>
-body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; max-width: 840px; margin: 0 auto; padding: 40px 28px; color: #1f2937; line-height: 1.75; }
-h1 { color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px; }
-h2 { color: #1e3a8a; margin-top: 28px; }
-blockquote { border-left: 4px solid var(--primary); margin: 8px 0; padding: 6px 14px; background: var(--primary-soft); color: #334155; }
-code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
-pre { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 8px; overflow-x: auto; }
-pre code { background: none; padding: 0; color: inherit; }
-table { border-collapse: collapse; margin: 10px 0; width: 100%; }
-th, td { border: 1px solid #d1d5db; padding: 6px 12px; text-align: left; }
-th { background: var(--primary-soft); color: #1e3a8a; }
-img { max-width: 100%; }
-.toolbar { position: fixed; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10; }
-.toolbar button { background: #1e3a8a; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-.toolbar button:hover { background: #2b4bb0; }
-@media print { .toolbar { display: none; } body { padding: 0; } }
-</style>
-</head>
-<body>
-<div class="toolbar"><button onclick="window.print()"><i class="fas fa-print"></i> 打印 / 保存为 PDF</button></div>
-<div id="content">加载中…</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"><\/script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
-<script src="mdrender.js"><\/script>
-<script>
-    const md = ${mdJson};
-    const content = document.getElementById('content');
-    try {
-        if (window.renderMarkdown) { content.innerHTML = renderMarkdown(md); }
-        else { content.textContent = md; }
-    } catch (e) { content.textContent = md; }
-<\/script>
-</body>
-</html>`;
-            const w = window.open('', '_blank');
-            if (!w) { alert('浏览器拦截了新窗口，请允许弹窗后重试。'); return; }
-            w.document.open();
-            w.document.write(html);
-            w.document.close();
-        }
-
         // ===== 播放控制 =====
         function togglePlay() {
+            // 真课件 v2：暂停/播放委托给 CoursewarePlayer（按钮与点击播放器区域共用）
+            if (window._cwPlayer) {
+                if (window._cwPlayer.playing) {
+                    window._cwPlayer.pause();
+                } else {
+                    window._cwPlayer.play();
+                }
+                return;
+            }
             if (isPlaying) {
                 pauseVideo();
             } else {
@@ -2223,8 +2330,8 @@ img { max-width: 100%; }
                 generatedAudio.muted = isMuted;
                 generatedAudio.play().catch(error => console.warn('音频播放失败：', error));
             }
-            document.getElementById('playIcon').className = 'fas fa-pause-circle';
-            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
+            _elOr('playIcon').className = 'fas fa-pause-circle';
+            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
             if (subtitleVisible) {
                 document.getElementById('subtitleBar').style.display = 'flex';
                 updateSubtitle();
@@ -2243,8 +2350,8 @@ img { max-width: 100%; }
         function pauseVideo() {
             isPlaying = false;
             if (generatedAudio) generatedAudio.pause();
-            document.getElementById('playIcon').className = 'fas fa-play-circle';
-            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+            _elOr('playIcon').className = 'fas fa-play-circle';
+            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
             clearInterval(playInterval);
         }
 
@@ -2257,8 +2364,8 @@ img { max-width: 100%; }
             clearInterval(playInterval);
             currentTime = 0;
             updateProgress();
-            document.getElementById('playIcon').className = 'fas fa-play-circle';
-            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+            _elOr('playIcon').className = 'fas fa-play-circle';
+            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
             document.querySelectorAll('.scene-item').forEach(el => el.classList.remove('active'));
             document.getElementById('subtitleBar').style.display = 'none';
         }
@@ -2284,7 +2391,7 @@ img { max-width: 100%; }
         function toggleMute() {
             isMuted = !isMuted;
             if (generatedAudio) generatedAudio.muted = isMuted;
-            document.getElementById('muteBtn').innerHTML = isMuted
+            _elOr('muteBtn').innerHTML = isMuted
                 ? '<i class="fas fa-volume-xmark"></i>'
                 : '<i class="fas fa-volume-high"></i>';
         }
@@ -2308,13 +2415,26 @@ img { max-width: 100%; }
                 container.requestFullscreen();
             }
         }
+        // 全屏时把聚光框（cw-spot，fixed 层）迁入全屏元素，否则会被全屏 Top Layer 盖住而消失
+        // 全屏切换不触发 window resize（文档视口不变），故迁移后主动重算舞台缩放与聚光位置
+        document.addEventListener('fullscreenchange', function () {
+            const spot = document.getElementById('cwSpot');
+            const fsEl = document.fullscreenElement;
+            if (spot) (fsEl || document.body).appendChild(spot);
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    try { if (window._deck && window._deck._onResize) window._deck._onResize(); } catch (e) {}
+                    try { if (window._cwPlayer && window._cwPlayer._respot) window._cwPlayer._respot(); } catch (e) {}
+                });
+            });
+        });
 
         function updateProgress() {
             const pct = (currentTime / totalDuration) * 100;
-            document.getElementById('progressFill').style.width = pct + '%';
+            _elOr('progressFill').style.width = pct + '%';
             const mins = Math.floor(currentTime / 60);
             const secs = Math.floor(currentTime % 60);
-            document.getElementById('currentTime').textContent = mins + ':' + String(secs).padStart(2, '0');
+            _elOr('currentTime').textContent = mins + ':' + String(secs).padStart(2, '0');
             highlightCurrentScene();
         }
 
@@ -2382,8 +2502,34 @@ img { max-width: 100%; }
                     }
                     const payload = await res.json();
                     const data = payload.data;
+                    // 真课件 v2：format=2，pages 携带 scene + narration（逐句配音）
+                    if (data.format === 2) {
+                        window._isCourseware = true;
+                        window._cwVoice = data.voice || '';
+                        const _notesBtn = document.getElementById('notesToggleBtn');
+                        if (_notesBtn) _notesBtn.style.display = '';
+                        if (data.status === 'queued') descEl.textContent = '任务已提交，正在排队…';
+                        else if (data.status === 'generating_outline') descEl.textContent = 'AI 正在规划真课件大纲… (' + (data.progress || 6) + '%)';
+                        else if (data.status === 'generating_pages') descEl.textContent = '逐页生成中' + (data.pages_total ? '：第 ' + (data.pages_done || 0) + '/' + data.pages_total + ' 页' : '') + ' (' + (data.progress || 15) + '%)';
+                        else if (data.status === 'generating_narration') descEl.textContent = 'AI 正在撰写逐句讲解脚本… (' + (data.progress || 45) + '%)';
+                        else if (data.status === 'generating_tts') descEl.textContent = 'Edge-TTS 正在合成逐句配音' + (data.tts_total ? '：' + (data.tts_done || 0) + '/' + data.tts_total + ' 句' : '') + ' (' + (data.progress || 65) + '%)';
+                        else if (data.status === 'failed') {
+                            descEl.textContent = '生成失败：' + (data.error?.message || '请稍后重试') + '。请返回重新生成。';
+                            return;
+                        }
+                        else descEl.textContent = '准备就绪…';
+                        if (data.pages?.length && data.status === 'slides_ready') {
+                            slides = data.pages;
+                            window._slideStyle = data.style || '教学清新';
+                            break;
+                        }
+                        await new Promise(r => setTimeout(r, 2000));
+                        continue;
+                    }
                     // 显示进度
                     if (data.status === 'queued') descEl.textContent = '任务已提交，正在排队…';
+                    else if (data.status === 'generating_outline') descEl.textContent = 'AI 正在规划课程大纲… (' + (data.progress || 8) + '%)';
+                    else if (data.status === 'generating_pages') descEl.textContent = '逐页生成中' + (data.pages_total ? '：第 ' + (data.pages_done || 0) + '/' + data.pages_total + ' 页' : '') + ' (' + (data.progress || 15) + '%)';
                     else if (data.status === 'generating') descEl.textContent = 'Qwen-Max 正在生成教学讲稿… (' + (data.progress || 20) + '%)';
                     else if (data.status === 'generating_tts') descEl.textContent = 'Qwen CosyVoice 正在合成语音配音… (' + (data.progress || 50) + '%)';
                     else if (data.status === 'failed') {
@@ -2395,6 +2541,8 @@ img { max-width: 100%; }
                         slides = data.slides;
                         audioUrl = data.audio_url;
                         window._slideAudioList = data.slide_audio || null;
+                        window._slideImages = data.images || {};
+                        window._slideStyle = data.style || '教学清新';
                         break;
                     }
                 } catch (e) {
@@ -2426,17 +2574,50 @@ img { max-width: 100%; }
                 tagBox.innerHTML = slides.map(s => `<span style="display:inline-block;padding:3px 10px;background:var(--bg);border:1px solid var(--border);border-radius:12px;font-size:11px;color:var(--text-dim);margin:2px 4px 2px 0;"># ${s.title}</span>`).join('');
             }
 
+            // 构建 frontend-slides 固定 16:9 演示舞台（一次性渲染全部胶片）
+            buildDeck(poster, slides);
+            const deck = window._deck;
+            // 手动翻页（键盘/滚轮/触屏，reason=user）时若正在播放则同步切换语音
+            deck.onChange = function (e) {
+                // 真课件模式：讲解推进由 CoursewarePlayer 接管，此处仅同步侧栏高亮
+                if (window._cwPlayer) {
+                    currentSlideIdx = e.index;
+                    window._currentSlideIdx = e.index;
+                    highlightScene(e.index);
+                    return;
+                }
+                if (e.index === currentSlideIdx) { highlightScene(e.index); return; }
+                currentSlideIdx = e.index;
+                window._currentSlideIdx = e.index;
+                highlightScene(e.index);
+                if (e.reason === 'user' && isSlidePlaying) playPageAudio(e.index);
+            };
+            // 内联编辑：进入编辑态时暂停并锁定音视频，退出后恢复播放
+            initDeckEditor(function (nowEditing) {
+                if (nowEditing) {
+                    window._deckEditing = true;
+                    isSlidePlaying = false;
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    if (animFrameId) cancelAnimationFrame(animFrameId);
+                    const a = currentAudio(); if (a) a.pause();
+                    if (audio) audio.pause();
+                    const pi = poster.querySelector('.player-poster-inner'); if (pi) pi.style.display = 'none';
+                } else {
+                    window._deckEditing = false;
+                    startPlayback();
+                }
+            });
             // 渲染第一张幻灯片
             renderSlideCard(poster, slides[0], 0);
             highlightScene(0);
 
             // ===== 视频播放器模式：逐页音频驱动进度条 + 自动翻页 =====
-            const progressFill = document.getElementById('progressFill');
-            const currentTimeEl = document.getElementById('currentTime');
-            const totalTimeEl = document.getElementById('totalTime');
-            const playIcon = document.getElementById('playIcon');
-            const playPauseBtn = document.getElementById('playPauseBtn');
-            const progressBar = document.querySelector('.player-progress');
+            const progressFill = _elOr('progressFill');
+            const currentTimeEl = _elOr('currentTime');
+            const totalTimeEl = _elOr('totalTime');
+            const playIcon = _elOr('playIcon');
+            const playPauseBtn = _elOr('playPauseBtn');
+            const progressBar = el_by_sel('.player-progress');
 
             // 逐页音频：slideAudio = [{ index, url }]；音频与每页 PPT 文字严格对应
             const slideAudios = Array.isArray(window._slideAudioList) ? window._slideAudioList : [];
@@ -2447,6 +2628,24 @@ img { max-width: 100%; }
             let animFrameId = null;
             let slideMuted = false;
             let noAudioTimer = null;     // 无音频页的展示计时器
+
+            // ===== 真课件 v2：逐句讲解 + spotlight + 交互场景播放器 =====
+            if (window._isCourseware && typeof CoursewarePlayer === 'function') {
+                slides.forEach(p => { p._voice = window._cwVoice; });
+                window._cwPlayer = new CoursewarePlayer({
+                    deck, pages: slides, taskId,
+                    els: { progressFill, currentTime: currentTimeEl, totalTime: totalTimeEl, subtitleText: document.getElementById('subtitleText') },
+                    onStateChanged: function (playing) {
+                        isSlidePlaying = playing;
+                        playPauseBtn.innerHTML = playing ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+                        const pi = poster.querySelector('.player-poster-inner');
+                        if (pi) pi.style.display = playing ? 'none' : 'flex';
+                    },
+                    onSentenceChange: function (pi, sj) {
+                        try { cwNotesSetActive(pi, sj); } catch (e) {}
+                    },
+                });
+            }
 
             // 保留"点击播放"按钮，让用户知道需要点击才能开始
             const posterInner = poster.querySelector('.player-poster-inner');
@@ -2479,14 +2678,19 @@ img { max-width: 100%; }
                 a.load();
             });
 
-            // 播放指定页：加载该页音频，播完自动切下一页
-            function playPage(index) {
-                currentSlideIdx = index;
-                renderSlideCard(poster, slides[currentSlideIdx], currentSlideIdx);
-                highlightScene(currentSlideIdx);
+            // 播放第 index 页语音（独立音频函数，供 playPage 与手动翻页共用）
+            let playingAudio = null;   // 当前正在播放的音频，翻页时先停旧音，避免多个声音叠加
+            function playPageAudio(index) {
                 if (noAudioTimer) { clearTimeout(noAudioTimer); noAudioTimer = null; }
-                const a = currentAudio();
+                // 先停下正在播放的音频，防止连续翻页导致多音叠加
+                if (playingAudio && playingAudio !== (slideAudios[index] ? slideAudios[index].audio : null)) {
+                    try { playingAudio.pause(); } catch (e) {}
+                    playingAudio.currentTime = 0;
+                    playingAudio = null;
+                }
+                const a = slideAudios[index] ? slideAudios[index].audio : null;
                 if (a) {
+                    playingAudio = a;
                     a.muted = slideMuted;
                     a.currentTime = 0;
                     a.onended = null;
@@ -2500,6 +2704,13 @@ img { max-width: 100%; }
                 } else {
                     onPageNoSound();
                 }
+            }
+            // 播放指定页：加载该页音频，播完自动切下一页（演示舞台由 renderSlideCard→deck 导航）
+            function playPage(index) {
+                currentSlideIdx = index;
+                renderSlideCard(poster, slides[currentSlideIdx], currentSlideIdx);
+                highlightScene(currentSlideIdx);
+                playPageAudio(index);
             }
 
             // 无音频页：展示固定时长后自动切页，避免卡住
@@ -2523,7 +2734,9 @@ img { max-width: 100%; }
             }
 
             function startPlayback() {
+                if (window._deckEditing) return;   // 编辑态锁定播放
                 if (isSlidePlaying) return;
+                if (window._cwPlayer) { window._cwPlayer.play(); return; }
                 // 隐藏"点击播放"，显示幻灯片内容
                 const pi = poster.querySelector('.player-poster-inner');
                 if (pi) pi.style.display = 'none';
@@ -2574,6 +2787,7 @@ img { max-width: 100%; }
             function pausePlayback() {
                 isSlidePlaying = false;
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                if (window._cwPlayer) { window._cwPlayer.pause(); return; }
                 if (animFrameId) cancelAnimationFrame(animFrameId);
                 if (noAudioTimer) { clearTimeout(noAudioTimer); noAudioTimer = null; }
                 const a = currentAudio();
@@ -2582,6 +2796,7 @@ img { max-width: 100%; }
             }
 
             function stopPlayback() {
+                if (window._cwPlayer) { window._cwPlayer.stop(); isSlidePlaying = false; playPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; const pip = poster.querySelector('.player-poster-inner'); if (pip) pip.style.display = 'flex'; return; }
                 pausePlayback();
                 const a = currentAudio();
                 if (a) { a.pause(); a.currentTime = 0; a.onended = null; }
@@ -2595,17 +2810,7 @@ img { max-width: 100%; }
                 if (pi) pi.style.display = 'flex';
             }
 
-            // 点击播放器区域 → 播放/暂停
-            document.getElementById('playerContainer').onclick = function(e) {
-                if (e.target.closest('.player-progress') || e.target.closest('.player-controls') || e.target.closest('.player-btn')) return;
-                isSlidePlaying ? pausePlayback() : startPlayback();
-            };
-
-            // 播放/暂停按钮
-            playPauseBtn.onclick = function(e) {
-                e.stopPropagation();
-                isSlidePlaying ? pausePlayback() : startPlayback();
-            };
+            // 点击 PPT 区域不再触发暂停/播放（由点击左侧当前页导航触发，见 _slideJumpTo）
 
             // ===== 进度条跳转（支持点击与拖拽） =====
             // 把总时间轴定位到「页 + 页内时间」：逐页音频模式
@@ -2623,6 +2828,7 @@ img { max-width: 100%; }
 
             function seekTo(pct) {
                 pct = Math.max(0, Math.min(1, pct));
+                if (window._cwPlayer) { window._cwPlayer.seekTo(pct); return; }
                 const target = pct * totalDuration;
                 if (slideAudios.length) {
                     const wasPlaying = isSlidePlaying;
@@ -2742,10 +2948,12 @@ img { max-width: 100%; }
             // 静音
             window._slideToggleMute = function() {
                 slideMuted = !slideMuted;
+                window._cwMuted = slideMuted;
+                if (window._cwPlayer && window._cwPlayer.current) window._cwPlayer.current.muted = slideMuted;
                 const a = currentAudio();
                 if (a) a.muted = slideMuted;
                 if (audio) audio.muted = slideMuted;
-                document.getElementById('muteBtn').innerHTML = slideMuted
+                _elOr('muteBtn').innerHTML = slideMuted
                     ? '<i class="fas fa-volume-xmark"></i>'
                     : '<i class="fas fa-volume-high"></i>';
             };
@@ -2755,9 +2963,14 @@ img { max-width: 100%; }
             window.skipTime = function(sec) { window._slideSkipTime(sec); };
             window.toggleMute = function() { window._slideToggleMute(); };
 
-            // 场景导航跳页：切换到目标页并播放该页语音（逐页音频模式）
+            // 场景导航跳页：点击当前页 → 暂停/继续；点击其它页 → 跳页并播该页语音
             window._slideJumpTo = function(idx) {
                 if (!slides || idx < 0 || idx >= slides.length) return;
+                // 点击当前页对应的导航项：暂停/继续播放（替代原"点击 PPT 暂停"）
+                if (idx === currentSlideIdx) {
+                    isSlidePlaying ? pausePlayback() : startPlayback();
+                    return;
+                }
                 if (slideAudios.length) {
                     // 定位到目标页起点
                     let acc = 0;
@@ -2794,97 +3007,203 @@ img { max-width: 100%; }
             return e.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
+        // 树形图：解析多种格式（每行一条 "根 -> 子 -> 孙" 路径 / 每行一层逗号分隔 / 单行）构建树，
+        // 采用真树布局（叶子铺满横向、父节点居中于子树），节点半径按标签自适应，完整展示节点内容
+        function renderTreeSvg(rawData, accent, accentLight, textMain, W, H, opt) {
+            const escT = (s) => String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const text = String(rawData || '').trim();
+            if (!text) return '';
+            const o = opt || {};
+            const baseR = o.nodeSize || 26;
+            const fontSize = o.fontSize || 15;
+            const padL = o.padL != null ? o.padL : 60;
+            const padR = o.padR != null ? o.padR : 60;
+            const padT = o.padT != null ? o.padT : 26;
+            const padB = o.padB != null ? o.padB : 32;
+
+            // ── 1. 解析为 {label, children} 树 ──
+            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+            let tree = null;
+            const hasArrow = lines.some(l => l.includes('->') || l.includes('→'));
+            const hasSlash = lines.some(l => l.includes('/'));
+            if (hasArrow || hasSlash) {
+                // 路径列表格式：每条 "根 -> 子 -> 孙"（或 根/子/孙），按公共前缀合并成树
+                const root = { label: null, children: [] };
+                const sep = hasArrow ? /->|→/ : '/';
+                lines.forEach(line => {
+                    const parts = line.split(sep).map(s => s.trim()).filter(Boolean);
+                    if (!parts.length) return;
+                    let cur = root;
+                    parts.forEach(p => {
+                        let child = cur.children.find(c => c.label === p);
+                        if (!child) { child = { label: p, children: [] }; cur.children.push(child); }
+                        cur = child;
+                    });
+                });
+                tree = root.children.length === 1 ? root.children[0] : root;
+            } else {
+                // 层级列表格式：每行一层，节点以 , 、 | 分隔
+                const levels = lines.map(l => l.split(/[,，|]/).map(s => s.trim()).filter(Boolean));
+                if (!levels.length || !levels[0].length) return '';
+                tree = { label: levels[0][0], children: [] };
+                let curLevel = [tree];
+                for (let li = 1; li < levels.length; li++) {
+                    const next = [];
+                    const per = levels[li].length / Math.max(1, curLevel.length);
+                    for (let i = 0; i < curLevel.length; i++) {
+                        const start = Math.floor(i * per), end = Math.floor((i + 1) * per);
+                        for (let ci = start; ci < end && ci < levels[li].length; ci++) {
+                            const n = { label: levels[li][ci], children: [] };
+                            curLevel[i].children.push(n);
+                            next.push(n);
+                        }
+                    }
+                    curLevel = next;
+                }
+            }
+            if (!tree) return '';
+
+            // ── 2. 布局：叶子按序占满横向、父节点居中于其子树 ──
+            let leafCount = 0, maxDepth = 0;
+            (function walk(n, d) {
+                maxDepth = Math.max(maxDepth, d);
+                if (!n.children.length) leafCount++;
+                n.children.forEach(c => walk(c, d + 1));
+            })(tree, 0);
+            const leafSpacing = (W - padL - padR) / Math.max(leafCount - 1, 1);
+            const levelGap = (H - padT - padB) / Math.max(maxDepth, 1);
+            let leafIdx = 0;
+            (function assign(n, d) {
+                n.y = padT + d * levelGap;
+                if (!n.children.length) { n.x = padL + leafIdx * leafSpacing; leafIdx++; }
+                else {
+                    n.children.forEach(c => assign(c, d + 1));
+                    const xs = n.children.map(c => c.x);
+                    n.x = (Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2;
+                }
+            })(tree, 0);
+
+            // ── 3. 节点半径按标签自适应，完整展示内容不截断 ──
+            const textW = (s) => { let w = 0; const t = String(s || ''); for (let i = 0; i < t.length; i++) w += t.charCodeAt(i) > 255 ? 1 : 0.55; return w; };
+            const nodeR = (label) => Math.max(baseR, Math.round(textW(label) * fontSize * 0.5 + 12));
+            const edges = [], nodes = [];
+            (function draw(n) {
+                const r = nodeR(n.label);
+                const x = n.x, y = n.y;
+                nodes.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${accentLight}" stroke="${accent}" stroke-width="2.5"/>` +
+                           `<text x="${x}" y="${y + fontSize * 0.35}" text-anchor="middle" fill="${accent}" font-size="${fontSize}" font-weight="700">${escT(n.label)}</text>`);
+                n.children.forEach(c => {
+                    edges.push(`<line x1="${x}" y1="${y + r}" x2="${c.x}" y2="${c.y - nodeR(c.label)}" stroke="#94a3b8" stroke-width="2"/>`);
+                    draw(c);
+                });
+            })(tree);
+
+            return edges.join('') + nodes.join('');
+        }
+
         // 根据 diagram 数据生成 SVG 示意图
         function renderDiagram(dia, accent, accentLight, textMain) {
             if (!dia || dia.type === 'none' || !dia.data) return '';
-            const W = 520, H = 160;
+            // 尝试 lieflat-charts 引擎（渐进式增强，失败则回退到原代码）
+            if (typeof renderLieflatChart === 'function') {
+                try {
+                    const lfResult = renderLieflatChart(dia, accent, accentLight, textMain);
+                    if (lfResult) return lfResult;
+                } catch(e) { /* 回退到原代码 */ }
+            }
+            const W = 600, H = 200;
             const escape = (s) => String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const wrap = (s) => String(s).length > 8 ? String(s).slice(0,7)+'…' : s;
+            const wrap = (s) => String(s).length > 9 ? String(s).slice(0,8)+'…' : s;
+            const colors = [accent,'#22C55E','#F59E0B','#EF4444','#22C3E6','#A78BFA'];
+            let svg = '';
 
-            if (dia.type === 'formula') {
-                return `<div style="margin-top:14px;padding:16px;background:${accentLight};border-radius:10px;text-align:center;border-left:4px solid ${accent};"><div style="font-size:22px;color:${accent};font-weight:700;">${renderMathExpr(dia.data, true)}</div>${dia.caption ? `<div style="font-size:11px;color:${textMain};margin-top:6px;">${escape(dia.caption)}</div>` : ''}</div>`;
+            if (dia.type === 'pie_chart' || dia.type === 'pie') {
+                const pairs = dia.data.split('|').map(function(p){var kv=p.split(':');return {k:kv[0].trim(),v:Number(kv[1])||0};});
+                const total = pairs.reduce(function(s,p){return s+p.v;},0) || 1;
+                const cx = 105, cy = H/2, r = 86;
+                let a0 = -Math.PI/2, segs = '', legend = '';
+                pairs.forEach(function(p, i){
+                    const a1 = a0 + (p.v/total)*Math.PI*2;
+                    const la = (a0+a1)/2, lx = cx + r*0.62*Math.cos(la), ly = cy + r*0.62*Math.sin(la);
+                    const pct = (p.v/total*100).toFixed(0);
+                    segs += '<path d="M'+cx+' '+cy+' L'+(cx+r*Math.cos(a0))+' '+(cy+r*Math.sin(a0))+' A'+r+' '+r+' 0 '+(a1-a0>Math.PI?1:0)+' 1 '+(cx+r*Math.cos(a1))+' '+(cy+r*Math.sin(a1))+' Z" fill="'+colors[i%colors.length]+'"/><text x="'+lx+'" y="'+ly+'" fill="#fff" font-size="15" text-anchor="middle" font-weight="700">'+pct+'%</text>';
+                    const lx0 = W/2 + 24, ly0 = 32 + i*40;
+                    legend += '<rect x="'+lx0+'" y="'+(ly0-13)+'" width="18" height="18" rx="4" fill="'+colors[i%colors.length]+'"/><text x="'+(lx0+28)+'" y="'+ly0+'" fill="'+textMain+'" font-size="16" font-weight="600">'+escape(p.k)+'</text><text x="'+(W-12)+'" y="'+ly0+'" text-anchor="end" fill="'+textMain+'" font-size="15">'+p.v+' · '+pct+'%</text>';
+                    a0 = a1;
+                });
+                svg = segs + legend;
+            } else if (dia.type === 'area_chart' || dia.type === 'area') {
+                const pts = dia.data.split(/[|;]/).map(function(p){var kv=p.split(':'); return Number(kv[1]) || 0;});
+                const maxv = Math.max.apply(null, pts.concat([1]));
+                const padL = 60, padR = 36, padT = 30, padB = 42;
+                const plotW = W - padL - padR, plotH = H - padT - padB, by2 = padT + plotH;
+                const pw2 = plotW/Math.max(pts.length-1,1);
+                let dp = '', fill = '', dots = '';
+                pts.forEach(function(v,i){
+                    const px = padL + i*pw2, py = by2 - (v/maxv)*plotH;
+                    dp += (i?'L':'M')+px+' '+py;
+                    fill += px+','+py+' ';
+                    dots += '<circle cx="'+px+'" cy="'+py+'" r="5" fill="'+accent+'" stroke="#fff" stroke-width="2"/><text x="'+px+'" y="'+(py-10)+'" text-anchor="middle" fill="'+textMain+'" font-size="13" font-weight="700">'+v+'</text>';
+                });
+                fill += ' '+(padL+(pts.length-1)*pw2)+','+by2+' '+padL+','+by2;
+                svg = '<polygon points="'+fill.trim()+'" fill="'+accent+'" opacity="0.15"/><path d="'+dp+'" fill="none" stroke="'+accent+'" stroke-width="3" stroke-linejoin="round"/>'+dots;
+            } else if (dia.type === 'formula') {
+                return `<div style="margin-top:14px;padding:18px;background:${accentLight};border-radius:10px;text-align:center;border-left:4px solid ${accent};"><div style="font-size:24px;color:${accent};font-weight:700;">${renderMathExpr(dia.data, true)}</div>${dia.caption ? `<div style="font-size:13px;color:${textMain};margin-top:8px;">${escape(dia.caption)}</div>` : ''}</div>`;
             }
 
-            let svg = '';
             if (dia.type === 'flow') {
                 const steps = dia.data.split('->').map(s => s.trim()).filter(Boolean);
-                const gap = steps.length > 1 ? (W - 80) / (steps.length - 1) : 0;
-                const startX = 40;
-                const y = H / 2;
+                const y = H/2;
+                const w = Math.min(150, Math.max(110, steps.length ? (W - 120) / steps.length : 150));
+                const gap = steps.length > 1 ? (W - steps.length*w) / (steps.length - 1) : 0;
+                const startX = (W - (steps.length*w + (steps.length-1)*gap)) / 2;
                 let nodes = '', arrows = '';
                 steps.forEach((step, i) => {
-                    const x = startX + gap * i;
-                    const w = Math.min(110, Math.max(70, step.length * 14));
-                    nodes += `<rect x="${x - w/2}" y="${y - 24}" width="${w}" height="48" rx="8" fill="${accentLight}" stroke="${accent}" stroke-width="2"/><text x="${x}" y="${y + 5}" text-anchor="middle" fill="${accent}" font-size="12" font-weight="600">${escape(wrap(step))}</text>`;
+                    const x = startX + (w+gap)*i + w/2;
+                    nodes += `<rect x="${x - w/2}" y="${y - 30}" width="${w}" height="60" rx="12" fill="${accentLight}" stroke="${accent}" stroke-width="2.5"/><text x="${x}" y="${y + 7}" text-anchor="middle" fill="${accent}" font-size="17" font-weight="700">${escape(wrap(step))}</text>`;
                     if (i < steps.length - 1) {
-                        arrows += `<line x1="${x + w/2}" y1="${y}" x2="${startX + gap*(i+1) - Math.min(110, Math.max(70, steps[i+1].length*14))/2 - 4}" y2="${y}" stroke="${accent}" stroke-width="2" marker-end="url(#arrow)"/>`;
+                        const nx = startX + (w+gap)*(i+1) + w/2;
+                        arrows += `<line x1="${x + w/2}" y1="${y}" x2="${nx - w/2 - 4}" y2="${y}" stroke="${accent}" stroke-width="2.5" marker-end="url(#arrow)"/>`;
                     }
                 });
-                svg = `<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="${accent}"/></marker></defs>${arrows}${nodes}`;
+                svg = `<defs><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,8 L12,4 z" fill="${accent}"/></marker></defs>${arrows}${nodes}`;
             } else if (dia.type === 'array') {
                 const [vals, highlight] = dia.data.includes('|') ? dia.data.split('|') : [dia.data, ''];
                 const items = vals.split(',').map(s => s.trim()).filter(Boolean);
-                const cellW = Math.min(64, (W - 40) / Math.max(items.length, 1));
-                const startX = (W - cellW * items.length) / 2;
-                const y = H / 2 - 28;
+                const cellW = Math.min(84, (W - 60) / Math.max(items.length, 1));
+                const gap = 8, totalW = items.length*cellW + (items.length-1)*gap;
+                const startX = (W - totalW) / 2;
+                const y = H/2 - 40;
                 const hl = new Set(highlight.split(',').map(s => s.trim()).filter(Boolean).map(Number));
                 let rects = '', idxs = '';
                 items.forEach((v, i) => {
-                    const x = startX + i * cellW;
+                    const x = startX + i*(cellW+gap);
                     const fill = hl.has(i) ? accent : '#fff';
                     const color = hl.has(i) ? '#fff' : textMain;
-                    rects += `<rect x="${x}" y="${y}" width="${cellW}" height="56" fill="${fill}" stroke="${accent}" stroke-width="2"/><text x="${x + cellW/2}" y="${y + 34}" text-anchor="middle" fill="${color}" font-size="14" font-weight="700">${escape(v)}</text>`;
-                    idxs += `<text x="${x + cellW/2}" y="${y + 72}" text-anchor="middle" fill="${textMain}" font-size="10">${i}</text>`;
+                    rects += `<rect x="${x}" y="${y}" width="${cellW}" height="72" rx="8" fill="${fill}" stroke="${accent}" stroke-width="2.5"/><text x="${x + cellW/2}" y="${y + 44}" text-anchor="middle" fill="${color}" font-size="19" font-weight="700">${escape(v)}</text>`;
+                    idxs += `<text x="${x + cellW/2}" y="${y + 92}" text-anchor="middle" fill="${textMain}" font-size="14">${i}</text>`;
                 });
                 svg = `${rects}${idxs}`;
             } else if (dia.type === 'compare') {
                 const rows = dia.data.split('\n').filter(l => l.trim()).map(l => l.split('|').map(s => s.trim()));
                 const cols = Math.max(...rows.map(r => r.length));
-                const colW = (W - 40) / cols;
-                const rowH = 42;
+                const colW = (W - 48) / cols;
+                const rowH = Math.min(60, (H - 16) / rows.length);
                 const startY = (H - rows.length * rowH) / 2;
                 let table = '';
                 rows.forEach((row, r) => {
                     row.forEach((cell, c) => {
-                        const x = 20 + c * colW;
+                        const x = 24 + c * colW;
                         const y = startY + r * rowH;
                         const isHeader = r === 0;
                         const fill = isHeader ? accent : (c === 0 ? accentLight : '#fff');
                         const color = isHeader ? '#fff' : (c === 0 ? accent : textMain);
-                        table += `<rect x="${x}" y="${y}" width="${colW}" height="${rowH}" fill="${fill}" stroke="#e2e8f0"/><text x="${x + colW/2}" y="${y + 26}" text-anchor="middle" fill="${color}" font-size="12" font-weight="${isHeader||c===0?700:400}">${escape(wrap(cell))}</text>`;
+                        table += `<rect x="${x}" y="${y}" width="${colW}" height="${rowH}" rx="4" fill="${fill}" stroke="#e2e8f0"/><text x="${x + colW/2}" y="${y + rowH/2 + 8}" text-anchor="middle" fill="${color}" font-size="17" font-weight="${isHeader||c===0?700:400}">${escape(wrap(cell))}</text>`;
                     });
                 });
                 svg = table;
             } else if (dia.type === 'tree') {
-                const levels = dia.data.split('\n').map(l => l.split(',').map(s => s.trim()).filter(Boolean));
-                const maxNodes = Math.max(...levels.map(l => l.length), 1);
-                const levelH = H / (levels.length + 1);
-                let nodes = '', edges = '';
-                const nodePositions = [];
-                levels.forEach((level, li) => {
-                    const count = level.length;
-                    const gap = count > 1 ? (W - 80) / (count - 1) : 0;
-                    const startX = count === 1 ? W / 2 : 40;
-                    level.forEach((node, ni) => {
-                        const x = count === 1 ? W / 2 : startX + gap * ni;
-                        const y = levelH * (li + 1);
-                        nodePositions.push({ x, y, level: li, index: ni });
-                    });
-                });
-                // 简单的父子连线：按层级顺序，每个上层节点连接下层相邻范围的节点
-                nodePositions.forEach((p, i) => {
-                    if (p.level < levels.length - 1) {
-                        const children = nodePositions.filter(np => np.level === p.level + 1);
-                        const perParent = children.length / Math.max(1, levels[p.level].length);
-                        const startIdx = Math.floor(p.index * perParent);
-                        const endIdx = Math.floor((p.index + 1) * perParent);
-                        for (let ci = startIdx; ci < endIdx; ci++) {
-                            if (children[ci]) edges += `<line x1="${p.x}" y1="${p.y + 16}" x2="${children[ci].x}" y2="${children[ci].y - 16}" stroke="#94a3b8" stroke-width="2"/>`;
-                        }
-                    }
-                    nodes += `<circle cx="${p.x}" cy="${p.y}" r="18" fill="${accentLight}" stroke="${accent}" stroke-width="2"/><text x="${p.x}" y="${p.y + 4}" text-anchor="middle" fill="${accent}" font-size="10" font-weight="600">${escape(wrap(levels[p.level][p.index]))}</text>`;
-                });
-                svg = `${edges}${nodes}`;
+                svg = renderTreeSvg(dia.data, accent, accentLight, textMain, W, H);
             } else if (dia.type === 'line_chart' || dia.type === 'bar_chart') {
                 // 兼容两种格式："标签1:5|标签2:8|标签3:3" 或 "1,5;2,8;3,3"
                 const isBar = dia.type === 'bar_chart';
@@ -2901,19 +3220,21 @@ img { max-width: 100%; }
                         if (parts.length >= 2) { labels.push(parts[0].trim()); const v = parseFloat(parts[1]); if (!isNaN(v)) values.push(v); }
                     });
                 }
-                const padL = 46, padR = 30, padT = 16, padB = 26;
-                const plotW = W - padL - padR, plotH = H - padT - padB;
-                const maxV = Math.max(...values, 1) * 1.1;
-                const xOf = (i) => padL + (values.length > 1 ? i / (values.length - 1) : 0.5) * plotW;
-                const yOf = (v) => padT + plotH - (v / maxV) * plotH;
-                const colors = ['var(--primary)', '#22c55e', '#f59e0b', '#ef4444', '#A78BFA'];
-                const xLabels = labels.map((l, i) => `<text x="${xOf(i)}" y="${padT + plotH + 14}" text-anchor="middle" fill="#64748b" font-size="9">${escape(wrap(l))}</text>`).join('');
-                if (isBar) {
-                    const bw = Math.min(36, plotW / Math.max(values.length, 1) * 0.6);
-                    svg = values.map((v, i) => `<rect x="${xOf(i) - bw / 2}" y="${yOf(v)}" width="${bw}" height="${Math.max(1, padT + plotH - yOf(v))}" fill="${colors[i % colors.length]}" rx="3" opacity=".85"/><text x="${xOf(i)}" y="${yOf(v) - 5}" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="700">${escape(v)}</text>`).join('') + xLabels;
-                } else {
-                    const pts = values.map((v, i) => `${xOf(i)},${yOf(v)}`).join(' ');
-                    svg = `<polyline points="${pts}" fill="none" stroke="${colors[0]}" stroke-width="2.5" stroke-linejoin="round"/>` + values.map((v, i) => `<circle cx="${xOf(i)}" cy="${yOf(v)}" r="3.5" fill="${colors[0]}" stroke="#fff" stroke-width="1.5"/><text x="${xOf(i)}" y="${yOf(v) - 7}" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="700">${escape(v)}</text>`).join('') + xLabels;
+                if (values.length) {
+                    const padL = 64, padR = 40, padT = 30, padB = 44;
+                    const plotW = W - padL - padR, plotH = H - padT - padB;
+                    const maxV = Math.max(...values, 1) * 1.1;
+                    const xOf = (i) => padL + (values.length > 1 ? i / (values.length - 1) : 0.5) * plotW;
+                    const yOf = (v) => padT + plotH - (v / maxV) * plotH;
+                    const grid = [0.25, 0.5, 0.75, 1].map(g => `<line x1="${padL}" y1="${padT + plotH * (1 - g)}" x2="${padL + plotW}" y2="${padT + plotH * (1 - g)}" stroke="#eef2f7" stroke-width="1"/>`).join('');
+                    const xLabels = labels.map((l, i) => `<text x="${xOf(i)}" y="${padT + plotH + 20}" text-anchor="middle" fill="#64748b" font-size="14">${escape(wrap(l))}</text>`).join('');
+                    if (isBar) {
+                        const bw = Math.min(52, plotW / Math.max(values.length, 1) * 0.62);
+                        svg = grid + values.map((v, i) => `<rect x="${xOf(i) - bw / 2}" y="${yOf(v)}" width="${bw}" height="${Math.max(1, padT + plotH - yOf(v))}" fill="${colors[i % colors.length]}" rx="6" opacity=".88"/><text x="${xOf(i)}" y="${yOf(v) - 8}" text-anchor="middle" fill="#1e293b" font-size="14" font-weight="700">${escape(v)}</text>`).join('') + xLabels;
+                    } else {
+                        const pts = values.map((v, i) => `${xOf(i)},${yOf(v)}`).join(' ');
+                        svg = grid + `<polyline points="${pts}" fill="none" stroke="${colors[0]}" stroke-width="3.5" stroke-linejoin="round"/>` + values.map((v, i) => `<circle cx="${xOf(i)}" cy="${yOf(v)}" r="6" fill="${colors[0]}" stroke="#fff" stroke-width="2"/><text x="${xOf(i)}" y="${yOf(v) - 11}" text-anchor="middle" fill="#1e293b" font-size="14" font-weight="700">${escape(v)}</text>`).join('') + xLabels;
+                    }
                 }
             } else if (dia.type === 'complexity_curve') {
                 // 多复杂度曲线对比："O(1)=1,4,16,64,256;O(n)=1,4,16,64,256;O(n²)=1,16,256,1024,4096"，横坐标 n=1,4,16,64,256
@@ -2925,29 +3246,217 @@ img { max-width: 100%; }
                     return { name, vals };
                 }).filter(s => s.vals.length > 0);
                 const xs = [1, 4, 16, 64, 256];
-                const padL = 46, padR = 30, padT = 16, padB = 26;
+                const padL = 64, padR = 54, padT = 30, padB = 44;
                 const plotW = W - padL - padR, plotH = H - padT - padB;
                 const allVals = series.flatMap(s => s.vals);
                 const minY = Math.min(...allVals), maxY = Math.max(...allVals);
                 const logMin = Math.log(Math.max(minY, 1)), logMax = Math.log(Math.max(maxY, logMin + 1));
                 const xOf = (n) => padL + (Math.log(n) - Math.log(1)) / (Math.log(256) - Math.log(1)) * plotW;
                 const yOf = (v) => padT + plotH - (Math.log(v) - logMin) / (logMax - logMin) * plotH;
-                const colors = ['var(--primary)', '#22c55e', '#f59e0b', '#ef4444', '#A78BFA'];
-                const grid = xs.map(n => `<line x1="${xOf(n)}" y1="${padT}" x2="${xOf(n)}" y2="${padT + plotH}" stroke="#eef2f7" stroke-width="1"/><text x="${xOf(n)}" y="${padT + plotH + 14}" text-anchor="middle" fill="#64748b" font-size="8">${n}</text>`).join('');
-                const yLabels = [1, 10, 100, 1000, 10000].filter(v => v >= minY && v <= maxY * 1.05).map(v => `<line x1="${padL}" y1="${yOf(v)}" x2="${padL + plotW}" y2="${yOf(v)}" stroke="#eef2f7" stroke-width="1"/><text x="${padL - 4}" y="${yOf(v) + 3}" text-anchor="end" fill="#64748b" font-size="8">${v}</text>`).join('');
+                const grid = xs.map(n => `<line x1="${xOf(n)}" y1="${padT}" x2="${xOf(n)}" y2="${padT + plotH}" stroke="#eef2f7" stroke-width="1"/><text x="${xOf(n)}" y="${padT + plotH + 20}" text-anchor="middle" fill="#64748b" font-size="13">${n}</text>`).join('');
+                const yLabels = [1, 10, 100, 1000, 10000].filter(v => v >= minY && v <= maxY * 1.05).map(v => `<line x1="${padL}" y1="${yOf(v)}" x2="${padL + plotW}" y2="${yOf(v)}" stroke="#eef2f7" stroke-width="1"/><text x="${padL - 6}" y="${yOf(v) + 4}" text-anchor="end" fill="#64748b" font-size="12">${v}</text>`).join('');
                 let paths = '', legend = '';
                 series.forEach((s, si) => {
                     const color = colors[si % colors.length];
                     const pts = s.vals.map((v, i) => `${xOf(xs[i] || (i + 1))},${yOf(v)}`).join(' ');
-                    paths += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>` + s.vals.map((v, i) => `<circle cx="${xOf(xs[i] || (i + 1))}" cy="${yOf(v)}" r="3" fill="${color}"/>`).join('');
-                    legend += `<text x="${padL + plotW + 8}" y="${padT + 14 + si * 14}" fill="${color}" font-size="9" font-weight="600">${escape(s.name)}</text>`;
+                    paths += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round"/>` + s.vals.map((v, i) => `<circle cx="${xOf(xs[i] || (i + 1))}" cy="${yOf(v)}" r="4.5" fill="${color}" stroke="#fff" stroke-width="1.5"/>`).join('');
+                    legend += `<text x="${padL + plotW + 10}" y="${padT + 18 + si * 22}" fill="${color}" font-size="14" font-weight="700">${escape(s.name)}</text>`;
                 });
                 svg = `${grid}${yLabels}${paths}${legend}`;
+            } else if (dia.type === 'scatter_chart' || dia.type === 'scatter') {
+                // 散点图：数据 "x,y;x,y;..."，展示数据分布/相关性
+                const sp = String(dia.data || '').trim();
+                const pts = sp.includes(';') || sp.includes(',')
+                    ? sp.split(';').map(p => p.trim()).filter(Boolean).map(p => {
+                        const i = p.indexOf(',');
+                        const x = i > 0 ? parseFloat(p.slice(0, i)) : NaN;
+                        const y = i > 0 ? parseFloat(p.slice(i + 1)) : NaN;
+                        return { x, y };
+                      }).filter(p => isFinite(p.x) && isFinite(p.y))
+                    : [];
+                if (pts.length) {
+                    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+                    const minX = Math.min(...xs), maxX = Math.max(...xs);
+                    const minY = Math.min(...ys), maxY = Math.max(...ys);
+                    const padL = 60, padR = 44, padT = 30, padB = 46;
+                    const plotW = W - padL - padR, plotH = H - padT - padB;
+                    const xOf = (x) => padL + ((x - minX) / (maxX - minX || 1)) * plotW;
+                    const yOf = (y) => padT + plotH - ((y - minY) / (maxY - minY || 1)) * plotH;
+                    const grid = [0.25, 0.5, 0.75, 1].map(g => `<line x1="${padL}" y1="${padT + plotH * (1 - g)}" x2="${padL + plotW}" y2="${padT + plotH * (1 - g)}" stroke="#eef2f7" stroke-width="1"/>`).join('');
+                    const dots = pts.map((p, i) => `<circle cx="${xOf(p.x)}" cy="${yOf(p.y)}" r="7" fill="${colors[i % 6]}" opacity=".9" stroke="#fff" stroke-width="1.5"/>`).join('');
+                    const axes = `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#cbd5e1" stroke-width="2"/><line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#cbd5e1" stroke-width="2"/>`;
+                    const ticks = `<text x="${padL - 8}" y="${padT + 16}" text-anchor="end" fill="#64748b" font-size="13">${maxY}</text><text x="${padL - 8}" y="${padT + plotH + 16}" text-anchor="end" fill="#64748b" font-size="13">${minY}</text><text x="${padL + 8}" y="${padT + plotH + 20}" fill="#64748b" font-size="13">${minX}</text><text x="${padL + plotW}" y="${padT + plotH + 20}" text-anchor="end" fill="#64748b" font-size="13">${maxX}</text>`;
+                    svg = grid + axes + ticks + dots;
+                }
+            } else if (dia.type === 'donut_chart' || dia.type === 'donut') {
+                // 环形图：数据 "标签:值|标签:值"，中间显示总数/核心数值
+                const dp = String(dia.data || '').split('|').map(p => { const kv = p.split(':'); return { k: kv[0].trim(), v: Number(kv[1]) || 0 }; }).filter(p => p.v > 0);
+                const total = dp.reduce((s, p) => s + p.v, 0) || 1;
+                const cx = 120, cy = H/2, r = 92, inner = r * 0.62;
+                let a0 = -Math.PI / 2, segs = '', legend = '';
+                dp.forEach((p, i) => {
+                    const a1 = a0 + (p.v / total) * Math.PI * 2;
+                    const large = (a1 - a0) > Math.PI ? 1 : 0;
+                    const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+                    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+                    const xi0 = cx + inner * Math.cos(a0), yi0 = cy + inner * Math.sin(a0);
+                    const xi1 = cx + inner * Math.cos(a1), yi1 = cy + inner * Math.sin(a1);
+                    const la = (a0 + a1) / 2, lx = cx + (r + inner) / 2 * Math.cos(la), ly = cy + (r + inner) / 2 * Math.sin(la);
+                    const pct = (p.v / total * 100).toFixed(0);
+                    segs += `<path d="M${xi0} ${yi0} L${x0} ${y0} A${r} ${r} 0 ${large} 1 ${x1} ${y1} L${xi1} ${yi1} A${inner} ${inner} 0 ${large} 0 ${xi0} ${yi0} Z" fill="${colors[i % colors.length]}"/><text x="${lx}" y="${ly}" fill="#fff" font-size="14" text-anchor="middle" font-weight="700">${pct}%</text>`;
+                    const lx0 = W/2 + 20, ly0 = 32 + i * 40;
+                    legend += `<rect x="${lx0}" y="${ly0 - 13}" width="18" height="18" rx="4" fill="${colors[i % colors.length]}"/><text x="${lx0 + 28}" y="${ly0}" fill="${textMain}" font-size="16" font-weight="600">${escape(p.k)}</text><text x="${W - 12}" y="${ly0}" text-anchor="end" fill="${textMain}" font-size="15">${p.v} · ${pct}%</text>`;
+                    a0 = a1;
+                });
+                svg = segs + `<text x="${cx}" y="${cy - 4}" text-anchor="middle" fill="${accent}" font-size="30" font-weight="800">${total}</text><text x="${cx}" y="${cy + 22}" text-anchor="middle" fill="#64748b" font-size="14">总计</text>` + legend;
+            } else if (dia.type === 'funnel') {
+                // 漏斗图：数据 "阶段:数量|阶段:数量"（逐级递减），展示转化链路
+                const stages = String(dia.data || '').split('|').map(p => { const kv = p.split(':'); return { k: kv[0].trim(), v: Number(kv[1]) || 0 }; }).filter(p => p.v > 0);
+                if (stages.length) {
+                    const maxV = Math.max(...stages.map(s => s.v), 1);
+                    const bw0 = W - 120, bh = H / stages.length, cx = W / 2;
+                    let fg = '';
+                    stages.forEach((s, i) => {
+                        const wCur = bw0 * (s.v / maxV);
+                        const wNext = i < stages.length - 1 ? bw0 * (stages[i + 1].v / maxV) : wCur * 0.6;
+                        const y0 = i * bh + 6, y1 = (i + 1) * bh - 6;
+                        const color = colors[i % colors.length];
+                        let shape;
+                        if (i === stages.length - 1) {
+                            shape = `<rect x="${cx - wCur / 2}" y="${y0}" width="${wCur}" height="${y1 - y0}" rx="10" fill="${color}"/>`;
+                        } else {
+                            shape = `<polygon points="${cx - wCur / 2},${y0} ${cx + wCur / 2},${y0} ${cx + wNext / 2},${y1} ${cx - wNext / 2},${y1}" fill="${color}" opacity=".92"/>`;
+                        }
+                        fg += `<g>${shape}<text x="${cx}" y="${(y0 + y1) / 2 + 6}" text-anchor="middle" fill="#fff" font-size="17" font-weight="700">${escape(wrap(s.k))}</text><text x="${cx}" y="${(y0 + y1) / 2 + 30}" text-anchor="middle" fill="#fff" font-size="15" font-weight="600">${s.v}</text></g>`;
+                    });
+                    svg = fg;
+                }
+            } else if (dia.type === 'radar_chart' || dia.type === 'radar') {
+                // 雷达图：数据 "指标:得分|指标:得分"（多维属性对比）
+                const axes = String(dia.data || '').split('|').map(p => { const kv = p.split(':'); return { k: kv[0].trim(), v: Number(kv[1]) || 0 }; }).filter(p => p.k);
+                if (axes.length >= 3) {
+                    const maxV = Math.max(...axes.map(a => a.v), 1) * 1.2;
+                    const cx = W / 2, cy = H / 2 + 6, r = Math.min(W, H) / 2 - 42;
+                    const n = axes.length;
+                    const pt = (i, scale) => { const ang = -Math.PI / 2 + (i / n) * Math.PI * 2; return { x: cx + r * scale * Math.cos(ang), y: cy + r * scale * Math.sin(ang) }; };
+                    let grid = '', spokes = '';
+                    for (let g = 1; g <= 4; g++) {
+                        const poly = Array.from({ length: n }, (_, i) => { const p = pt(i, g / 4); return `${p.x},${p.y}`; }).join(' ');
+                        grid += `<polygon points="${poly}" fill="${g === 4 ? accentLight : 'none'}" stroke="#cbd5e1" stroke-width="1.5"/>`;
+                    }
+                    axes.forEach((a, i) => { const p = pt(i, 1); spokes += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="#e2e8f0" stroke-width="1.5"/>`; });
+                    const dataPoly = axes.map((a, i) => { const p = pt(i, a.v / maxV); return `${p.x},${p.y}`; }).join(' ');
+                    const dataPts = axes.map((a, i) => { const p = pt(i, a.v / maxV); return `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${accent}" stroke="#fff" stroke-width="2"/>`; }).join('');
+                    const labels = axes.map((a, i) => { const p = pt(i, 1.3); return `<text x="${p.x}" y="${p.y + 4}" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">${escape(wrap(a.k))}</text>`; }).join('');
+                    svg = grid + spokes + `<polygon points="${dataPoly}" fill="${accent}" opacity="0.28"/><polyline points="${dataPoly}" fill="none" stroke="${accent}" stroke-width="3" stroke-linejoin="round"/>` + dataPts + labels;
+                }
+            } else if (dia.type === 'bubble_chart' || dia.type === 'bubble') {
+                // 气泡图：数据 "名称:x,y,大小;名称:x,y,大小"（大小>0），展示分布与量级
+                const bb = String(dia.data || '').split(';').map(p => p.trim()).filter(Boolean).map(p => {
+                    const ci = p.indexOf(':');
+                    let name = '', nums = p;
+                    if (ci > 0) { name = p.slice(0, ci).trim(); nums = p.slice(ci + 1); }
+                    const parts = nums.split(',').map(Number);
+                    return { name, x: parts[0], y: parts[1], r: isFinite(parts[2]) ? Math.abs(parts[2]) : 1 };
+                }).filter(b => isFinite(b.x) && isFinite(b.y));
+                if (bb.length) {
+                    const xs = bb.map(b => b.x), ys = bb.map(b => b.y);
+                    const minX = Math.min(...xs), maxX = Math.max(...xs);
+                    const minY = Math.min(...ys), maxY = Math.max(...ys);
+                    const padL = 60, padR = 44, padT = 34, padB = 46;
+                    const plotW = W - padL - padR, plotH = H - padT - padB;
+                    const xOf = (x) => padL + ((x - minX) / (maxX - minX || 1)) * plotW;
+                    const yOf = (y) => padT + plotH - ((y - minY) / (maxY - minY || 1)) * plotH;
+                    const maxR = Math.max(...bb.map(b => b.r), 1);
+                    const grid = [0.25, 0.5, 0.75, 1].map(g => `<line x1="${padL}" y1="${padT + plotH * (1 - g)}" x2="${padL + plotW}" y2="${padT + plotH * (1 - g)}" stroke="#eef2f7" stroke-width="1"/>`).join('');
+                    const bubs = bb.map((b, i) => {
+                        const bx = xOf(b.x), by = yOf(b.y), br = 6 + (b.r / maxR) * 26;
+                        return `<circle cx="${bx}" cy="${by}" r="${br}" fill="${colors[i % 6]}" opacity=".55" stroke="${colors[i % 6]}" stroke-width="2"/>` + (b.name ? `<text x="${bx}" y="${by - br - 6}" text-anchor="middle" fill="${textMain}" font-size="13" font-weight="600">${escape(wrap(b.name))}</text>` : '');
+                    }).join('');
+                    const axes = `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#cbd5e1" stroke-width="2"/><line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#cbd5e1" stroke-width="2"/>`;
+                    svg = grid + axes + bubs;
+                }
+            } else if (dia.type === 'waterfall') {
+                // 瀑布图：数据 "阶段:增减值|阶段:增减值"，展示累计分解
+                const st = String(dia.data || '').split(/[|;]/).map(p => { const kv = p.split(':'); return { k: kv[0].trim(), v: Number(kv[1]) || 0 }; }).filter(p => p.k);
+                if (st.length) {
+                    const padL = 64, padR = 36, padT = 36, padB = 44;
+                    const plotW = W - padL - padR, plotH = H - padT - padB;
+                    const step = plotW / Math.max(st.length, 1), bw = Math.min(70, plotW / Math.max(st.length, 1) * 0.55);
+                    let cum = 0, maxAbs = 0;
+                    st.forEach(s => { cum += s.v; maxAbs = Math.max(maxAbs, Math.abs(cum), Math.abs(s.v)); });
+                    const baseY = padT + plotH, scale = plotH / (maxAbs * 1.15 || 1);
+                    let cum2 = 0, out = '';
+                    st.forEach((s, i) => {
+                        const x = padL + i * step + (step - bw) / 2;
+                        const barTop = baseY - Math.max(cum2, cum2 + s.v) * scale;
+                        const barBot = baseY - Math.min(cum2, cum2 + s.v) * scale;
+                        const color = s.v >= 0 ? '#22C55E' : '#EF4444';
+                        out += `<rect x="${x}" y="${barTop}" width="${bw}" height="${Math.max(1, barBot - barTop)}" rx="4" fill="${color}" opacity=".9"/><text x="${x + bw / 2}" y="${barTop - 8}" text-anchor="middle" fill="${textMain}" font-size="14" font-weight="700">${s.v > 0 ? '+' : ''}${s.v}</text><text x="${x + bw / 2}" y="${baseY + 20}" text-anchor="middle" fill="#64748b" font-size="13">${escape(wrap(s.k))}</text>`;
+                        if (i < st.length - 1) {
+                            const nx = padL + (i + 1) * step + (step - bw) / 2;
+                            out += `<line x1="${x + bw + 6}" y1="${baseY - (cum2 + s.v) * scale}" x2="${nx - 6}" y2="${baseY - (cum2 + s.v) * scale}" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 5"/>`;
+                        }
+                        cum2 += s.v;
+                    });
+                    svg = out;
+                }
+            } else if (dia.type === 'gauge') {
+                // 仪表盘：数据 "指标:0-100 数值"，展示达成率/占比
+                const gp = String(dia.data || '').trim();
+                const ci = gp.indexOf(':');
+                const label = ci > 0 ? gp.slice(0, ci).trim() : '完成度';
+                const val = Math.max(0, Math.min(100, parseFloat(ci > 0 ? gp.slice(ci + 1) : gp) || 0));
+                const cx = W / 2, cy = 104, r = 62;
+                const a1 = Math.PI * (1 - val / 100);
+                const x1 = cx + r * Math.cos(a1), y1 = cy - r * Math.sin(a1);
+                const bgArc = `<path d="M${cx - r} ${cy} A${r} ${r} 0 0 0 ${cx + r} ${cy}" fill="none" stroke="#e2e8f0" stroke-width="24" stroke-linecap="round"/>`;
+                const fgArc = val > 0 ? `<path d="M${cx - r} ${cy} A${r} ${r} 0 0 0 ${x1} ${y1}" fill="none" stroke="${accent}" stroke-width="24" stroke-linecap="round"/>` : '';
+                const needle = `<line x1="${cx}" y1="${cy}" x2="${x1}" y2="${y1}" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="9" fill="#1e293b"/>`;
+                const txt = `<text x="${cx}" y="${cy + 46}" text-anchor="middle" fill="${accent}" font-size="40" font-weight="800">${val}%</text><text x="${cx}" y="${cy + 70}" text-anchor="middle" fill="#64748b" font-size="17" font-weight="600">${escape(label)}</text><text x="${cx - r - 8}" y="${cy + 18}" text-anchor="middle" fill="#94a3b8" font-size="14">0</text><text x="${cx + r + 8}" y="${cy + 18}" text-anchor="middle" fill="#94a3b8" font-size="14">100</text>`;
+                svg = bgArc + fgArc + needle + txt;
+            } else if (dia.type === 'heatmap' || dia.type === 'heatmap_chart') {
+                // 热力图：数值网格（首行可为列标签），展示矩阵强度
+                const lines = String(dia.data || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                let colLabels = null, rows = [];
+                lines.forEach((ln, li) => {
+                    if (li === 0 && ln.indexOf(':') < 0 && ln.split(',').every(t => isNaN(parseFloat(t.trim())))) {
+                        colLabels = ln.split(',').map(s => s.trim()).filter(Boolean);
+                        return;
+                    }
+                    const ci = ln.indexOf(':');
+                    const rowLabel = ci > 0 ? ln.slice(0, ci).trim() : '';
+                    const nums = (ci > 0 ? ln.slice(ci + 1) : ln).split(',').map(s => parseFloat(s.trim())).filter(n => isFinite(n));
+                    if (nums.length) rows.push({ label: rowLabel, vals: nums });
+                });
+                if (rows.length) {
+                    const cols = colLabels ? colLabels.length : Math.max(...rows.map(r => r.vals.length));
+                    const allV = rows.flatMap(r => r.vals);
+                    const vMin = Math.min(...allV), vMax = Math.max(...allV), span = (vMax - vMin) || 1;
+                    const labelW = rows.some(r => r.label) ? 96 : 24;
+                    const padL = labelW, padT = colLabels ? 36 : 14;
+                    const cellW = (W - padL - 24) / cols, cellH = Math.min(46, (H - padT - 18) / rows.length);
+                    const startY = padT + Math.max(0, (H - padT - cellH * rows.length - 16) / 2);
+                    const c1 = { r: 224, g: 231, b: 255 }, c2 = { r: 79, g: 70, b: 229 };
+                    let out = '';
+                    if (colLabels) colLabels.forEach((c, ci) => { const x = padL + ci * cellW + cellW / 2; out += `<text x="${x}" y="${startY - 12}" text-anchor="middle" fill="#64748b" font-size="14" font-weight="600">${escape(wrap(c))}</text>`; });
+                    rows.forEach((r, ri) => {
+                        const y = startY + ri * cellH;
+                        if (r.label) out += `<text x="${padL - 12}" y="${y + cellH / 2 + 5}" text-anchor="end" fill="${textMain}" font-size="14" font-weight="600">${escape(wrap(r.label))}</text>`;
+                        r.vals.slice(0, cols).forEach((v, ci) => {
+                            const t = (v - vMin) / span;
+                            const rr = Math.round(c1.r + (c2.r - c1.r) * t), gg = Math.round(c1.g + (c2.g - c1.g) * t), bb = Math.round(c1.b + (c2.b - c1.b) * t);
+                            const x = padL + ci * cellW + 2;
+                            out += `<rect x="${x}" y="${y + 2}" width="${cellW - 4}" height="${cellH - 4}" rx="6" fill="rgb(${rr},${gg},${bb})" stroke="#ffffff" stroke-width="1.5"/><text x="${x + (cellW - 4) / 2}" y="${y + cellH / 2 + 5}" text-anchor="middle" fill="${t > 0.55 ? '#fff' : '#1e293b'}" font-size="14" font-weight="700">${v}</text>`;
+                        });
+                    });
+                    svg = out;
+                }
             }
 
             if (!svg) return '';
-            const caption = dia.caption ? `<div style="text-align:center;font-size:11px;color:${textMain};margin-top:6px;">${escape(dia.caption)}</div>` : '';
-            return `<div style="margin-top:14px;background:#f8fafc;border-radius:10px;padding:12px;border:1px solid #e2e8f0;"><svg viewBox="0 0 ${W} ${H}" width="100%" height="160" style="display:block;">${svg}</svg>${caption}</div>`;
+            const caption = dia.caption ? `<div style="text-align:center;font-size:13px;color:${textMain};margin-top:8px;">${escape(dia.caption)}</div>` : '';
+            return `<div style="margin-top:14px;background:#f8fafc;border-radius:12px;padding:16px;border:1px solid #e2e8f0;"><svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;height:auto;aspect-ratio:${W}/${H};"><g>${svg}</g></svg>${caption}</div>`;
         }
 
         // 渲染单个 visual 元素为紧凑卡片
@@ -3011,36 +3520,8 @@ img { max-width: 100%; }
             }
             // 树形图
             if (v.type === 'tree') {
-                const levels = d.split('\n').map(l => l.split(',').map(s => s.trim()).filter(Boolean));
-                const H = 100, W = 300;
-                let svg = '';
-                levels.forEach((level, li) => {
-                    const y = (li + 1) * H / (levels.length + 1);
-                    const gap = level.length > 1 ? (W - 60) / (level.length - 1) : 0;
-                    level.forEach((node, ni) => {
-                        const x = level.length === 1 ? W / 2 : 30 + gap * ni;
-                        svg += `<circle cx="${x}" cy="${y}" r="14" fill="${accentLight}" stroke="${accent}" stroke-width="1.5"/><text x="${x}" y="${y+4}" text-anchor="middle" fill="${accent}" font-size="9" font-weight="600">${esc(node.length>4?node.slice(0,3)+'…':node)}</text>`;
-                    });
-                });
-                // 连线
-                levels.forEach((level, li) => {
-                    if (li >= levels.length - 1) return;
-                    const py = (li + 1) * H / (levels.length + 1) + 14;
-                    const ny = (li + 2) * H / (levels.length + 1) - 14;
-                    levels[li].forEach((_, pi) => {
-                        const pGap = level.length > 1 ? (W - 60) / (level.length - 1) : 0;
-                        const px = level.length === 1 ? W / 2 : 30 + pGap * pi;
-                        const children = levels[li + 1];
-                        const cGap = children.length > 1 ? (W - 60) / (children.length - 1) : 0;
-                        const per = children.length / Math.max(1, level.length);
-                        const si = Math.floor(pi * per), ei = Math.floor((pi + 1) * per);
-                        for (let ci = si; ci < ei && ci < children.length; ci++) {
-                            const cx = children.length === 1 ? W / 2 : 30 + cGap * ci;
-                            svg += `<line x1="${px}" y1="${py}" x2="${cx}" y2="${ny}" stroke="#94a3b8" stroke-width="1.5"/>`;
-                        }
-                    });
-                });
-                return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:4px;overflow:hidden;"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${svg}</svg>${caption}</div>`;
+                const H = 110, W = 300;
+                return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:4px;overflow:hidden;"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${renderTreeSvg(d, accent, accentLight, textMain, W, H, { nodeSize: 14, fontSize: 9, padL: 18, padR: 18, padT: 14, padB: 12 })}</svg>${caption}</div>`;
             }
             // 对比图
             if (v.type === 'compare') {
@@ -3073,50 +3554,550 @@ img { max-width: 100%; }
                 return `<table style="width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);"><thead><tr>${ths}</tr></thead><tbody>${tds}</tbody></table>`;
             } else if (/^[-•]\s+/m.test(c)) {
                 const items = c.split('\n').filter(l => l.trim()).map(l => l.replace(/^[-•]\s+/, ''));
-                return `<ul style="padding-left:18px;color:${textMain};font-size:14px;line-height:1.8;margin:0;">${items.map(item => `<li style="margin-bottom:8px;">${item}</li>`).join('')}</ul>`;
+                return `<ul style="padding-left:18px;color:${textMain};font-size:16px;line-height:1.8;margin:0;">${items.map(item => `<li style="margin-bottom:8px;">${item}</li>`).join('')}</ul>`;
             } else if (c.includes('\n')) {
                 return `<div style="color:${textMain};font-size:14px;line-height:1.8;white-space:pre-wrap;">${c.replace(/</g,'&lt;')}</div>`;
             } else {
-                return `<pre style="background:#f1f5f9;color:${textMain};padding:14px 18px;border-radius:8px;font-size:12px;line-height:1.6;overflow:auto;text-align:left;font-family:'Consolas','Courier New',monospace;border-left:4px solid ${accent};box-shadow:0 1px 4px rgba(0,0,0,.05);margin:0;">${c.replace(/</g,'&lt;')}</pre>`;
+                return `<pre style="background:#f1f5f9;color:${textMain};padding:14px 18px;border-radius:8px;font-size:16px;line-height:1.6;overflow:auto;text-align:left;font-family:'Consolas','Courier New',monospace;border-left:4px solid ${accent};box-shadow:0 1px 4px rgba(0,0,0,.05);margin:0;">${c.replace(/</g,'&lt;')}</pre>`;
             }
         }
 
+        // ============ FRONTEND-SLIDES 演示舞台模块 ============
+        const _DK_PAL = {
+            fresh:   ['#1e40af','#dbeafe','#1e293b','#64748b'],
+            minimal: ['#2563eb','#eff6ff','#0f172a','#64748b'],
+            tech:    ['#0891b2','#062a3a','#e8edf5','#94a3b8'],
+            biz:     ['#1d4ed8','#0b1b3a','#eef2f9','#94a3b8'],
+            color:   ['#e11d48','#ffe1e8','#1e293b','#7a6a70'],
+            studio:   ['#4361ee','#e9edff','#0a0a0a','#525a72'],
+            editorial:['#a45a3a','#e8d4c0','#1a1a1a','#6b6158'],
+            split:    ['#7b5ea7','#e6ddf3','#221f2a','#6a5f70'],
+            geometry: ['#7c6aad','#e2dcf2','#1f2733','#5c6b7a'],
+            notebook: ['#4a8a6f','#98d4bb','#1a1a1a','#6a6a60'],
+            voltage:  ['#0066ff','#e3f0ff','#101728','#4a5a78']
+        };
+        function themeDkKey() {
+            return ({'教学清新':'fresh','极简白':'minimal','深色科技':'tech','商务蓝':'biz','活泼多彩':'color','电子演播室':'studio','复古编辑':'editorial','分栏粉彩':'split','粉彩几何':'geometry','笔记本标签':'notebook','创意电压':'voltage'})[window._slideStyle] || 'tech';
+        }
+        // 由所选主题映射到 bold-template-pack 的“布局体系(增强版式)”：
+        // volugage/深色→neogrid 面板式；geometry/粉彩→rawgrid 边框式；其余→blue 圆角卡片式。
+        function layoutGrammarKey() {
+            return ({'voltage':'neogrid','tech':'neogrid','biz':'neogrid','geometry':'rawgrid','color':'rawgrid','split':'rawgrid'})[themeDkKey()] || 'blue';
+        }
+        function dkEsc(s) {
+            return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        // 将单条讲解数据渲染为一张固定 1920×1080 舞台胶片
+        function renderDeckSlideInto(sec, slide, idx) {
+            const total = window._totalSlides || 1;
+            const pal = _DK_PAL[themeDkKey()] || _DK_PAL.tech;
+            const accent = pal[0], accentLight = pal[1], textMain = pal[2], textSub = pal[3];
+            const visuals = Array.isArray(slide.visuals) ? slide.visuals : [];
+            const hasDiagram = !!(slide.diagram && slide.diagram.type && slide.diagram.type !== 'none' && slide.diagram.data);
+            const visualCards = visuals.map(v => renderVisual(v, accent, accentLight, textMain, textSub)).filter(Boolean);
+            const diagramHTML = hasDiagram ? renderDiagram(slide.diagram, accent, accentLight, textMain) : '';
+            const leftBlock = renderContentBlock(slide.left || slide.text, accent, accentLight, textMain, false);
+            const rightBlock = renderContentBlock(slide.right || slide.code, accent, accentLight, textMain, true);
+            const n = String(idx + 1).padStart(2, '0');
+            const layout = String(slide.layout || 'default').trim();
+            // 真课件 v2：spotlight 锚点（data-el 与 courseware-schema deriveElements 的 id 一一对应）
+            const isCw = !!window._isCourseware;
+            const sceneHTML = (isCw && slide.scene && slide.scene.template)
+                ? '<div class="dk-panel dk-pan-scene" data-el="scene"><div class="dk-pan-label">交互场景 · ' + dkEsc(slide.scene.caption || slide.scene.template) + '</div><div class="cw-scene-host"></div></div>'
+                : '';
+            const diagramChunk = diagramHTML ? '<div class="dk-chart">' + diagramHTML + '</div>' : '';
+            const visualsChunk = visualCards.length ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">' + visualCards.join('') + '</div>' : '';
+            const rightBlockChunk = (rightBlock && !diagramHTML && !visualCards.length) ? rightBlock : '';
+            const pointsCard = leftBlock ? '<div class="dk-card dk-reveal" data-edit="points">' + leftBlock + '</div>' : '';
+            const bodyText = slide.text ? dkEsc(String(slide.text)).replace(/\n/g, '<br/>') : '';
+            const bodyCard = bodyText ? '<div class="dk-card dk-reveal" data-edit="body" style="padding:16px 18px;">' + bodyText + '</div>' : '';
+            const g = layoutGrammarKey();
+            // 完整引擎：按所选布局体系用 CSS grid 实时组合版式（panel 拼块 + 网格跨区）
+            const panLabel = function(t){ return '<div class="dk-pan-label">' + t + '</div>'; };
+            const pPts = leftBlock ? '<div class="dk-panel dk-pan-pts" data-edit="points"' + (isCw ? ' data-el="pts"' : '') + '>' + panLabel('核心要点') + leftBlock + '</div>' : '';
+            const pTxt = bodyText ? '<div class="dk-panel dk-pan-txt" data-edit="body"' + (isCw ? ' data-el="txt"' : '') + '>' + panLabel('讲解正文') + bodyText + '</div>' : '';
+            const dgAttr = isCw ? ' data-el="diagram"' : '';
+            const visInner = (diagramHTML ? '<div class="dk-pan-chart"' + dgAttr + '>' + diagramHTML + '</div>' : '')
+                + (visualCards.length ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:10px;">' + visualCards.map(function(vc, vi){ return isCw ? vc.replace('<div class="visual-card"', '<div data-el="vis-' + vi + '" class="visual-card"') : vc; }).join('') + '</div>' : '')
+                + (rightBlockChunk ? '<div style="margin-top:14px;">' + rightBlock + '</div>' : '');
+            const pVis = visInner ? '<div class="dk-panel dk-pan-vis dk-pan-stack">' + panLabel('可视化分析') + visInner + '</div>' : '';
+            let bodyHTML;
+            const leftLines = String(slide.left || slide.text || '').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+            if (sceneHTML) {
+                // 真课件场景页：左要点/正文 + 右大尺寸交互场景（优先级最高）
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:0.8fr 1.2fr;gap:22px 28px;align-items:stretch;">'
+                    + '<div style="grid-column:1;">' + pPts + pTxt + '</div>'
+                    + '<div style="grid-column:2;">' + sceneHTML + '</div>'
+                    + '</div>';
+            } else if (layout === 'chart_top') {
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1fr;gap:14px;">' + pVis + pPts + '</div>';
+            } else if (layout === 'chart_left') {
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1fr 1fr;gap:22px 28px;align-items:stretch;">'
+                    + '<div style="grid-column:1;">' + pVis + '</div>'
+                    + '<div style="grid-column:2;">' + pPts + pTxt + '</div>'
+                    + '</div>';
+            } else if (layout === 'split') {
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1fr 1fr;gap:22px 28px;align-items:stretch;">'
+                    + '<div style="grid-column:1;">' + pPts + '</div>'
+                    + '<div style="grid-column:2;">' + pVis + '</div>'
+                    + '</div>';
+            } else if (layout === 'left_text') {
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1.1fr 0.9fr;gap:22px 28px;align-items:stretch;">'
+                    + '<div style="grid-column:1;">' + pTxt + '</div>'
+                    + '<div style="grid-column:2;">' + pVis + '</div>'
+                    + '</div>';
+            } else if (layout === 'triple') {
+                const codeCard = (slide.code || slide.right) ? '<div class="dk-panel"><div class="dk-pan-label">代码示例</div><pre style="margin:0;font-size:13px;color:' + textMain + ';white-space:pre-wrap;font-family:Consolas,monospace;">' + dkEsc(String(slide.code || slide.right)).slice(0,140) + '</pre></div>' : '';
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1fr;gap:14px;">'
+                    + pTxt
+                    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:stretch;">' + pPts + pVis + codeCard + '</div>'
+                    + '</div>';
+            } else if (layout === 'cards') {
+                const cardBg = ['#eef2ff','#f0fdf4','#fffbeb','#fdf2f8'];
+                const cardBd = ['#4F6BF0','#22C55E','#F59E0B','#EC4899'];
+                const cardHtml = leftLines.slice(0,4).map(function(it,i){
+                    const num = ['&#9312;','&#9313;','&#9314;','&#9315;'][i] || '&#9312;';
+                    return '<div class="dk-panel" style="background:'+cardBg[i]+';border-top:4px solid '+cardBd[i]+';"><div class="dk-pan-label" style="font-size:18px;">'+num+'</div><div style="font-size:15px;line-height:1.7;color:'+textMain+';">'+dkEsc(it)+'</div></div>';
+                }).join('');
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1fr;gap:14px;">'
+                    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;">' + cardHtml + '</div>'
+                    + pVis
+                    + '</div>';
+            } else if (layout === 'timeline') {
+                const stepHtml = leftLines.map(function(st,i){
+                    return '<div style="flex:1;text-align:center;position:relative;padding-top:24px;"><div style="width:30px;height:30px;line-height:30px;border-radius:50%;background:'+accent+';color:#fff;font-size:14px;font-weight:700;margin:0 auto 10px;position:relative;z-index:1;">'+(i+1)+'</div><div class="dk-panel" style="min-height:70px;">'+dkEsc(st)+'</div></div>';
+                }).join('');
+                const stepLine = leftLines.length > 1 ? '<div style="position:absolute;top:15px;left:10%;right:10%;height:2px;background:'+accentLight+';"></div>' : '';
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1fr;gap:14px;">'
+                    + '<div style="display:flex;gap:14px;position:relative;padding:0 6px;">' + stepLine + stepHtml + '</div>'
+                    + pVis
+                    + '</div>';
+            } else if (layout === 'focus') {
+                const focusText = dkEsc(String(slide.text || leftLines[0] || ''));
+                bodyHTML = '<div class="dk-area" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;text-align:center;">'
+                    + '<div style="font-size:30px;font-weight:700;color:'+accent+';line-height:1.6;">&#8220;'+focusText+'&#8221;</div>'
+                    + pPts
+                    + pVis
+                    + '</div>';
+            } else if (layout === 'bottom_bar') {
+                bodyHTML = '<div class="dk-area" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;text-align:center;">'
+                    + pTxt + pPts + pVis
+                    + '</div>';
+            } else if (layout === 'default') {
+                bodyHTML = '<div class="dk-area" style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;">'
+                    + (bodyText ? '<div style="font-size:24px;font-weight:700;color:'+textMain+';line-height:1.7;">'+bodyText+'</div>' : '')
+                    + pVis
+                    + '</div>';
+            } else {
+                // two_col 及未知布局：左要点/正文 + 右可视化
+                bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1.05fr 1fr;gap:22px 28px;align-items:stretch;">'
+                    + '<div style="grid-column:1;">' + pPts + pTxt + '</div>'
+                    + '<div style="grid-column:2;">' + pVis + '</div>'
+                    + '</div>';
+            }
+            sec.innerHTML =
+                '<div class="dk-pad-area">'
+                + '<div class="dk-kicker dk-reveal">核心知识点 ' + n + ' / ' + total + '</div>'
+                + '<div class="dk-title dk-reveal" contenteditable="false"' + (isCw ? ' data-el="title"' : '') + '>' + dkEsc(slide.title) + '</div>'
+                + (slide.subtitle ? '<div class="dk-subtitle dk-reveal"' + (isCw ? ' data-el="subtitle"' : '') + '>' + dkEsc(slide.subtitle) + '</div>' : '')
+                + bodyHTML
+                + '' // 底部强调条（bottom）已废弃，不再渲染
+                + '</div>'
+                + '<span class="dk-pageno" aria-hidden="true">' + n + '</span>';
+        }
+        // 构建完整演示舞台（一次性渲染全部胶片）
+        function buildDeck(poster, slides) {
+            if (window._deck) { window._deck.destroy && window._deck.destroy(); window._deck = null; }
+            if (window._deckViewport) { window._deckViewport.remove(); window._deckViewport = null; }
+            const vp = document.createElement('div');
+            vp.className = 'deck-viewport dk-theme-' + themeDkKey() + ' dk-layout-' + layoutGrammarKey();
+            const stage = document.createElement('div');
+            stage.className = 'deck-stage';
+            stage.id = 'deckStage';
+            slides.forEach(function (s, i) {
+                const sec = document.createElement('section');
+                sec.className = 'slide' + (i === 0 ? ' active visible' : '');
+                renderDeckSlideInto(sec, s, i);
+                stage.appendChild(sec);
+            });
+            // ── 追加随堂测验（最后一页） ──
+            (function(){
+                const quizIdx = slides.length;
+                const pal = _DK_PAL[themeDkKey()] || _DK_PAL.tech;
+                const sec = document.createElement('section');
+                sec.className = 'slide quiz-slide';
+                sec.id = 'deckQuizSlide';
+                const QN = 3, QPT = 5;
+                sec.innerHTML =
+                    '<div class="quiz-cover" id="quizCover">'
+                    + '<div class="quiz-cover-icon"></div>'
+                    + '<h2>随堂测验</h2>'
+                    + '<p class="qsub">检测你的学习成果</p>'
+                    + '<div class="qmeta">'
+                    + '<span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2"><path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg> '+QN+' 道题</span>'
+                    + '<span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 共 '+(QN*QPT)+' 分</span>'
+                    + '</div>'
+                    + '<button class="quiz-start-btn" id="quizStartBtn" type="button">开始答题 &rsaquo;</button>'
+                    + '<p class="quiz-err" id="quizErr" style="display:none"></p>'
+                    + '</div>'
+                    + '<div id="quizArea" style="display:none;flex:1;flex-direction:column;min-height:0;"></div>';
+                stage.appendChild(sec);
+                var cover = sec.querySelector('#quizCover');
+                var area = sec.querySelector('#quizArea');
+                var startBtn = sec.querySelector('#quizStartBtn');
+                var errEl = sec.querySelector('#quizErr');
+                var quizQ = window._currentQuery || (typeof videoQuery !== 'undefined' ? videoQuery : '') || '';
+                function begin(){
+                    startBtn.disabled = true;
+                    startBtn.textContent = '正在出题…';
+                    errEl.style.display = 'none';
+                    apiBase = location.origin;
+                    fetch(apiBase + '/api/v1/video/quiz', {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({query: quizQ})
+                    }).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j};});})
+                    .then(function(o){
+                        var list = o.ok && o.j && o.j.data && o.j.data.questions;
+                        if(!list || !list.length) throw new Error((o.j && o.j.error && o.j.error.message) || '未生成有效题目');
+                        renderQuiz(list.slice(0, QN));
+                    })
+                    .catch(function(e){
+                        startBtn.disabled = false;
+                        startBtn.innerHTML = '开始答题 &rsaquo;';
+                        errEl.textContent = '生成题目失败：' + e.message + '，可点击重试';
+                        errEl.style.display = 'block';
+                    });
+                }
+                function renderQuiz(qs){
+                    cover.style.display = 'none';
+                    area.style.display = 'flex';
+                    var LBL = ['A','B','C','D'];
+                    var sel = {}, submitted = false;
+                    var h = '<div class="quiz-top"><div class="qt-left"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><b>答题中</b><span class="qt-count" id="qCount">0/'+qs.length+'</span></div><button class="quiz-submit-btn" id="qSubmit" type="button">提交答案</button></div>'
+                    + '<div class="quiz-body"><div class="quiz-wm">' + (quizIdx < 9 ? '0' : '') + (quizIdx + 1) + '</div>';
+                    qs.forEach(function(q,i){
+                        h += '<div class="qq"><div class="qq-head"><div class="qq-num">' + (i+1) + '</div><div><div class="qq-title">' + esc(q.q) + '</div><div class="qq-meta">单选 · '+QPT+' 分</div></div></div>';
+                        (q.opts || []).forEach(function(op,j){
+                            h += '<div class="qq-opt" data-i="' + i + '" data-j="' + j + '"><span class="qq-label">' + LBL[j] + '</span><span>' + esc(op) + '</span></div>';
+                        });
+                        h += '<div class="qq-fb" id="fb' + i + '"></div></div>';
+                    });
+                    h += '<div class="quiz-done" id="qDone"></div></div>';
+                    area.innerHTML = h;
+                    var countEl = area.querySelector('#qCount');
+                    var subBtn = area.querySelector('#qSubmit');
+                    area.querySelectorAll('.qq-opt').forEach(function(el){
+                        el.addEventListener('click', function(){
+                            if(submitted) return;
+                            var i = Number(el.dataset.i), j = Number(el.dataset.j);
+                            sel[i] = j;
+                            area.querySelectorAll('.qq-opt[data-i="' + i + '"]').forEach(function(o){ o.classList.toggle('sel', o === el); });
+                            var n = Object.keys(sel).length;
+                            countEl.textContent = n + '/' + qs.length;
+                            subBtn.classList.toggle('ready', n === qs.length);
+                        });
+                    });
+                    subBtn.addEventListener('click', function(){
+                        if(submitted) return;
+                        if(Object.keys(sel).length < qs.length){ subBtn.textContent = '还有 ' + (qs.length - Object.keys(sel).length) + ' 题未作答'; return; }
+                        submitted = true;
+                        var right = 0;
+                        qs.forEach(function(q,i){
+                            var ok = sel[i] === q.ans;
+                            if(ok) right++;
+                            area.querySelectorAll('.qq-opt[data-i="' + i + '"]').forEach(function(o){
+                                var j = Number(o.dataset.j);
+                                if(j === q.ans) o.classList.add('right');
+                                else if(j === sel[i]) o.classList.add('bad');
+                            });
+                            var fb = area.querySelector('#fb' + i);
+                            fb.className = 'qq-fb show ' + (ok ? 'ok' : 'no');
+                            fb.innerHTML = (ok ? '<b>回答正确！</b>' : '<b>回答错误！正确答案是 ' + LBL[q.ans] + '.</b> ' + esc((q.opts||[])[q.ans]||'')) + '<span class="qq-exp">' + esc(q.exp||'暂无解析') + '</span>';
+                        });
+                        var done = area.querySelector('#qDone');
+                        done.className = 'quiz-done show';
+                        done.innerHTML = '<div class="qd-score">' + (right * QPT) + ' / ' + (qs.length * QPT) + ' 分</div><div class="qd-tip">' + (right === qs.length ? '全部正确，太棒了！' : '答对 ' + right + ' / ' + qs.length + ' 题，解析见上方') + '</div>';
+                        subBtn.textContent = '已提交';
+                        subBtn.classList.remove('ready');
+                        subBtn.disabled = true;
+                    });
+                }
+                function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+                startBtn.addEventListener('click', begin);
+            })();
+            vp.appendChild(stage);
+            poster.appendChild(vp);
+            window._deckViewport = vp;
+            window._deck = new SlidePresentation(stage, vp);
+            window._deckShow = function (idx, reason) { if (window._deck) window._deck.goTo(idx, reason || 'api'); };
+            return window._deck;
+        }
+        // 演示控制器：整台等比缩放 + 键盘/滚轮/触屏翻页 + onChange 同步
+        class SlidePresentation {
+            constructor(stage, viewport) {
+                this.stage = stage;
+                this.viewport = viewport;
+                this.slides = Array.from(stage.querySelectorAll('.slide'));
+                this.index = 0;
+                this.onChange = null;
+                this._touchX = null;
+                this._flashEl = this._makeFlash();
+                this._setupScale();
+                this._setupKeys();
+                this._setupWheel();
+                this._setupTouch();
+                this._goTo(0, 'init');
+            }
+            destroy() {
+                window.removeEventListener('resize', this._onResize);
+                this._flashEl && this._flashEl.remove();
+            }
+            _makeFlash() {
+                const el = document.createElement('div');
+                el.className = 'deck-page-flash';
+                document.body.appendChild(el);
+                return el;
+            }
+            _setupScale() {
+                this._onResize = () => {
+                    const w = this.viewport.clientWidth, h = this.viewport.clientHeight;
+                    if (!w || !h) return;
+                    const factor = Math.min(w / 1920, h / 1080);
+                    const x = (w - 1920 * factor) / 2;
+                    const y = (h - 1080 * factor) / 2;
+                    this.stage.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + factor + ')';
+                };
+                this._setupScaleRef = this._onResize;
+                this._onResize();
+                window.addEventListener('resize', this._onResize);
+            }
+            _setupKeys() {
+                document.addEventListener('keydown', function _dkKey(e) {
+                    const d = window._deck; if (!d) return;
+                    const t = e.target;
+                    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+                    if (e.metaKey || e.ctrlKey || e.altKey) return;
+                    const k = e.key;
+                    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') d.goTo(d.index + 1, 'user');
+                    else if (k === 'ArrowLeft' || k === 'PageUp') d.goTo(d.index - 1, 'user');
+                    else if (k === 'Home') d.goTo(0, 'user');
+                    else if (k === 'End') d.goTo(d.slides.length - 1, 'user');
+                    else return;
+                    e.preventDefault(); d._flash();
+                });
+            }
+            _setupWheel() {
+                // 已按用户要求完全禁用：上下滚动不再触发 PPT 翻页
+                // （翻页仅保留：键盘方向键/空格、触屏横向滑动、点击侧栏与按钮）
+            }
+            _setupTouch() {
+                this.viewport.addEventListener('touchstart', (e) => { this._touchX = e.changedTouches[0].clientX; }, { passive: true });
+                this.viewport.addEventListener('touchend', (e) => {
+                    if (this._touchX === null) return;
+                    const dx = e.changedTouches[0].clientX - this._touchX;
+                    if (Math.abs(dx) > 46) window._deck.goTo(this.index + (dx < 0 ? 1 : -1), 'user');
+                    this._touchX = null;
+                }, { passive: true });
+            }
+            _goTo(i, reason) {
+                const n = Math.max(0, Math.min(this.slides.length - 1, i));
+                if (n === this.index) return;
+                this.index = n;
+                this.slides.forEach((s, ix) => {
+                    s.classList.toggle('active', ix === n);
+                    s.classList.toggle('visible', ix === n);
+                });
+                if (this.onChange) this.onChange({ index: n, reason: reason });
+            }
+            goTo(i, reason) { this._goTo(i, reason); }
+            next(reason) { this._goTo(this.index + 1, reason || 'api'); }
+            prev(reason) { this._goTo(this.index - 1, reason || 'api'); }
+            _flash() {
+                if (!this._flashEl) return;
+                this._flashEl.textContent = (this.index + 1) + ' / ' + this.slides.length;
+                this._flashEl.classList.add('show');
+                clearTimeout(this._flashTimer);
+                this._flashTimer = setTimeout(() => this._flashEl.classList.remove('show'), 650);
+            }
+        }
+        // 内联编辑：E 键 + Ctrl+S（入口为键盘快捷键，不再显示热区/浮动按钮）
+        function initDeckEditor(getPause) {
+            let active = false;
+            // ── AI 修改本页工具条（编辑模式下显示）──
+            const aiBar = document.createElement('div');
+            aiBar.className = 'ai-edit-bar';
+            aiBar.innerHTML =
+                '<span class="ai-page-tag" id="aiPageTag">本页</span>'
+                + '<input id="aiEditInput" type="text" placeholder="用一句话描述要改什么，如：把右侧图表换成雷达图" maxlength="200">'
+                + '<button id="aiEditBtn" title="调用 AI 按指令增量修改本页"><i class="fas fa-wand-magic-sparkles"></i> AI 修改本页</button>'
+                + '<button id="aiUndoBtn" class="ghost" title="撤销上一次 AI 修改" style="display:none;">撤销</button>'
+                + '<button id="aiSaveBtn" class="ghost" title="把当前编辑结果保存到服务器">保存到服务器</button>'
+                + '<span class="ai-status" id="aiStatus"></span>';
+            document.body.appendChild(aiBar);
+            const aiHistory = []; // 每页的撤销栈：{ idx, prev }
+            function setAiStatus(msg) { const el = document.getElementById('aiStatus'); if (el) el.textContent = msg || ''; }
+            function refreshAiBar() {
+                if (!active) return;
+                const tag = document.getElementById('aiPageTag');
+                const idx = window._currentSlideIdx || 0;
+                const total = (window._slidesData || []).length;
+                if (tag) tag.textContent = idx < total ? '第 ' + (idx + 1) + '/' + total + ' 页' : '随堂测验页';
+                const dis = idx >= total;
+                const inp = document.getElementById('aiEditInput'); if (inp) inp.disabled = dis;
+                const btn = document.getElementById('aiEditBtn'); if (btn) btn.disabled = dis;
+            }
+            async function doAiPatch() {
+                const idx = window._currentSlideIdx || 0;
+                const slides = window._slidesData;
+                const input = document.getElementById('aiEditInput');
+                const btn = document.getElementById('aiEditBtn');
+                const instruction = input && input.value.trim();
+                if (!slides || !slides[idx] || !instruction) { setAiStatus('请先输入修改指令'); return; }
+                btn.disabled = true; setAiStatus('AI 修改中…');
+                try {
+                    const res = await fetch('/api/v1/ppt/patch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ task_id: window._currentTaskId, slide_index: idx, instruction })
+                    });
+                    const payload = await res.json();
+                    if (!res.ok) throw new Error(payload.error?.message || 'AI 修改失败');
+                    aiHistory.push({ idx, prev: slides[idx] });
+                    document.getElementById('aiUndoBtn').style.display = '';
+                    slides[idx] = payload.data.slide;
+                    // 仅重渲染该页
+                    const sec = document.querySelectorAll('#deckStage .slide')[idx];
+                    if (sec) renderDeckSlideInto(sec, slides[idx], idx);
+                    try { localStorage.setItem('watch_deck_edit_' + window._currentTaskId, JSON.stringify(slides)); } catch (e) {}
+                    const warns = payload.data.warnings || [];
+                    setAiStatus(warns.length ? '已修改（自动修正 ' + warns.length + ' 处格式）' : '已修改');
+                    if (input) input.value = '';
+                } catch (e) {
+                    setAiStatus(e.message);
+                } finally {
+                    btn.disabled = false;
+                }
+            }
+            function doAiUndo() {
+                const last = aiHistory.pop();
+                if (!last) return;
+                const slides = window._slidesData;
+                slides[last.idx] = last.prev;
+                const sec = document.querySelectorAll('#deckStage .slide')[last.idx];
+                if (sec) { renderDeckSlideInto(sec, slides[last.idx], last.idx); if (active) applyEdit(true); }
+                try { localStorage.setItem('watch_deck_edit_' + window._currentTaskId, JSON.stringify(slides)); } catch (e) {}
+                if (!aiHistory.length) document.getElementById('aiUndoBtn').style.display = 'none';
+                setAiStatus('已撤销');
+            }
+            async function saveToServer() {
+                const slides = window._slidesData;
+                if (!slides || !window._currentTaskId) { setAiStatus('无可保存内容'); return; }
+                setAiStatus('保存中…');
+                try {
+                    const res = await fetch('/api/v1/video/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ task_id: window._currentTaskId, slides })
+                    });
+                    const payload = await res.json();
+                    if (!res.ok) throw new Error(payload.error?.message || '保存失败');
+                    setAiStatus('已保存到服务器（' + payload.data.saved + ' 页）');
+                } catch (e) { setAiStatus(e.message); }
+            }
+            aiBar.addEventListener('click', function (ev) { ev.stopPropagation(); });
+            aiBar.addEventListener('keydown', function (ev) {
+                ev.stopPropagation();
+                if (ev.key === 'Enter' && ev.target.id === 'aiEditInput') doAiPatch();
+            });
+            document.getElementById('aiEditBtn').addEventListener('click', doAiPatch);
+            document.getElementById('aiUndoBtn').addEventListener('click', doAiUndo);
+            document.getElementById('aiSaveBtn').addEventListener('click', saveToServer);
+            function applyEdit(on) {
+                document.querySelectorAll('#playerPoster #deckStage .dk-title, #playerPoster #deckStage .dk-subtitle, #playerPoster #deckStage .dk-bottom, #playerPoster #deckStage .dk-kicker, #playerPoster #deckStage [data-edit="points"], #playerPoster #deckStage [data-edit="body"]')
+                    .forEach(el => { el.setAttribute('contenteditable', on ? 'true' : 'false'); });
+            }
+            function saveEdits() {
+                const slides = window._slidesData; if (!slides) return;
+                document.querySelectorAll('#deckStage .slide').forEach(function (sec, idx) {
+                    const s = slides[idx]; if (!s) return;
+                    const t = sec.querySelector('.dk-title');
+                    const b = sec.querySelector('.dk-bottom');
+                    const p = sec.querySelector('[data-edit="points"]');
+                    const body = sec.querySelector('[data-edit="body"]');
+                    if (t) s.title = t.textContent.trim();
+                    if (b) s.bottom = b.textContent.trim();
+                    if (p) s.left = p.textContent.trim();
+                    if (body) s.text = body.textContent.trim();
+                });
+                try { localStorage.setItem('watch_deck_edit_' + window._currentTaskId, JSON.stringify(slides)); } catch (e) {}
+            }
+            function toggleEdit() {
+                active = !active;
+                applyEdit(active);
+                aiBar.classList.toggle('show', active);
+                if (active) refreshAiBar(); else setAiStatus('');
+                if (!active) saveEdits();
+                const btn = document.getElementById('deckEditBtn');
+                if (btn) btn.classList.toggle('active', active);
+                if (typeof getPause === 'function') getPause(active);
+            }
+            window.toggleDeckEdit = toggleEdit;
+            // 翻页时同步 AI 条的页码标签
+            setInterval(function () { if (active) refreshAiBar(); }, 500);
+            document.addEventListener('keydown', function _dkEdit(e) {
+                if (active && (e.target.closest && e.target.closest('.ai-edit-bar'))) return;
+                if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) toggleEdit();
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && active) { e.preventDefault(); saveEdits(); saveToServer(); }
+            });
+        }
+
         function renderSlideCard(container, slide, idx) {
+            // —— 已升级为 frontend-slides 固定16:9 演示舞台导航 ——
+            if (window._deck) window._deck.goTo(idx, 'bridge');
+            return;
             const total = window._totalSlides || 1;
             const pct = Math.round((idx + 1) / total * 100);
-            const accent = '#1e40af';
-            const accentLight = '#dbeafe';
+            const _PALS = { '教学清新':['#1e40af','#dbeafe','#64748b'], '极简白':['#2563eb','#eff6ff','#9ca3af'], '深色科技':['#0891b2','#cffafe','#475569'], '商务蓝':['#1d4ed8','#dbeafe','#64748b'], '活泼多彩':['#e11d48','#fecdd3','#92400e'] };
+            const _pal = _PALS[window._slideStyle] || _PALS['教学清新'];
+            const accent = _pal[0];
+            const accentLight = _pal[1];
             const textMain = '#1e293b';
-            const textSub = '#64748b';
+            const textSub = _pal[2];
 
             const mainTitle = slide.title || '';
             const subTitle = slide.subtitle || '';
 
             // 生成所有 visuals + diagram（diagram 单独渲染大图，不混入 visuals 网格）
-            const visuals = slide.visuals || [];
+            const visuals = Array.isArray(slide.visuals) ? slide.visuals : [];
             const hasDiagram = !!(slide.diagram && slide.diagram.type && slide.diagram.type !== 'none' && slide.diagram.data);
-            const visualCards = visuals.map(v => renderVisual(v, accent, accentLight, textMain, textSub)).filter(Boolean);
+            const layout = slide.layout || 'default';
+            const panelVis = (layout === 'two_col' && !hasDiagram && visuals.length) ? (visuals.find(function(v){return v && v.type === 'table';}) || visuals[0]) : null;
+            const gridVisuals = panelVis ? visuals.filter(function (v) { return v !== panelVis; }) : visuals;
+            const visualCards = gridVisuals.map(v => renderVisual(v, accent, accentLight, textMain, textSub)).filter(Boolean);
+            const panelVisual = panelVis ? renderVisual(panelVis, accent, accentLight, textMain, textSub) : '';
             const diagramBlock = hasDiagram ? renderDiagram(slide.diagram, accent, accentLight, textMain) : '';
 
             // visuals 网格：1列/2列/3列
             const colCount = visualCards.length <= 1 ? 1 : visualCards.length <= 4 ? 2 : 3;
             const visualsGrid = visualCards.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(${colCount},1fr);gap:${colCount===1?'10px':'8px'};margin-top:${colCount===1?'10px':'12px'};">${visualCards.join('')}</div>` : '';
 
-            const layout = slide.layout || 'default';
             let contentArea = '';
 
             if (layout === 'two_col') {
                 const leftBlock = renderContentBlock(slide.left || slide.text, accent, accentLight, textMain, false);
                 const rightBlock = renderContentBlock(slide.right || slide.code, accent, accentLight, textMain, true);
+                const lbCount = String(slide.left || '').split('\n').map(function(s){return s.trim();}).filter(Boolean).length;
+                const leftExtra = (!hasDiagram && slide.text && lbCount <= 3) ? '<div style="font-size:13px;color:' + textMain + ';line-height:1.75;background:' + accentLight + ';border-radius:8px;padding:10px;margin-top:8px;">' + String(slide.text).replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '';
                 contentArea = `
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;height:100%;">
                     <div style="display:flex;flex-direction:column;gap:10px;">
                         <div style="font-size:15px;color:${accent};font-weight:700;border-left:4px solid ${accent};padding-left:10px;">核心要点</div>
-                        ${leftBlock}
+                        ${leftBlock}${leftExtra}
                     </div>
                     <div style="display:flex;flex-direction:column;gap:10px;">
                         <div style="font-size:15px;color:${accent};font-weight:700;border-left:4px solid ${accent};padding-left:10px;">可视化分析</div>
-                        ${hasDiagram && diagramBlock ? diagramBlock : rightBlock}
+                        ${hasDiagram && diagramBlock ? diagramBlock : (panelVisual || rightBlock)}
                     </div>
                 </div>${visualsGrid}`;
             } else if (layout === 'triple') {
@@ -3156,6 +4137,69 @@ img { max-width: 100%; }
                     <div style="font-size:14px;line-height:1.9;color:${textMain};">${slide.text || ''}</div>
                     <div>${diagramBlock || visualsGrid || renderContentBlock(slide.right || slide.code, accent, accentLight, textMain, true)}</div>
                 </div>`;
+            } else if (layout === 'bottom_bar') {
+                const leftBlock = renderContentBlock(slide.left || slide.text, accent, accentLight, textMain, false);
+                contentArea = `
+                <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100%;gap:14px;text-align:center;">
+                    ${slide.text ? `<div style="font-size:18px;font-weight:700;color:${accent};line-height:1.7;">${slide.text}</div>` : ''}
+                    ${leftBlock ? `<div style="max-width:800px;width:100%;">${leftBlock}</div>` : ''}
+                    ${diagramBlock || visualsGrid || ''}
+                </div>`;
+            } else if (layout === 'chart_top') {
+                const leftBlock = renderContentBlock(slide.left || slide.text, accent, accentLight, textMain, false);
+                contentArea = `
+                <div style="display:flex;flex-direction:column;gap:14px;height:100%;">
+                    ${hasDiagram && diagramBlock ? `<div style="flex:1 1 auto;min-height:0;">${diagramBlock}</div>` : (visualsGrid ? `<div>${visualsGrid}</div>` : '')}
+                    <div style="flex:0 0 auto;">
+                        <div style="font-size:15px;color:${accent};font-weight:700;border-left:4px solid ${accent};padding-left:10px;margin-bottom:8px;">核心要点</div>
+                        ${leftBlock}
+                    </div>
+                </div>`;
+            } else if (layout === 'chart_left') {
+                const leftBlock = renderContentBlock(slide.left || slide.text, accent, accentLight, textMain, false);
+                contentArea = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;height:100%;">
+                    <div>${diagramBlock || visualsGrid || renderContentBlock(slide.right || slide.code, accent, accentLight, textMain, true)}</div>
+                    <div>
+                        <div style="font-size:15px;color:${accent};font-weight:700;border-left:4px solid ${accent};padding-left:10px;margin-bottom:8px;">核心要点</div>
+                        ${leftBlock}
+                    </div>
+                </div>`;
+            } else if (layout === 'cards') {
+                const cardItems = String(slide.left || slide.text || '').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+                const cardBg = ['#eef2ff','#f0fdf4','#fffbeb','#fdf2f8'];
+                const cardBd = ['#4F6BF0','#22C55E','#F59E0B','#EC4899'];
+                const cardHtml = cardItems.slice(0,4).map(function(it,i){
+                    const num = ['&#9312;','&#9313;','&#9314;','&#9315;'][i] || '&#9312;';
+                    const escx = String(it).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    return '<div style="background:'+cardBg[i]+';border-radius:12px;padding:16px;border-top:4px solid '+cardBd[i]+';display:flex;gap:10px;align-items:flex-start;"><span style="font-size:22px;flex-shrink:0;">'+num+'</span><div style="font-size:14px;line-height:1.7;color:'+textMain+';">'+escx+'</div></div>';
+                }).join('');
+                contentArea = `
+                <div style="display:flex;flex-direction:column;gap:12px;height:100%;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">${cardHtml}</div>
+                    ${diagramBlock || visualsGrid || ''}
+                </div>`;
+            } else if (layout === 'timeline') {
+                const stepItems = String(slide.left || slide.text || '').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+                const stepHtml = stepItems.map(function(st,i){
+                    const escx = String(st).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    return '<div style="flex:1;text-align:center;position:relative;padding-top:20px;"><div style="width:26px;height:26px;line-height:26px;border-radius:50%;background:'+accent+';color:#fff;font-size:12px;font-weight:700;margin:0 auto 8px;position:relative;z-index:1;">'+(i+1)+'</div><div style="font-size:13px;line-height:1.7;color:'+textMain+';background:#f8fafc;border-radius:10px;padding:12px;border:1px solid #e2e8f0;">'+escx+'</div></div>';
+                }).join('');
+                const stepLine = stepItems.length > 1 ? '<div style="position:absolute;top:13px;left:12%;right:12%;height:2px;background:'+accentLight+';"></div>' : '';
+                contentArea = `
+                <div style="display:flex;flex-direction:column;gap:14px;height:100%;">
+                    <div style="display:flex;gap:12px;position:relative;padding:0 8px;">${stepLine}${stepHtml}</div>
+                    ${diagramBlock || visualsGrid || ''}
+                </div>`;
+            } else if (layout === 'focus') {
+                const focusText = String(slide.text || (String(slide.left || '').split('\n')[0] || '')).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const leftBlock = renderContentBlock(slide.left || '', accent, accentLight, textMain, false);
+                contentArea = `
+                <div style="display:flex;flex-direction:column;justify-content:center;height:100%;gap:16px;text-align:center;">
+                    <div style="font-size:24px;font-weight:700;color:${accent};line-height:1.7;">&#8220;${focusText}&#8221;</div>
+                    <div style="max-width:820px;width:100%;margin:0 auto;text-align:left;">${leftBlock}</div>
+                    ${diagramBlock || visualsGrid || ''}
+                </div>`;
             } else {
                 contentArea = `
                 <div style="display:flex;flex-direction:column;justify-content:flex-start;height:100%;gap:10px;">
@@ -3166,10 +4210,11 @@ img { max-width: 100%; }
                 </div>`;
             }
 
-            const bottomBar = slide.bottom ? `<div style="background:${accent};color:#fff;text-align:center;padding:12px 24px;font-size:14px;font-weight:600;margin:0 -34px -24px -34px;">${slide.bottom}</div>` : '';
+            const bottomBar = ''; // 底部强调条（bottom）已废弃，不再渲染
 
             const dotStyle = (i) => `style="display:inline-block;width:${i===idx?28:8}px;height:8px;border-radius:4px;background:${i===idx?accent:'#cbd5e1'};transition:all .3s;margin:0 3px;"`;
             const dots = Array.from({length:total},(_,i)=>`<span ${dotStyle(i)}></span>`).join('');
+            const artImg = (window._slideImages || {})[idx];
 
             container.innerHTML = `
             <div style="display:flex;flex-direction:column;width:100%;height:100%;background:#ffffff;border-radius:14px;overflow:hidden;position:relative;box-shadow:0 10px 40px rgba(0,0,0,.08);">
@@ -3182,6 +4227,7 @@ img { max-width: 100%; }
                     ${subTitle ? `<p style="color:${textSub};font-size:13px;margin-top:4px;">${subTitle}</p>` : ''}
                 </div>
                 <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-start;padding:18px 30px;overflow:auto;color:${textMain};">
+                    ${artImg ? `<div style="display:flex;justify-content:center;margin-bottom:12px;"><img src="${artImg}" alt="" style="max-width:100%;max-height:240px;width:auto;object-fit:contain;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.12);"/></div>` : ''}
                     ${contentArea}
                 </div>
                 ${bottomBar}
@@ -3197,24 +4243,92 @@ img { max-width: 100%; }
         function renderSlides(slides) {
             window._totalSlides = slides.length;
             const list = document.getElementById('sceneList');
-            const icons = ['fa-lightbulb','fa-book-open','fa-gear','fa-chart-line','fa-check-circle'];
-            list.innerHTML = slides.map((s, i) => `
-                <div class="scene-item" id="slide-nav-${i}" onclick="jumpToSlide(${i})" style="display:flex;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:.2s;border:1px solid transparent;align-items:center;">
-                    <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:15px;color:#818cf8;">${i+1}</div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            <i class="fas ${icons[i%icons.length]}" style="color:#818cf8;margin-right:6px;font-size:12px;"></i>${s.title}
-                        </div>
-                        <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.text.slice(0,40)}…</div>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color:var(--text-muted);font-size:10px;"></i>
-                </div>
-            `).join('');
-            // Add scene-item class behaviors via inline styles
+            const _tp = { '教学清新':'#1e40af','极简白':'#2563eb','深色科技':'#0891b2','商务蓝':'#1d4ed8','活泼多彩':'#e11d48' }[window._slideStyle] || '#1e40af';
+            const escs = function(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+            function miniBody(s){
+                var ls = String(s.left||'').split('\n').map(function(x){return x.replace(/^[-•·]\s*/,'').trim();}).filter(Boolean).slice(0,3);
+                if(!ls.length){ var tx=String(s.text||'').replace(/<[^>]*>/g,' ').trim(); if(tx) ls.push(tx.slice(0,40)); }
+                var o=[];
+                for(var k=0;k<ls.length&&k<3;k++){ o.push('<div style="display:flex;gap:4px;align-items:flex-start;margin:2px 0;"><span style="width:4px;height:4px;border-radius:50%;background:'+_tp+';margin-top:4px;flex-shrink:0;"></span><span style="font-size:9px;line-height:1.35;color:#334155;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">'+escs(ls[k])+'</span></div>'); }
+                return o.join('');
+            }
+            list.innerHTML = slides.map(function(s,i){
+                return '<div class="scene-item" id="slide-nav-'+i+'" onclick="jumpToSlide('+i+')" title="'+escs(s.title)+'" style="margin-bottom:8px;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.1);transition:.18s;position:relative;">'
+                  + '<img src="/api/v1/video/slide-svg?task_id='+encodeURIComponent(window._currentTaskId||'')+'&index='+i+'" alt="" style="width:100%;display:block;" loading="lazy">'
+                  + '<div style="position:absolute;left:6px;top:6px;background:rgba(15,23,42,.65);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;">'+(i+1)+'</div>'
+                  + '</div>';
+            }).join('')
+            + '<div class="scene-item" id="slide-nav-'+slides.length+'" onclick="jumpToSlide('+slides.length+')" title="随堂测验" style="margin-bottom:8px;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;background:linear-gradient(135deg,#f5f3ff,#fdf2f8);box-shadow:0 1px 4px rgba(0,0,0,.1);transition:.18s;position:relative;padding:14px 12px;text-align:center;">'
+            + '<div style="margin-bottom:6px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></div>'
+            + '<div style="font-size:11px;font-weight:700;color:#7C5CF0;">随堂测验</div>'
+            + '<div style="font-size:9px;color:#a78bfa;margin-top:2px;">3 道题</div>'
+            + '</div>';
             list.querySelectorAll('[id^="slide-nav-"]').forEach(el => {
-                el.addEventListener('mouseenter', () => { el.style.background = 'var(--bg-card)'; el.style.borderColor = 'var(--border)'; });
-                el.addEventListener('mouseleave', () => { if (!el.classList.contains('active')) { el.style.background = ''; el.style.borderColor = 'transparent'; } });
+                el.addEventListener('mouseenter', () => { el.style.borderColor = 'var(--border)'; });
+                el.addEventListener('mouseleave', () => { if (!el.classList.contains('active')) el.style.borderColor = 'transparent'; });
             });
+        }
+
+        // ===== 讲义笔记（参考 OpenMAIC lecture-notes：逐句讲稿 + 动作图标 + 当前句高亮 + 点击跳转）=====
+        let _cwNotesEl = null;
+        function _cwNoteIcon(fx) {
+            return { spot: '🔦', pulse: '✨', underline: '＿', zoom: '🔍' }[fx] || '';
+        }
+        function _cwNoteEsc(x) {
+            return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function _ensureCwNotes() {
+            if (_cwNotesEl) return _cwNotesEl;
+            const d = document.createElement('div');
+            d.id = 'cwNotesDrawer';
+            d.className = 'cw-notes-drawer';
+            d.innerHTML = '<div class="cw-notes-head"><span class="cw-notes-title">📖 讲义笔记</span><span class="cw-notes-close" onclick="toggleCwNotes()" title="关闭">×</span></div><div class="cw-notes-body" id="cwNotesBody"></div>';
+            document.body.appendChild(d);
+            _cwNotesEl = d;
+            return d;
+        }
+        function renderCwNotes() {
+            const pages = (window._cwPlayer && window._cwPlayer.pages) || window._cwPages || [];
+            const body = document.getElementById('cwNotesBody');
+            if (!body) return;
+            body.innerHTML = pages.map(function (p, pi) {
+                const narr = p.narration || [];
+                if (!narr.length) return '';
+                const rows = narr.map(function (s, sj) {
+                    const ic = _cwNoteIcon(s.fx);
+                    return '<div class="cw-note-sent" data-np="' + pi + '" data-ns="' + sj + '" onclick="cwNoteJump(' + pi + ',' + sj + ')">'
+                        + (ic ? '<span class="cw-note-ic">' + ic + '</span>' : '')
+                        + '<span class="cw-note-tx">' + _cwNoteEsc(s.text) + '</span></div>';
+                }).join('');
+                return '<div class="cw-notes-page" data-np="' + pi + '">'
+                    + '<div class="cw-notes-page-head"><span class="cw-notes-page-num">第 ' + (pi + 1) + ' 页</span><span class="cw-notes-page-title">' + _cwNoteEsc(p.title || '') + '</span></div>'
+                    + rows + '</div>';
+            }).join('');
+        }
+        function toggleCwNotes() {
+            const d = _ensureCwNotes();
+            const open = d.style.display !== 'flex';
+            d.style.display = open ? 'flex' : 'none';
+            if (open) {
+                renderCwNotes();
+                if (window._cwPlayer) window._cwPlayer._notifySentence();
+            }
+            const btn = document.getElementById('notesToggleBtn');
+            if (btn) btn.classList.toggle('active', open);
+        }
+        function cwNoteJump(pi, sj) {
+            if (window._cwPlayer) window._cwPlayer.jumpToSentence(pi, sj);
+        }
+        function cwNotesSetActive(pi, sj) {
+            if (!_cwNotesEl || _cwNotesEl.style.display !== 'block') return;
+            _cwNotesEl.querySelectorAll('.cw-note-sent').forEach(function (el) {
+                el.classList.toggle('active', Number(el.dataset.np) === pi && Number(el.dataset.ns) === sj);
+            });
+            _cwNotesEl.querySelectorAll('.cw-notes-page').forEach(function (el) {
+                el.classList.toggle('current', Number(el.dataset.np) === pi);
+            });
+            const active = _cwNotesEl.querySelector('.cw-note-sent.active');
+            if (active && active.scrollIntoView) active.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
 
         function jumpToSlide(idx) {
@@ -3711,5 +4825,8 @@ img { max-width: 100%; }
         </div>
     </div>
 
+    <script src="lieflat-charts.js"></script>
+<script src="scene-templates.js"></script>
+<script src="courseware-engine.js"></script>
 </body>
 </html>

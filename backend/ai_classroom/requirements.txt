@@ -1,0 +1,14 @@
+# AI Classroom Backend — Dependencies
+Django>=4.2,<5.1
+djangorestframework>=3.14,<3.16
+django-cors-headers>=4.0,<5.1
+edge-tts>=6.1
+moviepy>=2.0
+Pillow>=10.0
+matplotlib>=3.7
+
+# Optional: for production
+# gunicorn>=21.2
+# psycopg2-binary>=2.9
+# redis>=5.0
+# celery>=5.3

@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+:root {
+  --bg: #F0F2F5;
+  --bg-2: #FFFFFF;
+  --bg-3: #E8EAED;
+  --border: #D8DCE1;
+  --border-soft: #C4C9D1;
+  --text: #1A1D21;
+  --text-2: #4A5260;
+  --text-muted: #8A929E;
+  --accent: #4A5260;
+  --accent-dim: #E2E5EA;
+  --accent-green: #3FB950;
+  --accent-orange: #F78166;
+  --accent-purple: #BC8CFF;
+  --accent-yellow: #E3B341;
+  --tag-fe: #DBEAFE;
+  --tag-fe-text: #1D4ED8;
+  --tag-algo: #DCFCE7;
+  --tag-algo-text: #15803D;
+  --tag-be: #FEF3C7;
+  --tag-be-text: #B45309;
+  --tag-ai: #EDE9FE;
+  --tag-ai-text: #7C3AED;
+  --tag-gen: #F5F0E8;
+  --tag-gen-text: #92400E;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-soft); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

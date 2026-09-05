@@ -1,3 +1,11 @@
+# ── Node 依赖与缓存（originkit/Next.js 引入，不提交） ──
+node_modules/
+.npm-cache/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
 # ── 敏感文件（不提交） ──
 .env
 data/store.json

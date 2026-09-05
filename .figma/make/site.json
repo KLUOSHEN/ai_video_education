@@ -1,0 +1,10 @@
+{
+  "description": "Facilitates dynamic learning and discussion with a user-friendly forum layout designed for seamless knowledge exchange and community engagement.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

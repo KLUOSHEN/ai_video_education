@@ -129,7 +129,7 @@
   }
   .canvas-wrap.dragging { cursor: grabbing; }
   .viewport { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
-  .edge-svg { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+  .edge-svg { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: auto; }
 
   .node {
     position: absolute;
@@ -145,6 +145,8 @@
     transition: box-shadow var(--dur-fast) var(--ease-snap), border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-spring);
   }
   .node:active { transform: scale(0.97); }
+  .node { touch-action: none; }
+  .node.dragging, .node.dragging:hover, .node.dragging:active { transform: none; cursor: grabbing; z-index: 30; transition: none; }
   .node.selected { z-index: 20; box-shadow: 0 0 0 2px rgba(79,107,240,0.7), 0 8px 28px rgba(15,23,42,0.18); }
 
   .node.not_started { border-color: #CBD5E1; background: #FFFFFF; color: #64748B; }
@@ -155,6 +157,28 @@
   .node.mastered   { border-color: #EAB308; background: #FEF9C3; color: #713F12;
     box-shadow: 0 0 14px rgba(234,179,8,0.26); }
   .node.is-current { box-shadow: 0 0 0 2px var(--primary), 0 0 16px rgba(79,107,240,0.4); }
+
+  /* Obsidian Canvas 风格连接点 */
+  .node .port {
+    position: absolute; width: 10px; height: 10px; border-radius: 50%;
+    background: #94A3B8; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    opacity: 0; transition: opacity var(--dur-fast) var(--ease-snap), transform var(--dur-fast) var(--ease-snap), background var(--dur-fast) var(--ease-snap);
+    z-index: 5; cursor: crosshair; pointer-events: auto;
+  }
+  .node:hover .port, .node.selected .port { opacity: 1; }
+  .node .port:hover { background: var(--primary); transform: scale(1.25); }
+  .node .port.left  { left: -5px; top: 50%; transform: translateY(-50%); }
+  .node .port.right { right: -5px; top: 50%; transform: translateY(-50%); }
+  .node .port.top   { top: -5px; left: 50%; transform: translateX(-50%); }
+  .node .port.bottom{ bottom: -5px; left: 50%; transform: translateX(-50%); }
+
+  /* 连线编辑态 */
+  .edge { fill: none; stroke: #CBD5E1; stroke-width: 1.2; transition: stroke var(--dur-fast) var(--ease-snap), stroke-width var(--dur-fast) var(--ease-snap), filter var(--dur-fast) var(--ease-snap); cursor: pointer; marker-end: url(#arrowhead); pointer-events: none; }
+  .edge-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; pointer-events: stroke; }
+  .edge-hit:hover + .edge, .edge:hover { stroke: var(--primary); stroke-width: 2.2; filter: drop-shadow(0 0 3px rgba(79,107,240,0.35)); marker-end: url(#arrowhead-active); }
+  .edge.selected { stroke: var(--danger); stroke-width: 2.4; filter: drop-shadow(0 0 4px rgba(239,68,68,0.35)); marker-end: url(#arrowhead-danger); }
+  .edge.animated { filter: drop-shadow(0 0 2px currentColor); }
+  .edge-preview { fill: none; stroke: var(--primary); stroke-width: 1.8; pointer-events: none; opacity: 0.85; filter: drop-shadow(0 0 4px rgba(79,107,240,0.4)); marker-end: url(#arrowhead-active); }
 
   @keyframes pulse {
     0%,100% { box-shadow: 0 0 12px rgba(245,158,11,0.3); }
@@ -179,10 +203,6 @@
     background: var(--primary); color: #FFFFFF;
     font-size: 10px; font-weight: 800;
   }
-  .handle { position: absolute; left: 50%; width: 8px; height: 8px; border-radius: 50%;
-    background: #94A3B8; transform: translateX(-50%); }
-  .handle.top { top: -5px; } .handle.bottom { bottom: -5px; }
-
   /* ── 详情面板 ── */
   .detail {
     width: 300px; flex-shrink: 0; overflow-y: auto;
@@ -260,6 +280,73 @@
   .hint { position: absolute; left: 16px; bottom: 16px; font-size: 11.5px; color: var(--text-muted);
     background: rgba(255,255,255,0.9); padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border); z-index: 40; }
 
+  /* ── 添加笔记 / 添加节点按钮 ── */
+  .add-btns { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 40;
+    display: flex; align-items: center; gap: 10px; }
+  .add-node-btn, .add-note-btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 999px;
+    border: 1px solid var(--border); background: #fff; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit; box-shadow: 0 4px 14px rgba(15,23,42,.12);
+    transition: border-color var(--dur-fast) var(--ease-snap), box-shadow var(--dur-fast) var(--ease-snap), transform var(--dur-fast) var(--ease-snap); }
+  .add-node-btn { color: var(--primary); }
+  .add-note-btn { color: var(--emerald); }
+  .add-node-btn:hover, .add-note-btn:hover { border-color: var(--primary); box-shadow: 0 6px 20px rgba(79,107,240,.28); transform: translateY(-1px); }
+  .add-node-btn:active, .add-note-btn:active { transform: scale(.96); }
+
+  /* ── 笔记卡片(4:3) ── */
+  .note-card { width: 300px; height: 225px; padding: 0; display: flex; flex-direction: column; overflow: hidden; cursor: pointer; }
+  .note-head { padding: 10px 14px 6px; }
+  .note-title { display: block; font-size: 15px; font-weight: 800; color: var(--text); line-height: 1.3; word-break: break-word; }
+  .note-title.placeholder { color: var(--text-dim); font-style: normal; opacity: 1; }
+  .note-body { flex: 1; padding: 4px 14px 12px; font-size: 13px; line-height: 1.65; color: var(--text-dim);
+    white-space: pre-wrap; word-break: break-word; min-height: 120px; cursor: text; }
+  .note-body.placeholder { color: var(--text-muted); font-style: italic; opacity: .72; }
+  .note-card .title-editor { font-size: 15px; font-weight: 800; color: var(--text); }
+  .note-editor { width: 100%; min-height: 110px; border: none; outline: none; resize: none; background: transparent;
+    font-family: inherit; font-size: 13px; line-height: 1.65; color: var(--text-dim); padding: 0; }
+
+  /* ── 笔记卡片缩放手柄 ── */
+  .note-card .resize-h { position: absolute; z-index: 6; }
+  .note-card .resize-e, .note-card .resize-w { width: 8px; height: 100%; top: 0; }
+  .note-card .resize-e { right: 0; cursor: ew-resize; }
+  .note-card .resize-w { left: 0; cursor: ew-resize; }
+  .note-card .resize-n, .note-card .resize-s { height: 8px; width: 100%; left: 0; }
+  .note-card .resize-n { top: 0; cursor: ns-resize; }
+  .note-card .resize-s { bottom: 0; cursor: ns-resize; }
+  .note-card .resize-se, .note-card .resize-sw, .note-card .resize-ne, .note-card .resize-nw { width: 16px; height: 16px; }
+  .note-card .resize-se { right: 0; bottom: 0; cursor: nwse-resize; }
+  .note-card .resize-sw { left: 0; bottom: 0; cursor: nesw-resize; }
+  .note-card .resize-ne { right: 0; top: 0; cursor: nesw-resize; }
+  .note-card .resize-nw { left: 0; top: 0; cursor: nwse-resize; }
+  .note-card .resize-h { background: transparent; opacity: 0; transition: opacity var(--dur-fast) var(--ease-snap); }
+  .note-card:hover .resize-h, .note-card .resize-h:hover { opacity: 1; }
+  .note-card .resize-se, .note-card .resize-sw, .note-card .resize-ne, .note-card .resize-nw {
+    background: linear-gradient(135deg, transparent 52%, rgba(79,107,240,.55) 52%); }
+  .note-card .resize-sw, .note-card .resize-ne { background: linear-gradient(225deg, transparent 52%, rgba(79,107,240,.55) 52%); }
+
+  /* ── 标题内联编辑 ── */
+  .title-editor { width: 100%; border: none; outline: none; background: transparent; padding: 0; margin: 0;
+    font: inherit; color: inherit; border-bottom: 1px solid var(--primary); border-radius: 0; min-width: 0; }
+  .node-title.placeholder { color: var(--text-muted); font-style: italic; opacity: .72; }
+  .node-meta .node-cat, .node-meta .node-tag { cursor: text; }
+  .node-meta .node-cat:hover, .node-meta .node-tag:hover { outline: 1px dashed rgba(79,107,240,.5); }
+
+  /* ── 自定义节点详情编辑表单 ── */
+  .detail-edit-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+  .detail-field { display: flex; flex-direction: column; gap: 5px; }
+  .detail-field label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--text-muted); }
+  .detail-field input, .detail-field textarea {
+    width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); font-family: inherit; font-size: 13px; line-height: 1.5;
+    box-sizing: border-box; resize: vertical; outline: none;
+    transition: border-color var(--dur-fast) var(--ease-snap), box-shadow var(--dur-fast) var(--ease-snap); }
+  .detail-field input:focus, .detail-field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,107,240,.12); }
+  .detail-field input::placeholder, .detail-field textarea::placeholder { color: var(--text-muted); }
+  .detail-field.row { flex-direction: row; align-items: center; }
+  .detail-field.row label { margin: 0; min-width: 52px; flex-shrink: 0; }
+  .detail-field.row input { flex: 1; }
+
   /* ── 底部进度 ── */
   .progressbar {
     height: 46px; flex-shrink: 0; display: flex; align-items: center; gap: 16px;
@@ -276,9 +363,10 @@
   .stat b { font-weight: 700; }
 
   /* ── 边 ── */
-  .edge { fill: none; stroke: #CBD5E1; stroke-width: 1.4; }
-  .edge.completed { stroke: var(--emerald); stroke-width: 2; }
-  .edge.mastered  { stroke: var(--yellow); stroke-width: 2; }
+  .edge { fill: none; stroke: #CBD5E1; stroke-width: 1.4; marker-end: url(#arrowhead); }
+  .edge.completed { stroke: var(--emerald); stroke-width: 2; marker-end: url(#arrowhead-completed); }
+  .edge.mastered  { stroke: var(--yellow); stroke-width: 2; marker-end: url(#arrowhead-mastered); }
+  .edge.selected { marker-end: url(#arrowhead-danger); }
   .edge.animated { stroke-dasharray: 6 6; animation: dashflow 0.8s linear infinite; }
   @keyframes dashflow { to { stroke-dashoffset: -12; } }
 
@@ -305,7 +393,7 @@
   }
 </style>
     <script defer src="https://unpkg.com/lucide@1.21.0/dist/umd/lucide.min.js"></script>
-    <script defer src="../lucide-unify.js"></script>
+    <script defer src="lucide-unify.js"></script>
   </head>
 <body>
   <header class="topbar">
@@ -317,7 +405,7 @@
       </div>
     </div>
     <div class="controls">
-      <a class="gen-link" href="/generate.html">⚡ AI 生成</a>
+      <a class="gen-link" href="generate.html">⚡ AI 生成</a>
       <select id="treeSelect" aria-label="切换技能树"></select>
       <div class="legend">
         <span class="legend-item"><i class="dot not_started"></i>未学习</span>
@@ -331,9 +419,31 @@
   <main class="main">
     <section class="canvas-wrap" id="canvasWrap">
       <div class="viewport" id="viewport">
-        <svg class="edge-svg" id="edgeSvg"></svg>
+        <svg class="edge-svg" id="edgeSvg">
+          <defs>
+            <marker id="arrowhead" markerWidth="13" markerHeight="9.75" refX="13" refY="4.875" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L13,4.875 L0,9.75 L2.9,4.875 Z" fill="#64748B" />
+            </marker>
+            <marker id="arrowhead-active" markerWidth="13" markerHeight="9.75" refX="13" refY="4.875" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L13,4.875 L0,9.75 L2.9,4.875 Z" fill="#4F6BF0" />
+            </marker>
+            <marker id="arrowhead-danger" markerWidth="13" markerHeight="9.75" refX="13" refY="4.875" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L13,4.875 L0,9.75 L2.9,4.875 Z" fill="#EF4444" />
+            </marker>
+            <marker id="arrowhead-completed" markerWidth="13" markerHeight="9.75" refX="13" refY="4.875" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L13,4.875 L0,9.75 L2.9,4.875 Z" fill="#16A34A" />
+            </marker>
+            <marker id="arrowhead-mastered" markerWidth="13" markerHeight="9.75" refX="13" refY="4.875" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L13,4.875 L0,9.75 L2.9,4.875 Z" fill="#EAB308" />
+            </marker>
+          </defs>
+        </svg>
       </div>
-      <div class="hint">共 <b id="nodeCount">0</b> 个技能节点 · <b id="edgeCount">0</b> 条依赖</div>
+      <div class="hint">共 <b id="nodeCount">0</b> 个技能节点 · <b id="edgeCount">0</b> 条依赖 · 拖动节点可重排布局</div>
+      <div class="add-btns">
+        <button id="addNodeBtn" class="add-node-btn" title="添加自定义节点">＋ 添加节点</button>
+        <button id="addNoteBtn" class="add-note-btn" title="添加笔记">＋ 添加笔记</button>
+      </div>
       <div class="canvas-tools">
         <button id="zoomIn" title="放大">+</button>
         <button id="zoomOut" title="缩小">−</button>
@@ -355,7 +465,10 @@
 (function () {
   'use strict';
   var NODE_W = 190, NODE_H = 88, HGAP = 34, VGAP = 58;
-  var state = { key: null, selected: null, scale: 1, tx: 0, ty: 0, nodes: [], edges: [], positions: {} };
+  var NOTE_W = 300, NOTE_H = 225;
+  var state = { key: null, selected: null, selectedEdge: null, scale: 1, tx: 0, ty: 0, nodes: [], edges: [], positions: {} };
+  var edgeEdit = null; // { sourceId, sourcePort, previewPath }
+  var EDGE_KEY = 'dsh.skilltree.app.edges';
 
   var canvasWrap = document.getElementById('canvasWrap');
   var viewport = document.getElementById('viewport');
@@ -433,19 +546,103 @@
   }
 
   /* ── 渲染 ── */
-  function edgePath(sx, sy, tx, ty) {
-    var midY = (sy + ty) / 2;
-    return 'M ' + sx + ' ' + sy + ' C ' + sx + ' ' + midY + ' ' + tx + ' ' + midY + ' ' + tx + ' ' + ty;
+  function inferPorts(sx, sy, tx, ty) {
+    var dx = tx - sx, dy = ty - sy;
+    if (Math.abs(dx) > Math.abs(dy) * 1.2) {
+      return dx > 0 ? { sourcePort: 'right', targetPort: 'left' } : { sourcePort: 'left', targetPort: 'right' };
+    }
+    return dy > 0 ? { sourcePort: 'bottom', targetPort: 'top' } : { sourcePort: 'top', targetPort: 'bottom' };
+  }
+
+  function edgePath(sx, sy, tx, ty, sourcePort, targetPort) {
+    var ports = inferPorts(sx, sy, tx, ty);
+    sourcePort = sourcePort || ports.sourcePort;
+    targetPort = targetPort || ports.targetPort;
+    var dx = Math.abs(tx - sx), dy = Math.abs(ty - sy);
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var curve = Math.min(120, Math.max(40, dist * 0.4));
+    var c1x = sx, c1y = sy, c2x = tx, c2y = ty;
+    if (sourcePort === 'bottom') c1y += curve;
+    else if (sourcePort === 'top') c1y -= curve;
+    else if (sourcePort === 'right') c1x += curve;
+    else if (sourcePort === 'left') c1x -= curve;
+    if (targetPort === 'bottom') c2y += curve;
+    else if (targetPort === 'top') c2y -= curve;
+    else if (targetPort === 'right') c2x += curve;
+    else if (targetPort === 'left') c2x -= curve;
+    return 'M ' + sx + ' ' + sy + ' C ' + c1x + ' ' + c1y + ' ' + c2x + ' ' + c2y + ' ' + tx + ' ' + ty;
+  }
+
+  function redrawEdges() {
+    var nodes = state.nodes, edges = state.edges;
+    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    nodes.forEach(function (n) {
+      var p = state.positions[n.id];
+      minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x + NODE_W); maxY = Math.max(maxY, p.y + NODE_H);
+    });
+    var pad = 60, vbW = (maxX - minX) + pad * 2, vbH = (maxY - minY) + pad * 2;
+    var ox = minX - pad, oy = minY - pad;
+    edgeSvg.setAttribute('viewBox', ox + ' ' + oy + ' ' + vbW + ' ' + vbH);
+    edgeSvg.setAttribute('width', vbW); edgeSvg.setAttribute('height', vbH);
+    edgeSvg.style.left = ox + 'px'; edgeSvg.style.top = oy + 'px';
+    var existing = {};
+    edgeSvg.querySelectorAll('path[data-eid]').forEach(function (p) { existing[p.getAttribute('data-eid')] = p; });
+    var keep = {};
+    edges.forEach(function (e) {
+      keep[e.id] = true;
+      var sp = state.positions[e.source], tp = state.positions[e.target];
+      if (!sp || !tp) return;
+      var ports = inferPorts(sp.x + NODE_W / 2, sp.y + NODE_H / 2, tp.x + NODE_W / 2, tp.y + NODE_H / 2);
+      var sourcePort = e.sourcePort || ports.sourcePort;
+      var targetPort = e.targetPort || ports.targetPort;
+      var sCenter = getPortCenter(e.source, sourcePort);
+      var tCenter = getPortCenter(e.target, targetPort);
+      if (!sCenter || !tCenter) return;
+      var d = edgePath(sCenter.x, sCenter.y, tCenter.x, tCenter.y, sourcePort, targetPort);
+      var path = existing[e.id];
+      var sourceNode = nodes.find(function (n) { return n.id === e.source; });
+      var cls = 'edge';
+      if (sourceNode && (sourceNode.status === 'completed' || sourceNode.status === 'mastered')) {
+        cls += ' ' + sourceNode.status + ' animated';
+      }
+      if (state.selectedEdge === e.id) cls += ' selected';
+      var marker = 'url(#arrowhead)';
+      if (state.selectedEdge === e.id) marker = 'url(#arrowhead-danger)';
+      else if (sourceNode && sourceNode.status === 'completed') marker = 'url(#arrowhead-completed)';
+      else if (sourceNode && sourceNode.status === 'mastered') marker = 'url(#arrowhead-mastered)';
+      if (path) {
+        path.setAttribute('class', cls);
+        path.setAttribute('d', d);
+        path.setAttribute('marker-end', marker);
+        var hit = edgeSvg.querySelector('path.edge-hit[data-eid="' + e.id + '"]');
+        if (hit) hit.setAttribute('d', d);
+        return;
+      }
+      var hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      hitPath.setAttribute('class', 'edge-hit'); hitPath.setAttribute('data-eid', e.id); hitPath.setAttribute('d', d);
+      edgeSvg.appendChild(hitPath);
+      var np = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      np.setAttribute('class', cls); np.setAttribute('data-eid', e.id); np.setAttribute('d', d); np.setAttribute('marker-end', marker);
+      edgeSvg.appendChild(np);
+    });
+    edgeSvg.querySelectorAll('path[data-eid]').forEach(function (p) {
+      if (!keep[p.getAttribute('data-eid')]) p.remove();
+    });
   }
 
   function render() {
     var tree = TREES[state.key];
     if (!tree) return;
     var nodes = tree.nodes.map(function (n) { return Object.assign({}, n); });
-    var edges = tree.edges;
+    var customNodes = (loadCustomNodes()[state.key] || []).map(function (n) { return Object.assign({}, n); });
+    nodes = nodes.concat(customNodes);
+    var edges = loadEdges()[state.key] || tree.edges || [];
+    edges = edges.map(function (e) { return Object.assign({}, e); });
     state.nodes = nodes; state.edges = edges;
     applySavedProgress();
     state.positions = computeLayout(nodes, edges);
+    applySavedPositions();
     state.selected = null;
 
     titleEl.textContent = tree.tree.title;
@@ -454,54 +651,11 @@
     edgeCountEl.textContent = edges.length;
 
     // 边(SVG)
-    var svgParts = [];
-    var maxX = -1e9, maxY = -1e9, minX = 1e9, minY = 1e9;
-    nodes.forEach(function (n) {
-      var p = state.positions[n.id];
-      minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x + NODE_W); maxY = Math.max(maxY, p.y + NODE_H);
-    });
-    var pad = 60;
-    var vbW = (maxX - minX) + pad * 2, vbH = (maxY - minY) + pad * 2;
-    var ox = minX - pad, oy = minY - pad;
-
-    edges.forEach(function (e) {
-      var sp = state.positions[e.source], tp = state.positions[e.target];
-      var sx = sp.x + NODE_W / 2, sy = sp.y + NODE_H;
-      var tx = tp.x + NODE_W / 2, ty = tp.y;
-      var cls = 'edge';
-      var sourceNode = nodes.find(function (n) { return n.id === e.source; });
-      if (sourceNode && (sourceNode.status === 'completed' || sourceNode.status === 'mastered')) {
-        cls += ' ' + sourceNode.status;
-        cls += ' animated';
-      }
-      svgParts.push('<path class="' + cls + '" data-eid="' + e.id + '" d="' + edgePath(sx, sy, tx, ty) + '"/>');
-    });
-    edgeSvg.setAttribute('viewBox', ox + ' ' + oy + ' ' + vbW + ' ' + vbH);
-    edgeSvg.setAttribute('width', vbW);
-    edgeSvg.setAttribute('height', vbH);
-    edgeSvg.style.left = ox + 'px';
-    edgeSvg.style.top = oy + 'px';
-    edgeSvg.innerHTML = svgParts.join('');
+    redrawEdges();
 
     // 节点(HTML)
     var nodeHtml = nodes.map(function (n) {
-      var p = state.positions[n.id];
-      var isCurrent = n.status === 'in_progress';
-      var flag = n.status === 'mastered' ? '★' : (n.status === 'completed' ? '✓' : '');
-      return '<div class="node ' + n.status + (isCurrent ? ' is-current' : '') + '" data-id="' + n.id + '"' +
-        ' style="left:' + p.x + 'px; top:' + p.y + 'px;">' +
-        (isCurrent ? '<span class="node-current-badge">当前</span>' : '') +
-        '<span class="handle top"></span><span class="handle bottom"></span>' +
-        '<div class="node-head">' +
-        '<span class="node-icon">' + n.icon + '</span>' +
-        '<span class="node-title">' + n.title + '</span>' +
-        (flag ? '<span class="node-flag">' + flag + '</span>' : '') +
-        '</div>' +
-        '<div class="node-meta">' +
-        '<span class="node-cat">' + n.category + '</span>' +
-        '<span>' + (DEPTH_LABELS[n.recommended_depth] || n.recommended_depth) + ' · ' + n.recommended_depth + '</span>' +
-        '</div></div>';
+      return nodeElHtml(n, state.positions[n.id]);
     }).join('');
     // 清除旧节点,保留 SVG
     viewport.querySelectorAll('.node').forEach(function (el) { el.remove(); });
@@ -516,6 +670,22 @@
 
   function renderDetail(node) {
     if (!node) { renderDetailEmpty(); return; }
+    if (node.custom) {
+      detailPanel.innerHTML = customDetailHtml(node);
+      bindCustomDetailEvents(node.id);
+      return;
+    }
+    if (node.note) {
+      detailPanel.innerHTML =
+        '<div class="detail-head">' +
+          '<span class="big-icon">📝</span>' +
+          '<div><h2>' + (node.title || '未命名') + '</h2>' +
+            '<div class="detail-tags"><span>笔记</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="detail-desc" style="white-space:pre-wrap;">' + (node.content || '（空白笔记）') + '</div>';
+      return;
+    }
     var status = node.status;
     var prereqs = state.edges.filter(function (e) { return e.target === node.id; })
       .map(function (e) { return state.nodes.find(function (n) { return n.id === e.source; }); })
@@ -537,6 +707,8 @@
         '</div>' +
       '</div>' +
       statusActionsHtml(node) +
+      '<button class="gen-explain-btn" data-id="' + node.id + '" data-topic="' + String(node.title||'').replace(/"/g,'&quot;') + '" data-ctx="' + String([node.description, node.content, (node.key_concepts||[]).join('、')].filter(Boolean).join('；')).replace(/"/g,'&quot;') + '" onclick="window.genExplain(this)" style="display:block;width:100%;margin:12px 0 4px;padding:10px 12px;border-radius:10px;border:none;background:var(--primary,#4F6BF0);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✨ 生成知识点详解</button>' +
+      '<div class="explain-out" style="margin:6px 0 12px;font-size:13px;line-height:1.7;color:var(--text-dim,#475569);"></div>' +
       (node.content ? '<section class="detail-section content"><h3>知识点内容</h3><p>' + node.content + '</p></section>' : '') +
       (node.description ? '<p class="detail-desc">' + node.description + '</p>' : '') +
       (node.depth_rationale ? '<section class="detail-section rationale"><h3>目标深度</h3><p>' + node.depth_rationale + '</p></section>' : '') +
@@ -550,8 +722,155 @@
     detailPanel.innerHTML = '<div class="detail-empty">点击左侧节点<br>查看学习目标与掌握证据</div>';
   }
 
+  /* ── 自定义节点详情编辑表单 ── */
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function splitLines(s) {
+    return String(s == null ? '' : s).split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  function customDetailHtml(node) {
+    var tags = node.note
+      ? '<span>笔记</span>'
+      : '<span>' + escHtml(node.category || '自定义') + '</span><span>' + escHtml(node.tag || '自定义') + '</span>';
+    var fields = node.note
+      ? '<div class="detail-field"><label>标题</label><input type="text" data-ef="title" value="' + escHtml(node.title) + '" placeholder="输入笔记标题"></div>' +
+        '<div class="detail-field"><label>内容</label><textarea data-ef="content" rows="6" placeholder="记录你的想法…">' + escHtml(node.content) + '</textarea></div>'
+      : '<div class="detail-field row"><label>图标</label><input type="text" data-ef="icon" value="' + escHtml(node.icon) + '" maxlength="4" placeholder="📝"></div>' +
+        '<div class="detail-field"><label>标题</label><input type="text" data-ef="title" value="' + escHtml(node.title) + '" placeholder="输入节点名称"></div>' +
+        '<div class="detail-field"><label>分类</label><input type="text" data-ef="category" value="' + escHtml(node.category) + '" placeholder="自定义"></div>' +
+        '<div class="detail-field"><label>自定义标签</label><input type="text" data-ef="tag" value="' + escHtml(node.tag) + '" placeholder="自定义"></div>' +
+        '<div class="detail-field"><label>内容</label><textarea data-ef="content" rows="4" placeholder="输入内容…">' + escHtml(node.content) + '</textarea></div>' +
+        '<div class="detail-field"><label>学习目标（每行一条）</label><textarea data-ef="objectives" rows="3" placeholder="每行一条">' + escHtml((node.learning_objectives || []).join('\n')) + '</textarea></div>' +
+        '<div class="detail-field"><label>关键概念（每行一条）</label><textarea data-ef="concepts" rows="3" placeholder="每行一条">' + escHtml((node.key_concepts || []).join('\n')) + '</textarea></div>' +
+        '<div class="detail-field"><label>通过标准（每行一条）</label><textarea data-ef="evidence" rows="3" placeholder="每行一条">' + escHtml((node.observable_evidence || []).join('\n')) + '</textarea></div>';
+    return '<div class="detail-head">' +
+      '<span class="big-icon">' + (node.note ? '📝' : escHtml(node.icon || '📝')) + '</span>' +
+      '<div><h2>' + escHtml(node.title || '未命名') + '</h2>' +
+        '<div class="detail-tags">' + tags + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="detail-edit-form">' + fields + '</div>' +
+    (node.note ? '' : statusActionsHtml(node));
+  }
+  function bindCustomDetailEvents(id) {
+    detailPanel.querySelectorAll('[data-ef]').forEach(function (el) {
+      el.addEventListener('change', function () { commitCustomField(id, el); });
+      el.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' && el.tagName !== 'TEXTAREA') { ev.preventDefault(); commitCustomField(id, el); el.blur(); }
+      });
+    });
+  }
+  function commitCustomField(id, el) {
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (!node) return;
+    var f = el.getAttribute('data-ef');
+    var val = el.value;
+    switch (f) {
+      case 'icon': node.icon = val.trim() || '📝'; break;
+      case 'title': node.title = val.trim(); break;
+      case 'category': node.category = val.trim(); break;
+      case 'tag': node.tag = val.trim(); break;
+      case 'content': node.content = val; break;
+      case 'objectives': node.learning_objectives = splitLines(val); break;
+      case 'concepts': node.key_concepts = splitLines(val); break;
+      case 'evidence': node.observable_evidence = splitLines(val); break;
+    }
+    saveCustomNodes();
+    refreshNodeCardText(id);
+    updateDetailHead(id);
+  }
+  function refreshNodeCardText(id) {
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (!node) return;
+    var el = viewport.querySelector('.node[data-id="' + id + '"]');
+    if (!el) return;
+    if (node.note) {
+      var nTitle = el.querySelector('.note-title');
+      if (nTitle) { nTitle.textContent = node.title || '未命名'; nTitle.classList.toggle('placeholder', !node.title); }
+      var nBody = el.querySelector('.note-body');
+      if (nBody) { nBody.textContent = node.content || ''; nBody.classList.toggle('placeholder', !node.content); }
+      return;
+    }
+    var iconEl = el.querySelector('.node-icon');
+    if (iconEl) iconEl.textContent = node.icon || '📝';
+    var tEl = el.querySelector('.node-title');
+    if (tEl) { tEl.textContent = node.title || ''; tEl.classList.toggle('placeholder', !node.title); }
+    var cEl = el.querySelector('.node-cat');
+    if (cEl) cEl.textContent = node.category || '自定义';
+    var gEl = el.querySelector('.node-tag');
+    if (gEl) gEl.textContent = node.tag || '自定义';
+  }
+  function updateDetailHead(id) {
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (!node) return;
+    var head = detailPanel.querySelector('.detail-head');
+    if (!head) return;
+    var iconEl = head.querySelector('.big-icon');
+    if (iconEl) iconEl.textContent = node.note ? '📝' : (node.icon || '📝');
+    var h2 = head.querySelector('h2');
+    if (h2) h2.textContent = node.title || '未命名';
+    var tags = head.querySelectorAll('.detail-tags span');
+    if (!node.note) {
+      if (tags[0]) tags[0].textContent = node.category || '自定义';
+      if (tags[1]) tags[1].textContent = node.tag || '自定义';
+    }
+  }
+
+  window.genExplain = function (btn) {
+    var out = btn && btn.nextElementSibling;
+    if (!out) return;
+    var srcId = btn.getAttribute('data-id') || '';
+    var topic = btn.getAttribute('data-topic') || '';
+    var ctx = btn.getAttribute('data-ctx') || '';
+    btn.disabled = true; btn.textContent = '生成中…';
+    out.innerHTML = '<div style="color:var(--muted,#8a929e)">AI 正在生成详解…</div>';
+    fetch('/api/v1/skill/explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: topic, context: ctx })
+    }).then(function (r) { return r.json(); }).then(function (p) {
+      if (!p || !p.data) throw new Error((p && p.error && p.error.message) || '生成失败');
+      var t = String(p.data.text || '');
+      t = t.replace(/^#{1,6}\s*/gm, '').replace(/\*\*/g, '');
+      out.innerHTML = '<div style="white-space:pre-wrap;">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+      var src = state.nodes.find(function (n) { return n.id === srcId; });
+      if (src && t) createExplainNote(src, t);
+    }).catch(function (e) {
+      out.innerHTML = '<div style="color:var(--danger,#dc2626)">生成失败：' + String((e && e.message) || e) + '</div>';
+    }).finally(function () { btn.disabled = false; btn.textContent = '✨ 生成知识点详解'; });
+  };
+
+  function createExplainNote(src, text) {
+    var id = 'note-' + Date.now() + '-' + Math.floor(Math.random() * 1e4) + '-explain';
+    var sp = state.positions[src.id];
+    var nx = (sp ? sp.x + NODE_W + 46 : 80);
+    var ny = (sp ? sp.y : 80);
+    var node = { id: id, title: (src.title || '知识点') + '详解', content: text, icon: '📝', category: '笔记', status: 'not_started', depth_level: 1, recommended_depth: 'Understand', custom: true, note: true };
+    state.nodes.push(node);
+    state.positions[id] = { x: nx, y: ny };
+    var holder = document.createElement('div');
+    holder.innerHTML = nodeElHtml(node, state.positions[id]);
+    viewport.appendChild(holder.firstChild);
+    if (!state.edges.some(function (e) { return e.source === src.id && e.target === id; })) {
+      state.edges.push({ id: edgeId(src.id, id), source: src.id, sourcePort: 'right', target: id, targetPort: 'left' });
+    }
+    saveCustomNodes();
+    savePositions();
+    saveEdges();
+    redrawEdges();
+    renderProgress();
+    nodeCountEl.textContent = state.nodes.length;
+    edgeCountEl.textContent = state.edges.length;
+    // 选中新笔记，方便直接查看与拖动
+    state.selected = id;
+    viewport.querySelectorAll('.node').forEach(function (n) { n.classList.toggle('selected', n.getAttribute('data-id') === id); });
+    renderDetail(node);
+  }
+
   /* ── 状态管理 ── */
   var PROGRESS_KEY = 'dsh.skilltree.app.progress';
+  var STATUS_LABELS = { not_started: '未学习', in_progress: '学习中', completed: '完成', mastered: '掌握' };
   var STATUS_OPTIONS = [
     { s: 'not_started', label: '未学习', color: '#CBD5E1' },
     { s: 'in_progress', label: '学习中', color: '#F59E0B' },
@@ -607,8 +926,8 @@
     var isDone = node.status === 'completed' || node.status === 'mastered';
     state.edges.forEach(function (e) {
       if (e.source !== nodeId) return;
-      var path = edgeSvg.querySelector('path[data-eid="' + e.id + '"]');
-      if (path) path.setAttribute('class', 'edge' + (isDone ? ' ' + node.status + ' animated' : ''));
+      var path = edgeSvg.querySelector('path.edge[data-eid="' + e.id + '"]');
+      if (path) path.setAttribute('class', 'edge' + (isDone ? ' ' + node.status + ' animated' : '') + (state.selectedEdge === e.id ? ' selected' : ''));
     });
   }
 
@@ -677,8 +996,9 @@
     var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
     state.nodes.forEach(function (n) {
       var p = state.positions[n.id];
+      var w = n.note ? NOTE_W : NODE_W, h = n.note ? NOTE_H : NODE_H;
       minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x + NODE_W); maxY = Math.max(maxY, p.y + NODE_H);
+      maxX = Math.max(maxX, p.x + w); maxY = Math.max(maxY, p.y + h);
     });
     var bw = maxX - minX, bh = maxY - minY;
     var scale = Math.min(wrapW / bw, wrapH / bh) * 0.9;
@@ -723,7 +1043,7 @@
 
   var dragging = false, lastX = 0, lastY = 0, velHist = [], momentumId = null;
   canvasWrap.addEventListener('pointerdown', function (e) {
-    if (e.target.closest('.node') || e.target.closest('.canvas-tools')) return;
+    if (e.target.closest('.node') || e.target.closest('.canvas-tools') || e.target.closest('.add-btns')) return;
     e.preventDefault();
     dragging = true; lastX = e.clientX; lastY = e.clientY;
     velHist = [{ t: performance.now(), x: e.clientX, y: e.clientY }];
@@ -773,6 +1093,7 @@
   }
 
   viewport.addEventListener('click', function (e) {
+    if (justDraggedNode) { justDraggedNode = false; return; }
     var el = e.target.closest('.node');
     if (!el) return;
     var id = el.getAttribute('data-id');
@@ -797,38 +1118,612 @@
   /* ── 右键菜单 ── */
   var ctxMenu = document.getElementById('ctxMenu');
   var ctxNodeId = null;
+  var ctxEdgeId = null;
+
+  function showCtxMenu(x, y, html) {
+    ctxMenu.innerHTML = html;
+    ctxMenu.classList.add('show');
+    var mw = ctxMenu.offsetWidth, mh = ctxMenu.offsetHeight;
+    if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
+    if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
+    ctxMenu.style.left = x + 'px';
+    ctxMenu.style.top = y + 'px';
+  }
 
   viewport.addEventListener('contextmenu', function (e) {
     var el = e.target.closest('.node');
     if (!el) return;
     e.preventDefault();
     ctxNodeId = el.getAttribute('data-id');
+    ctxEdgeId = null;
     var node = state.nodes.find(function (n) { return n.id === ctxNodeId; });
     if (!node) return;
-    ctxMenu.innerHTML = STATUS_OPTIONS.map(function (o) {
+    var html = STATUS_OPTIONS.map(function (o) {
       return '<button data-s="' + o.s + '"><span class="dot" style="background:' + o.color + '"></span>' + o.label + (node.status === o.s ? ' ✓' : '') + '</button>';
     }).join('');
-    ctxMenu.classList.add('show');
-    var mw = ctxMenu.offsetWidth, mh = ctxMenu.offsetHeight;
-    var x = e.clientX, y = e.clientY;
-    if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
-    if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
-    ctxMenu.style.left = x + 'px';
-    ctxMenu.style.top = y + 'px';
+    if (node.custom) html += '<button data-action="delete-node">🗑 ' + (node.note ? '删除笔记' : '删除节点') + '</button>';
+    showCtxMenu(e.clientX, e.clientY, html);
+  });
+
+  edgeSvg.addEventListener('contextmenu', function (e) {
+    var path = closestEdgePath(e.target);
+    if (!path) return;
+    e.preventDefault();
+    ctxEdgeId = path.getAttribute('data-eid');
+    ctxNodeId = null;
+    showCtxMenu(e.clientX, e.clientY, '<button data-action="delete-edge">🗑 删除连线</button>');
   });
 
   ctxMenu.addEventListener('click', function (e) {
     var btn = e.target.closest('button');
-    if (!btn || !ctxNodeId) return;
-    setNodeStatus(ctxNodeId, btn.getAttribute('data-s'));
+    if (!btn) return;
+    if (btn.getAttribute('data-action') === 'delete-node') {
+      if (ctxNodeId) deleteCustomNode(ctxNodeId);
+      hideCtxMenu();
+      return;
+    }
+    if (ctxNodeId) {
+      setNodeStatus(ctxNodeId, btn.getAttribute('data-s'));
+    } else if (ctxEdgeId && btn.getAttribute('data-action') === 'delete-edge') {
+      deleteEdge(ctxEdgeId);
+      state.selectedEdge = null;
+    }
     hideCtxMenu();
   });
 
-  function hideCtxMenu() { ctxMenu.classList.remove('show'); ctxNodeId = null; }
+  function hideCtxMenu() { ctxMenu.classList.remove('show'); ctxNodeId = null; ctxEdgeId = null; }
 
   document.addEventListener('click', function (e) { if (!e.target.closest('.ctx-menu')) hideCtxMenu(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideCtxMenu(); });
   window.addEventListener('scroll', hideCtxMenu);
+
+  /* ── 自定义节点 ── */
+  var CUSTOM_KEY = 'dsh.skilltree.app.customNodes';
+  function loadCustomNodes() {
+    try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function saveCustomNodes() {
+    var all = loadCustomNodes();
+    all[state.key] = state.nodes.filter(function (n) { return n.custom; });
+    try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+
+  function nodeElHtml(node, p) {
+    if (node.note) {
+      var nw = (p.w || NOTE_W), nh = (p.h || NOTE_H);
+      return '<div class="node note-card" data-id="' + node.id + '" style="left:' + p.x + 'px; top:' + p.y + 'px; width:' + nw + 'px; height:' + nh + 'px;">' +
+        '<span class="port left" data-port="left"></span>' +
+        '<span class="port right" data-port="right"></span>' +
+        '<span class="port top" data-port="top"></span>' +
+        '<span class="port bottom" data-port="bottom"></span>' +
+        '<span class="resize-h resize-nw" data-r="nw"></span>' +
+        '<span class="resize-h resize-n" data-r="n"></span>' +
+        '<span class="resize-h resize-ne" data-r="ne"></span>' +
+        '<span class="resize-h resize-e" data-r="e"></span>' +
+        '<span class="resize-h resize-se" data-r="se"></span>' +
+        '<span class="resize-h resize-s" data-r="s"></span>' +
+        '<span class="resize-h resize-sw" data-r="sw"></span>' +
+        '<span class="resize-h resize-w" data-r="w"></span>' +
+        '<div class="note-head">' +
+        '<span class="note-title' + (node.title ? '' : ' placeholder') + '">' + escHtml(node.title || '未命名') + '</span>' +
+        '</div>' +
+        '<div class="note-body' + (node.content ? '' : ' placeholder') + '">' + escHtml(node.content || '双击编辑内容') + '</div></div>';
+    }
+    var isCurrent = node.status === 'in_progress';
+    var flag = node.status === 'mastered' ? '★' : (node.status === 'completed' ? '✓' : '');
+    var meta = node.custom
+      ? '<span class="node-cat">' + (node.category || '自定义') + '</span><span class="node-tag">' + (node.tag || '自定义') + '</span>'
+      : '<span class="node-cat">' + node.category + '</span><span>' + (DEPTH_LABELS[node.recommended_depth] || node.recommended_depth) + ' · ' + node.recommended_depth + '</span>';
+    return '<div class="node ' + node.status + (isCurrent ? ' is-current' : '') + '" data-id="' + node.id + '"' +
+      ' style="left:' + p.x + 'px; top:' + p.y + 'px;">' +
+      (isCurrent ? '<span class="node-current-badge">当前</span>' : '') +
+      '<span class="port left" data-port="left"></span>' +
+      '<span class="port right" data-port="right"></span>' +
+      '<span class="port top" data-port="top"></span>' +
+      '<span class="port bottom" data-port="bottom"></span>' +
+      '<div class="node-head">' +
+      '<span class="node-icon">' + (node.icon || '📝') + '</span>' +
+      '<span class="node-title' + (node.title ? '' : ' placeholder') + '">' + (node.title || '双击编辑') + '</span>' +
+      (flag ? '<span class="node-flag">' + flag + '</span>' : '') +
+      '</div>' +
+      '<div class="node-meta">' + meta + '</div></div>';
+  }
+
+  function selectNode(node) {
+    state.selected = node.id;
+    viewport.querySelectorAll('.node').forEach(function (n) { n.classList.toggle('selected', n.getAttribute('data-id') === node.id); });
+    renderDetail(node);
+  }
+
+  function startEditTitle(id) {
+    var el = viewport.querySelector('.node[data-id="' + id + '"]');
+    if (!el) return;
+    var titleEl = el.querySelector('.node-title') || el.querySelector('.note-title');
+    if (!titleEl) return;
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (!node) return;
+    if (titleEl.querySelector('input.title-editor')) return;
+    var orig = node.title || '';
+    var input = document.createElement('input');
+    input.className = 'title-editor';
+    input.value = orig;
+    input.placeholder = node.note ? '输入笔记标题' : '输入节点名称';
+    titleEl.textContent = '';
+    titleEl.appendChild(input);
+    input.focus();
+    input.select();
+    var done = false;
+    function commit() {
+      if (done) return;
+      done = true;
+      var val = input.value.trim();
+      node.title = val;
+      titleEl.textContent = val || '';
+      titleEl.classList.toggle('placeholder', !val);
+      if (state.selected === id) renderDetail(node);
+      saveCustomNodes();
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); commit(); input.blur(); }
+      else if (ev.key === 'Escape') {
+        done = true;
+        node.title = orig;
+        titleEl.textContent = orig || '';
+        titleEl.classList.toggle('placeholder', !orig);
+        input.blur();
+      }
+    });
+  }
+
+  function startInlineEdit(opts) {
+    var el = opts.el, node = opts.node, field = opts.field, placeholder = opts.placeholder, emptyText = opts.emptyText;
+    if (el.querySelector('input.title-editor')) return;
+    var orig = node[field] || '';
+    var input = document.createElement('input');
+    input.className = 'title-editor';
+    input.value = orig;
+    input.placeholder = placeholder;
+    el.textContent = '';
+    el.appendChild(input);
+    input.focus();
+    input.select();
+    var done = false;
+    function commit() {
+      if (done) return;
+      done = true;
+      var val = input.value.trim();
+      node[field] = val;
+      el.textContent = val || emptyText;
+      el.classList.toggle('placeholder', !val);
+      if (state.selected === node.id) renderDetail(node);
+      saveCustomNodes();
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); commit(); input.blur(); }
+      else if (ev.key === 'Escape') {
+        done = true;
+        node[field] = orig;
+        el.textContent = orig || emptyText;
+        el.classList.toggle('placeholder', !orig);
+        input.blur();
+      }
+    });
+  }
+
+  function startEditCategory(id) {
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (!node) return;
+    var el = viewport.querySelector('.node[data-id="' + id + '"] .node-cat');
+    if (!el) return;
+    startInlineEdit({ el: el, node: node, field: 'category', placeholder: '输入分类', emptyText: '自定义' });
+  }
+
+  function startEditTag(id) {
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (!node) return;
+    var el = viewport.querySelector('.node[data-id="' + id + '"] .node-tag');
+    if (!el) return;
+    startInlineEdit({ el: el, node: node, field: 'tag', placeholder: '输入自定义标签', emptyText: '自定义' });
+  }
+
+  function startEditNoteBody(id) {
+    var el = viewport.querySelector('.node[data-id="' + id + '"]');
+    if (!el) return;
+    var bodyEl = el.querySelector('.note-body');
+    if (!bodyEl) return;
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (!node) return;
+    if (bodyEl.querySelector('textarea.note-editor')) return;
+    var orig = node.content || '';
+    var ta = document.createElement('textarea');
+    ta.className = 'note-editor';
+    ta.value = orig;
+    ta.placeholder = '记录你的想法…';
+    bodyEl.textContent = '';
+    bodyEl.appendChild(ta);
+    ta.focus();
+    var done = false;
+    function commit() {
+      if (done) return;
+      done = true;
+      var val = ta.value;
+      node.content = val;
+      bodyEl.textContent = val || '';
+      bodyEl.classList.toggle('placeholder', !val);
+      if (state.selected === id) renderDetail(node);
+      saveCustomNodes();
+    }
+    ta.addEventListener('blur', commit);
+    ta.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') {
+        done = true;
+        node.content = orig;
+        bodyEl.textContent = orig || '';
+        bodyEl.classList.toggle('placeholder', !orig);
+        ta.blur();
+      }
+    });
+  }
+
+  function addNote() {
+    var id = 'note-' + Date.now();
+    var wrap = canvasWrap.getBoundingClientRect();
+    var wx = (wrap.width / 2 - state.tx) / state.scale - NOTE_W / 2;
+    var wy = (wrap.height / 2 - state.ty) / state.scale - NOTE_H / 2;
+    var node = { id: id, title: '', content: '', icon: '📝', category: '笔记', status: 'not_started', depth_level: 1, recommended_depth: 'Understand', custom: true, note: true };
+    state.nodes.push(node);
+    state.positions[id] = { x: wx, y: wy };
+    var holder = document.createElement('div');
+    holder.innerHTML = nodeElHtml(node, state.positions[id]);
+    viewport.appendChild(holder.firstChild);
+    saveCustomNodes();
+    savePositions();
+    renderProgress();
+    nodeCountEl.textContent = state.nodes.length;
+    selectNode(node);
+    startEditTitle(id);
+  }
+
+  function addCustomNode() {
+    var id = 'custom-' + Date.now();
+    var wrap = canvasWrap.getBoundingClientRect();
+    var wx = (wrap.width / 2 - state.tx) / state.scale - NODE_W / 2;
+    var wy = (wrap.height / 2 - state.ty) / state.scale - NODE_H / 2;
+    var node = { id: id, title: '', icon: '📝', category: '自定义', status: 'not_started', depth_level: 1, recommended_depth: 'Understand', custom: true };
+    state.nodes.push(node);
+    state.positions[id] = { x: wx, y: wy };
+    var holder = document.createElement('div');
+    holder.innerHTML = nodeElHtml(node, state.positions[id]);
+    viewport.appendChild(holder.firstChild);
+    saveCustomNodes();
+    savePositions();
+    renderProgress();
+    nodeCountEl.textContent = state.nodes.length;
+    selectNode(node);
+    startEditTitle(id);
+  }
+
+  function deleteCustomNode(id) {
+    var idx = -1;
+    state.nodes.forEach(function (n, i) { if (n.id === id) idx = i; });
+    if (idx < 0) return;
+    state.nodes.splice(idx, 1);
+    state.edges = state.edges.filter(function (e) { return e.source !== id && e.target !== id; });
+    delete state.positions[id];
+    var el = viewport.querySelector('.node[data-id="' + id + '"]');
+    if (el) el.remove();
+    if (state.selected === id) { state.selected = null; renderDetailEmpty(); }
+    saveCustomNodes();
+    savePositions();
+    saveEdges();
+    redrawEdges();
+    renderProgress();
+    nodeCountEl.textContent = state.nodes.length;
+    edgeCountEl.textContent = state.edges.length;
+  }
+
+  document.getElementById('addNodeBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    addCustomNode();
+  });
+
+  document.getElementById('addNoteBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    addNote();
+  });
+
+  viewport.addEventListener('dblclick', function (e) {
+    var el = e.target.closest('.node');
+    if (!el) return;
+    if (e.target.closest('.port')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var id = el.getAttribute('data-id');
+    var node = state.nodes.find(function (n) { return n.id === id; });
+    if (node && node.note) {
+      if (e.target.closest('.note-title')) startEditTitle(id);
+      else startEditNoteBody(id);
+      return;
+    }
+    if (node && node.custom) {
+      if (e.target.closest('.node-cat')) { startEditCategory(id); return; }
+      if (e.target.closest('.node-tag')) { startEditTag(id); return; }
+    }
+    startEditTitle(id);
+  });
+
+  /* ── 节点拖动 + 位置持久化 ── */
+  var POS_KEY = 'dsh.skilltree.app.positions';
+
+  function loadPositions() {
+    try { return JSON.parse(localStorage.getItem(POS_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function savePositions() {
+    var all = loadPositions();
+    var treePos = {};
+    state.nodes.forEach(function (n) {
+      var p = state.positions[n.id];
+      if (!p) return;
+      var rec = { x: Math.round(p.x), y: Math.round(p.y) };
+      if (p.w) rec.w = Math.round(p.w);
+      if (p.h) rec.h = Math.round(p.h);
+      treePos[n.id] = rec;
+    });
+    all[state.key] = treePos;
+    try { localStorage.setItem(POS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+  function applySavedPositions() {
+    var treePos = loadPositions()[state.key];
+    if (!treePos) return;
+    Object.keys(treePos).forEach(function (id) {
+      if (state.positions[id]) {
+        state.positions[id].x = treePos[id].x;
+        state.positions[id].y = treePos[id].y;
+        if (treePos[id].w) state.positions[id].w = treePos[id].w;
+        if (treePos[id].h) state.positions[id].h = treePos[id].h;
+      }
+    });
+  }
+
+  /* ── Edge 持久化 ── */
+  function loadEdges() {
+    try { return JSON.parse(localStorage.getItem(EDGE_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function saveEdges() {
+    var all = loadEdges();
+    all[state.key] = state.edges.map(function (e) {
+      var item = { id: e.id, source: e.source, target: e.target };
+      if (e.sourcePort) item.sourcePort = e.sourcePort;
+      if (e.targetPort) item.targetPort = e.targetPort;
+      return item;
+    });
+    try { localStorage.setItem(EDGE_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+
+  function edgeId(source, target) {
+    return source + '->' + target;
+  }
+
+  function getPortCenter(nodeId, port) {
+    var p = state.positions[nodeId];
+    if (!p) return null;
+    var x = p.x + NODE_W / 2, y = p.y + NODE_H / 2;
+    if (port === 'left') x = p.x;
+    else if (port === 'right') x = p.x + NODE_W;
+    else if (port === 'top') y = p.y;
+    else if (port === 'bottom') y = p.y + NODE_H;
+    return { x: x, y: y };
+  }
+
+  function startEdgePreview(sourceId, sourcePort) {
+    var center = getPortCenter(sourceId, sourcePort);
+    if (!center) return;
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('class', 'edge-preview');
+    edgeSvg.appendChild(path);
+    edgeEdit = { sourceId: sourceId, sourcePort: sourcePort, previewPath: path };
+    var rect = canvasWrap.getBoundingClientRect();
+    updateEdgePreview(rect.left + center.x * state.scale + state.tx, rect.top + center.y * state.scale + state.ty);
+  }
+
+  function updateEdgePreview(clientX, clientY) {
+    if (!edgeEdit) return;
+    var center = getPortCenter(edgeEdit.sourceId, edgeEdit.sourcePort);
+    if (!center) return;
+    var rect = canvasWrap.getBoundingClientRect();
+    var sx = center.x, sy = center.y;
+    var tx = (clientX - rect.left - state.tx) / state.scale;
+    var ty = (clientY - rect.top - state.ty) / state.scale;
+    edgeEdit.previewPath.setAttribute('d', edgePath(sx, sy, tx, ty));
+  }
+
+  function nearestPort(nodeId, x, y) {
+    var ports = ['left','right','top','bottom'];
+    var best = null, bestDist = Infinity;
+    ports.forEach(function (port) {
+      var c = getPortCenter(nodeId, port);
+      if (!c) return;
+      var d = Math.hypot(c.x - x, c.y - y);
+      if (d < bestDist) { bestDist = d; best = port; }
+    });
+    return best;
+  }
+
+  function endEdgePreview(clientX, clientY) {
+    if (!edgeEdit) return;
+    var preview = edgeEdit.previewPath;
+    var sourceId = edgeEdit.sourceId;
+    var sourcePort = edgeEdit.sourcePort;
+    edgeEdit = null;
+    if (preview && preview.parentNode) preview.remove();
+    var rect = canvasWrap.getBoundingClientRect();
+    var tx = (clientX - rect.left - state.tx) / state.scale;
+    var ty = (clientY - rect.top - state.ty) / state.scale;
+    var targetEl = document.elementFromPoint(clientX, clientY);
+    if (!targetEl) return;
+    var targetNode = targetEl.closest('.node');
+    if (!targetNode) return;
+    var targetId = targetNode.getAttribute('data-id');
+    if (targetId === sourceId) return;
+    if (state.edges.some(function (e) { return e.source === sourceId && e.target === targetId; })) return;
+    var targetPort = nearestPort(targetId, tx, ty) || 'top';
+    state.edges.push({ id: edgeId(sourceId, targetId), source: sourceId, sourcePort: sourcePort, target: targetId, targetPort: targetPort });
+    saveEdges();
+    redrawEdges();
+  }
+
+  function deleteEdge(edgeId) {
+    state.edges = state.edges.filter(function (e) { return e.id !== edgeId; });
+    saveEdges();
+    redrawEdges();
+  }
+
+  /* ── 连线交互事件 ── */
+  viewport.addEventListener('pointerdown', function (e) {
+    var port = e.target.closest('.port');
+    if (port) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      var nodeEl = port.closest('.node');
+      if (!nodeEl) return;
+      startEdgePreview(nodeEl.getAttribute('data-id'), port.getAttribute('data-port'));
+      try { canvasWrap.setPointerCapture(e.pointerId); } catch (err) {}
+      return;
+    }
+  }, true);
+
+  function isPortTarget(e) {
+    return !!e.target.closest('.port');
+  }
+
+  window.addEventListener('pointermove', function (e) {
+    if (edgeEdit) {
+      e.preventDefault();
+      updateEdgePreview(e.clientX, e.clientY);
+    }
+  });
+  window.addEventListener('pointerup', function (e) {
+    if (edgeEdit) {
+      e.preventDefault();
+      endEdgePreview(e.clientX, e.clientY);
+    }
+  });
+
+  function closestEdgePath(el) {
+    return el && (el.closest('path.edge') || el.closest('path.edge-hit'));
+  }
+
+  edgeSvg.addEventListener('click', function (e) {
+    var path = closestEdgePath(e.target);
+    if (!path) { state.selectedEdge = null; redrawEdges(); return; }
+    e.stopPropagation();
+    state.selectedEdge = path.getAttribute('data-eid');
+    redrawEdges();
+  });
+
+  window.addEventListener('keydown', function (e) {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedEdge) {
+      deleteEdge(state.selectedEdge);
+      state.selectedEdge = null;
+    }
+  });
+
+  var nodeDrag = null, justDraggedNode = false;
+  viewport.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0) return;
+    if (isPortTarget(e)) return;
+    if (e.target.closest('.resize-h')) return;
+    var el = e.target.closest('.node');
+    if (!el) return;
+    var id = el.getAttribute('data-id');
+    var p = state.positions[id];
+    if (!p) return;
+    velHist = [];
+    cancelAnimationFrame(momentumId);
+    nodeDrag = { id: id, el: el, startX: e.clientX, startY: e.clientY, origX: p.x, origY: p.y, origW: p.w || 0, origH: p.h || 0, moved: false };
+    el.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!nodeDrag) return;
+    var dx = e.clientX - nodeDrag.startX, dy = e.clientY - nodeDrag.startY;
+    if (!nodeDrag.moved && Math.hypot(dx, dy) < 4) return;
+    nodeDrag.moved = true;
+    var nx = nodeDrag.origX + dx / state.scale;
+    var ny = nodeDrag.origY + dy / state.scale;
+    var np = { x: nx, y: ny };
+    if (nodeDrag.origW) np.w = nodeDrag.origW;
+    if (nodeDrag.origH) np.h = nodeDrag.origH;
+    state.positions[nodeDrag.id] = np;
+    nodeDrag.el.style.left = nx + 'px';
+    nodeDrag.el.style.top = ny + 'px';
+    redrawEdges();
+  });
+  function endNodeDrag() {
+    if (!nodeDrag) return;
+    var moved = nodeDrag.moved;
+    nodeDrag.el.classList.remove('dragging');
+    document.body.style.userSelect = '';
+    nodeDrag = null;
+    if (moved) {
+      justDraggedNode = true;
+      savePositions();
+      setTimeout(function () { justDraggedNode = false; }, 0);
+    }
+  }
+  window.addEventListener('pointerup', endNodeDrag);
+  window.addEventListener('pointercancel', endNodeDrag);
+
+  /* ── 笔记卡片缩放 ── */
+  var noteResize = null;
+  viewport.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0) return;
+    var h = e.target.closest('.resize-h');
+    if (!h) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var el = h.closest('.node.note-card');
+    if (!el) return;
+    var id = el.getAttribute('data-id');
+    var p = state.positions[id];
+    if (!p) return;
+    noteResize = {
+      id: id, el: el, dir: h.getAttribute('data-r'),
+      startX: e.clientX, startY: e.clientY,
+      origW: el.offsetWidth, origH: el.offsetHeight,
+      origX: p.x, origY: p.y
+    };
+    el.classList.add('resizing');
+    document.body.style.userSelect = 'none';
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!noteResize) return;
+    var r = noteResize;
+    var dx = (e.clientX - r.startX) / state.scale;
+    var dy = (e.clientY - r.startY) / state.scale;
+    var dir = r.dir, w = r.origW, h = r.origH, x = r.origX, y = r.origY;
+    if (dir.indexOf('e') !== -1) w = Math.max(140, r.origW + dx);
+    if (dir.indexOf('s') !== -1) h = Math.max(110, r.origH + dy);
+    if (dir.indexOf('w') !== -1) { var nw = Math.max(140, r.origW - dx); x = r.origX + (r.origW - nw); w = nw; }
+    if (dir.indexOf('n') !== -1) { var nh = Math.max(110, r.origH - dy); y = r.origY + (r.origH - nh); h = nh; }
+    r.el.style.width = w + 'px';
+    r.el.style.height = h + 'px';
+    r.el.style.left = x + 'px';
+    r.el.style.top = y + 'px';
+    state.positions[r.id] = { x: x, y: y, w: w, h: h };
+    redrawEdges();
+  });
+  function endNoteResize() {
+    if (!noteResize) return;
+    noteResize.el.classList.remove('resizing');
+    document.body.style.userSelect = '';
+    noteResize = null;
+    savePositions();
+  }
+  window.addEventListener('pointerup', endNoteResize);
+  window.addEventListener('pointercancel', endNoteResize);
 
   /* ── 启动 ── */
   state.key = Object.keys(TREES)[0];

@@ -1,0 +1,612 @@
+{
+  "schema": "ppt-master.svg-quality-report.v1",
+  "stage": "final",
+  "target": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6",
+  "source_fingerprint": {
+    "algorithm": "sha256",
+    "digest": "4c2e239899420ed40681b4ea9f71cca6280d743e053134cab5f22f4013141733",
+    "file_count": 8,
+    "files": [
+      {
+        "file": "01_slide.svg",
+        "sha256": "c24cb759eb925c4a95a76df58c9121d1a2b2980a77dd54cf7c07d1f0cf7add68"
+      },
+      {
+        "file": "02_slide.svg",
+        "sha256": "21fbe4dd7ddca96e093da250c205ba48fe7fc3d85b134a0b7bddd63dd1683694"
+      },
+      {
+        "file": "03_slide.svg",
+        "sha256": "fa98acd443fcdbd4617cba6b3fe71c9dfbf95d57166550bffe205e78cfc0bd4f"
+      },
+      {
+        "file": "04_slide.svg",
+        "sha256": "c4e65c8bab16dbc549019e1d568d7723853d7feeeafe2e9a2384d6fa9d879329"
+      },
+      {
+        "file": "05_slide.svg",
+        "sha256": "62cdbb7aba6c12d7a349a7aeaa1c98d52f3219fce3eccc12cdfe811afd5262ad"
+      },
+      {
+        "file": "06_slide.svg",
+        "sha256": "95791568cba6d731e8f2fe721a6f91c6e442093812b0d0b5bd86038d657e7c74"
+      },
+      {
+        "file": "07_slide.svg",
+        "sha256": "f1d5e2712a930121f58f604c0bb290e279784acc74b1ccfde7f060443fbaa274"
+      },
+      {
+        "file": "08_slide.svg",
+        "sha256": "5892718941b7a23c3c7de8ed832fd1f918b4d81da7aee54335bf52c5a5024276"
+      }
+    ]
+  },
+  "summary": {
+    "total": 8,
+    "passed": 6,
+    "warnings": 0,
+    "errors": 2
+  },
+  "issue_types": {
+    "viewBox issues": 2
+  },
+  "categories": {
+    "blocking": {
+      "count": 2,
+      "issues": [
+        {
+          "file": "01_slide.svg",
+          "message": "<text> (x=96, y=268; text='快速排序是一种高效的排序算法，采用分治策…') exceeds the root viewBox on the horizontal axis: content (96.0, 247.6)-(1704.0, 276.4), canvas (0.0, 0.0)-(1280.0, 720.0), overflow horizontal 33.1%, vertical 0.0%; move or reflow the text until its estimated bounds stay on-page; ≈24.0 px per CJK char at 24px without headroom; ≈53 chars fit in 1280 px"
+        },
+        {
+          "file": "08_slide.svg",
+          "message": "<text> (x=96, y=268; text='快速排序是一种高效的排序算法，采用分治策…') exceeds the root viewBox on the horizontal axis: content (96.0, 247.6)-(2367.6, 276.4), canvas (0.0, 0.0)-(1280.0, 720.0), overflow horizontal 85.0%, vertical 0.0%; move or reflow the text until its estimated bounds stay on-page; ≈22.7 px per mixed char at 24px without headroom; ≈56 chars fit in 1280 px"
+        }
+      ]
+    },
+    "introduced": {
+      "count": 0,
+      "issues": []
+    },
+    "inherited": {
+      "count": 0,
+      "issues": []
+    },
+    "source-import": {
+      "count": 0,
+      "summary": {
+        "warning_count": 0,
+        "by_code": {}
+      }
+    }
+  },
+  "drift": {
+    "colors": {},
+    "fonts": {},
+    "sizes": {}
+  },
+  "carrier_receipt": {
+    "scope": "informational-not-a-quota",
+    "pages": 8,
+    "totals": {
+      "text_elements": 34,
+      "image_placements": 0,
+      "icons": 0,
+      "svg_geometry_elements": 34,
+      "preset_shapes": 0,
+      "page_frame_elements": 17,
+      "marker_uses": 0,
+      "inline_emphasis_runs": 0,
+      "gradient_uses": 0,
+      "filter_uses": 0,
+      "text_effects": 0
+    },
+    "pages_with": {
+      "images": 0,
+      "icons": 0,
+      "presets": 0,
+      "charts": 1,
+      "tables": 0,
+      "formulas": 0,
+      "inline_emphasis_runs": 0,
+      "gradient_uses": 0,
+      "filter_uses": 0,
+      "text_effects": 0
+    },
+    "geometry_elements": {
+      "circle": 16,
+      "ellipse": 0,
+      "line": 0,
+      "path": 1,
+      "polygon": 0,
+      "polyline": 0,
+      "rect": 17
+    },
+    "preset_names": {},
+    "native_objects": {
+      "chart": 1,
+      "formula_block": 0,
+      "formula_inline": 0,
+      "other": 0,
+      "table": 0
+    },
+    "image_page_max_frame_share_range": []
+  },
+  "project_issues": {
+    "template": [],
+    "animation": [],
+    "illustration": [],
+    "communication_trace": [],
+    "pptx_structure": []
+  },
+  "files": [
+    {
+      "file": "01_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6\\svg_output\\01_slide.svg",
+      "exists": true,
+      "errors": [
+        "<text> (x=96, y=268; text='快速排序是一种高效的排序算法，采用分治策…') exceeds the root viewBox on the horizontal axis: content (96.0, 247.6)-(1704.0, 276.4), canvas (0.0, 0.0)-(1280.0, 720.0), overflow horizontal 33.1%, vertical 0.0%; move or reflow the text until its estimated bounds stay on-page; ≈24.0 px per CJK char at 24px without headroom; ≈53 chars fit in 1280 px"
+      ],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 3,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 1,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 3,
+        "tspan_elements": 0
+      },
+      "passed": false,
+      "source_sha256": "c24cb759eb925c4a95a76df58c9121d1a2b2980a77dd54cf7c07d1f0cf7add68"
+    },
+    {
+      "file": "02_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6\\svg_output\\02_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 5,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 3,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 5,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "21fbe4dd7ddca96e093da250c205ba48fe7fc3d85b134a0b7bddd63dd1683694"
+    },
+    {
+      "file": "03_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6\\svg_output\\03_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 3,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 1,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 3,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "fa98acd443fcdbd4617cba6b3fe71c9dfbf95d57166550bffe205e78cfc0bd4f"
+    },
+    {
+      "file": "04_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6\\svg_output\\04_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 6,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 3,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 1
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 1,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 6,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "c4e65c8bab16dbc549019e1d568d7723853d7feeeafe2e9a2384d6fa9d879329"
+    },
+    {
+      "file": "05_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6\\svg_output\\05_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 4,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 2,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 4,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "62cdbb7aba6c12d7a349a7aeaa1c98d52f3219fce3eccc12cdfe811afd5262ad"
+    },
+    {
+      "file": "06_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6\\svg_output\\06_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 6,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 4,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 6,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "95791568cba6d731e8f2fe721a6f91c6e442093812b0d0b5bd86038d657e7c74"
+    },
+    {
+      "file": "07_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6\\svg_output\\07_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 3,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 1,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 3,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "f1d5e2712a930121f58f604c0bb290e279784acc74b1ccfde7f060443fbaa274"
+    },
+    {
+      "file": "08_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\24e857ce-d057-43f7-906f-45f01ad249d6\\svg_output\\08_slide.svg",
+      "exists": true,
+      "errors": [
+        "<text> (x=96, y=268; text='快速排序是一种高效的排序算法，采用分治策…') exceeds the root viewBox on the horizontal axis: content (96.0, 247.6)-(2367.6, 276.4), canvas (0.0, 0.0)-(1280.0, 720.0), overflow horizontal 85.0%, vertical 0.0%; move or reflow the text until its estimated bounds stay on-page; ≈22.7 px per mixed char at 24px without headroom; ≈56 chars fit in 1280 px"
+      ],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 4,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 3,
+              "circle": 1,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 3,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 4,
+        "tspan_elements": 0
+      },
+      "passed": false,
+      "source_sha256": "5892718941b7a23c3c7de8ed832fd1f918b4d81da7aee54335bf52c5a5024276"
+    }
+  ]
+}

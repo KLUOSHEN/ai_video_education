@@ -14,7 +14,9 @@ npm run dev      # 开发模式（node --watch server.js，文件变更自动重
 npm test         # 单元+集成测试（node --test tests/*.test.js，Node 内置测试运行器，无需安装）
 ```
 
-无构建、无 lint、无第三方依赖，因此**不需要 `npm install`**（运行时零依赖包）。PowerShell 脚本受限时用 `npm.cmd`。
+无构建、无 lint、无第三方依赖，因此**不需要** **`npm install`**（运行时零依赖包）。PowerShell 脚本受限时用 `npm.cmd`。
+
+# **[http://localhost:3000/](http://localhost:3000/%EF%BC%89)**
 
 ## 架构
 
@@ -31,19 +33,21 @@ npm test         # 单元+集成测试（node --test tests/*.test.js，Node 内�
 - **存储**：JSON 文件存储（运行时自动创建 `data/store.json`）。`store` 对象提供集合式 CRUD（`find`/`add`/`update`）。生产可参考 `database/schema.sql` 换 PostgreSQL。
 
 **关键辅助文件**：
+
 - `mdrender.js` — 共享前端渲染器（Markdown + KaTeX 公式 + highlight.js 代码高亮，CDN 缺失时降级纯文本），`window.renderMarkdown(text)` 返回 HTML
 - `vortex.js` — `search.html` 背景动画（canvas），`initVortex()`
-- `docs/` — API.md（接口文档）、DEPLOYMENT.md（部署/安全说明）、TEST_REPORT.md
+- `docs/` — API.md（接口文档）、DEPLOYMENT.md（部署/安全说明）、TEST\_REPORT.md
 
 ## AI 提供方与配置（`.env`）
 
-| 平台 | Key | 用途 | 状态 |
-|------|-----|------|------|
-| 阿里云百炼 Qwen | `QWEN_API_KEY` | 讲稿/幻灯片生成（`qwen-max`）、AI 出题、CosyVoice TTS（`cosyvoice-v3-flash`）、SSE 解题助手 | **核心，必配** |
-| 火山方舟 ARK 豆包 | `ARK_API_KEY` | 讲稿生成回退 LLM（`doubao-1-5-pro-32k-250115`） | 回退，建议配 |
-| 第三方适配器 | `TTS_PROVIDER_URL`/`VIDEO_PROVIDER_URL` | 通用媒体服务（返回 `{url}`） | 可选 |
+| 平台          | Key                                     | 用途                                                                      | 状态        |
+| ----------- | --------------------------------------- | ----------------------------------------------------------------------- | --------- |
+| 阿里云百炼 Qwen  | `QWEN_API_KEY`                          | 讲稿/幻灯片生成（`qwen-max`）、AI 出题、CosyVoice TTS（`cosyvoice-v3-flash`）、SSE 解题助手 | **核心，必配** |
+| 火山方舟 ARK 豆包 | `ARK_API_KEY`                           | 讲稿生成回退 LLM（`doubao-1-5-pro-32k-250115`）                                 | 回退，建议配    |
+| 第三方适配器      | `TTS_PROVIDER_URL`/`VIDEO_PROVIDER_URL` | 通用媒体服务（返回 `{url}`）                                                      | 可选        |
 
-**重要——代码与 `.env.example` 不一致，别被误导**：
+**重要——代码与** **`.env.example`** **不一致，别被误导**：
+
 - `DOUBAO_TTS_API_KEY`、`TTS_PROVIDER` 在 `server.js` **完全未被引用**（豆包 TTS 回退未实现，配音只走 Qwen）。
 - `createDoubaoTask`/`getDoubaoTaskStatus`（ARK Seedance 视频）**定义了但从未被调用**——是死代码，当前视频生成实际只产出 SVG 海报。
 - 未配置任何 Key 时开发模式也能跑通：用静音 WAV + SVG 课程封面代替真实媒体。
@@ -67,3 +71,4 @@ npm test         # 单元+集成测试（node --test tests/*.test.js，Node 内�
 - 限流：每 IP 每分钟 60 请求；请求体 64KB 上限。
 - 媒体文件名由时间戳+UUID 生成，不使用用户输入拼路径（防路径穿越）。
 - `.env` 不提交仓库；生产按 `database/schema.sql` 接入 PostgreSQL 并用持久队列（Redis/SQS）替代 JSON 存储。
+

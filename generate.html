@@ -42,7 +42,7 @@
   .brand h1 { font-size: 16px; font-weight: 700; }
 
   .gen-bar { display: flex; align-items: center; gap: 10px; padding: 12px 18px; flex-shrink: 0;
-    background: var(--panel); border-bottom: 1px solid var(--border); flex-wrap: wrap; position: relative; z-index: 1; }
+    background: var(--panel); border-bottom: 1px solid var(--border); flex-wrap: wrap; position: relative; z-index: 2; }
   .gen-bar input { height: 38px; padding: 0 14px; border-radius: 10px; background: var(--bg);
     border: 1px solid var(--border); color: var(--text); font-size: 13.5px; outline: none;
     font-family: inherit; transition: border-color var(--dur-fast) var(--ease-snap), box-shadow var(--dur-fast) var(--ease-snap); }
@@ -88,6 +88,8 @@
     cursor: pointer; user-select: none; box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 6px 20px rgba(79,107,240,.08);
     transition: box-shadow var(--dur-fast) var(--ease-snap), border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-spring); }
   .node:active { transform: scale(0.97); }
+  .node { touch-action: none; }
+  .node.dragging, .node.dragging:hover, .node.dragging:active { transform: none; cursor: grabbing; z-index: 30; transition: none; }
   .node.selected { z-index: 20; box-shadow: 0 0 0 2px rgba(79,107,240,0.7), 0 8px 28px rgba(15,23,42,0.18); }
   .node.not_started { border-color: #CBD5E1; background: #FFFFFF; color: #64748B; }
   .node.in_progress { border-color: #F59E0B; background: #FEF3C7; color: #92400E; animation: pulse 2.2s ease-in-out infinite; }
@@ -405,31 +407,53 @@ function computeLayout(nodes, edges) {
 function edgePath(sx, sy, tx, ty) { var midY = (sy + ty) / 2;
   return 'M ' + sx + ' ' + sy + ' C ' + sx + ' ' + midY + ' ' + tx + ' ' + midY + ' ' + tx + ' ' + ty; }
 
+function redrawEdges() {
+  var nodes = state.nodes, edges = state.edges;
+  var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+  nodes.forEach(function (n) {
+    var p = state.positions[n.id];
+    minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x + NODE_W); maxY = Math.max(maxY, p.y + NODE_H);
+  });
+  var pad = 60, vbW = (maxX - minX) + pad * 2, vbH = (maxY - minY) + pad * 2;
+  var ox = minX - pad, oy = minY - pad;
+  edgeSvg.setAttribute('viewBox', ox + ' ' + oy + ' ' + vbW + ' ' + vbH);
+  edgeSvg.setAttribute('width', vbW); edgeSvg.setAttribute('height', vbH);
+  edgeSvg.style.left = ox + 'px'; edgeSvg.style.top = oy + 'px';
+  var existing = {};
+  edgeSvg.querySelectorAll('path').forEach(function (p) { existing[p.getAttribute('data-eid')] = p; });
+  var keep = {};
+  edges.forEach(function (e) {
+    keep[e.id] = true;
+    var sp = state.positions[e.source], tp = state.positions[e.target];
+    if (!sp || !tp) return;
+    var sx = sp.x + NODE_W / 2, sy = sp.y + NODE_H, tx = tp.x + NODE_W / 2, ty = tp.y;
+    var d = edgePath(sx, sy, tx, ty);
+    var path = existing[e.id];
+    if (path) { path.setAttribute('d', d); return; }
+    var sourceNode = nodes.find(function (n) { return n.id === e.source; });
+    var cls = 'edge';
+    if (sourceNode && (sourceNode.status === 'completed' || sourceNode.status === 'mastered')) {
+      cls += ' ' + sourceNode.status + ' animated';
+    }
+    var np = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    np.setAttribute('class', cls); np.setAttribute('data-eid', e.id); np.setAttribute('d', d);
+    edgeSvg.appendChild(np);
+  });
+  edgeSvg.querySelectorAll('path').forEach(function (p) {
+    if (!keep[p.getAttribute('data-eid')]) p.remove();
+  });
+}
+
 function render() {
   var s = state.snapshot; if (!s) return;
   var nodes = s.nodes, edges = s.edges;
   state.nodes = nodes; state.edges = edges;
   state.positions = computeLayout(nodes, edges);
+  applySavedPositions();
   state.selected = null;
 
-  var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
-  nodes.forEach(function (n) { var p = state.positions[n.id];
-    minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x + NODE_W); maxY = Math.max(maxY, p.y + NODE_H); });
-  var pad = 60, vbW = (maxX - minX) + pad * 2, vbH = (maxY - minY) + pad * 2, ox = minX - pad, oy = minY - pad;
-
-  var svgParts = [];
-  edges.forEach(function (e) {
-    var sp = state.positions[e.source], tp = state.positions[e.target];
-    if (!sp || !tp) return;
-    var sx = sp.x + NODE_W / 2, sy = sp.y + NODE_H, tx = tp.x + NODE_W / 2, ty = tp.y;
-    var cls = 'edge', src = nodes.filter(function (n) { return n.id === e.source; })[0];
-    if (src && (src.status === 'completed' || src.status === 'mastered')) { cls += ' ' + src.status + ' animated'; }
-    svgParts.push('<path class="' + cls + '" data-eid="' + e.id + '" d="' + edgePath(sx, sy, tx, ty) + '"/>');
-  });
-  edgeSvg.setAttribute('viewBox', ox + ' ' + oy + ' ' + vbW + ' ' + vbH);
-  edgeSvg.setAttribute('width', vbW); edgeSvg.setAttribute('height', vbH);
-  edgeSvg.style.left = ox + 'px'; edgeSvg.style.top = oy + 'px';
-  edgeSvg.innerHTML = svgParts.join('');
+  redrawEdges();
 
   var nodeHtml = nodes.map(function (n) {
     var p = state.positions[n.id], flag = n.status === 'mastered' ? '★' : (n.status === 'completed' ? '✓' : '');
@@ -484,6 +508,8 @@ function renderDetail(node) {
     '<span class="chip">约 ' + (node.estimated_minutes || 90) + ' 分钟</span>' +
     '</div></div></div>' +
     statusActionsHtml(node) +
+    '<button class="gen-explain-btn" data-topic="' + String(node.title||'').replace(/"/g,'&quot;') + '" data-ctx="' + String([node.description, (node.key_concepts||[]).join('、'), (node.learning_objectives||[]).join('、')].filter(Boolean).join('；')).replace(/"/g,'&quot;') + '" onclick="window.genExplain(this)" style="display:block;width:100%;margin:12px 0 4px;padding:10px 12px;border-radius:10px;border:none;background:var(--primary,#4F6BF0);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✨ 生成知识点详解</button>' +
+    '<div class="explain-out" style="margin:6px 0 12px;font-size:13px;line-height:1.7;color:var(--text-dim,#475569);"></div>' +
     (node.description ? '<p class="detail-desc">' + node.description + '</p>' : '') +
     (node.depth_rationale ? '<section class="detail-section rationale"><h3>目标深度</h3><p>' + node.depth_rationale + '</p></section>' : '') +
     (objList ? '<section class="detail-section objective"><h3>学习目标</h3><ul>' + objList + '</ul></section>' : '') +
@@ -492,6 +518,26 @@ function renderDetail(node) {
 }
 
 function renderDetailEmpty() { detailPanel.innerHTML = '<div class="detail-empty">点击节点查看学习目标与掌握证据</div>'; }
+
+window.genExplain = function (btn) {
+  var out = btn && btn.nextElementSibling;
+  if (!out) return;
+  var topic = btn.getAttribute('data-topic') || '';
+  var ctx = btn.getAttribute('data-ctx') || '';
+  btn.disabled = true; btn.textContent = '生成中…';
+  out.innerHTML = '<div style="color:var(--text-muted,#8a929e)">AI 正在生成详解…</div>';
+  fetch('/api/v1/skill/explain', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic: topic, context: ctx })
+  }).then(function (r) { return r.json(); }).then(function (p) {
+    if (!p || !p.data) throw new Error((p && p.error && p.error.message) || '生成失败');
+    var t = String(p.data.text || '');
+    out.innerHTML = '<div style="white-space:pre-wrap;">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+  }).catch(function (e) {
+    out.innerHTML = '<div style="color:var(--danger,#dc2626)">生成失败：' + String((e && e.message) || e) + '</div>';
+  }).finally(function () { btn.disabled = false; btn.textContent = '✨ 生成知识点详解'; });
+};
 
 var STATUS_OPTIONS = [
   { s: 'not_started', label: '未学习', color: '#CBD5E1' },
@@ -655,7 +701,76 @@ function releaseMomentum() {
   momentumId = requestAnimationFrame(step);
 }
 
+/* ── 节点拖动 + 位置持久化 ── */
+var POS_KEY = 'dsh.generate.positions';
+
+function currentTreeKey() {
+  return (state.snapshot && state.snapshot.tree && state.snapshot.tree.title) || 'default';
+}
+function loadPositions() {
+  try { return JSON.parse(localStorage.getItem(POS_KEY) || '{}'); } catch (e) { return {}; }
+}
+function savePositions() {
+  var all = loadPositions();
+  var treePos = {};
+  state.nodes.forEach(function (n) {
+    var p = state.positions[n.id];
+    if (p) treePos[n.id] = { x: Math.round(p.x), y: Math.round(p.y) };
+  });
+  all[currentTreeKey()] = treePos;
+  try { localStorage.setItem(POS_KEY, JSON.stringify(all)); } catch (e) {}
+}
+function applySavedPositions() {
+  var treePos = loadPositions()[currentTreeKey()];
+  if (!treePos) return;
+  Object.keys(treePos).forEach(function (id) {
+    if (state.positions[id]) { state.positions[id].x = treePos[id].x; state.positions[id].y = treePos[id].y; }
+  });
+}
+
+var nodeDrag = null, justDraggedNode = false;
+viewport.addEventListener('pointerdown', function (e) {
+  if (e.button !== 0) return;
+  var el = e.target.closest('.node');
+  if (!el) return;
+  var id = el.getAttribute('data-id');
+  var p = state.positions[id];
+  if (!p) return;
+  velHist = [];
+  cancelAnimationFrame(momentumId);
+  nodeDrag = { id: id, el: el, startX: e.clientX, startY: e.clientY, origX: p.x, origY: p.y, moved: false };
+  el.classList.add('dragging');
+  document.body.style.userSelect = 'none';
+});
+window.addEventListener('pointermove', function (e) {
+  if (!nodeDrag) return;
+  var dx = e.clientX - nodeDrag.startX, dy = e.clientY - nodeDrag.startY;
+  if (!nodeDrag.moved && Math.hypot(dx, dy) < 4) return;
+  nodeDrag.moved = true;
+  var nx = nodeDrag.origX + dx / state.scale;
+  var ny = nodeDrag.origY + dy / state.scale;
+  state.positions[nodeDrag.id] = { x: nx, y: ny };
+  nodeDrag.el.style.left = nx + 'px';
+  nodeDrag.el.style.top = ny + 'px';
+  redrawEdges();
+});
+function endNodeDrag() {
+  if (!nodeDrag) return;
+  var moved = nodeDrag.moved;
+  nodeDrag.el.classList.remove('dragging');
+  document.body.style.userSelect = '';
+  nodeDrag = null;
+  if (moved) {
+    justDraggedNode = true;
+    savePositions();
+    setTimeout(function () { justDraggedNode = false; }, 0);
+  }
+}
+window.addEventListener('pointerup', endNodeDrag);
+window.addEventListener('pointercancel', endNodeDrag);
+
 viewport.addEventListener('click', function (e) {
+  if (justDraggedNode) { justDraggedNode = false; return; }
   var el = e.target.closest('.node'); if (!el) return;
   var id = el.getAttribute('data-id');
   var node = state.nodes.filter(function (n) { return n.id === id; })[0];
@@ -756,6 +871,13 @@ function hideCtxMenu() { ctxMenu.classList.remove('show'); ctxNodeId = null; }
 document.addEventListener('click', function (e) { if (!e.target.closest('.ctx-menu')) hideCtxMenu(); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideCtxMenu(); });
 window.addEventListener('scroll', hideCtxMenu);
+
+// 从 URL 预填学习方向（如 /generate.html?topic=前端开发）
+(function () {
+  var q = new URLSearchParams(window.location.search);
+  var t = q.get('topic');
+  if (t) { var inp = document.getElementById('topicInput'); if (inp) inp.value = t; }
+})();
 </script>
 </body>
 </html>

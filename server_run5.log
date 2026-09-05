@@ -1,0 +1,4 @@
+﻿{"time":"2026-09-05T05:14:45.876Z","event":"server.started","port":3002,"url":"http://localhost:3002"}
+{"time":"2026-09-05T05:14:52.934Z","event":"request","id":"236e816f-e33a-4854-854f-3f80903af7f4","method":"GET","path":"/api/v1/video/slide-svg","ms":4}
+{"time":"2026-09-05T05:14:52.942Z","event":"request","id":"c4d857a1-a8e5-4eca-a459-a08959f6a244","method":"GET","path":"/api/v1/video/slide-svg","ms":1}
+{"time":"2026-09-05T05:15:00.264Z","event":"request","id":"ad0f9dcf-96a6-480b-918e-210bfab2b794","method":"GET","path":"/api/v1/video/slide-svg","ms":1}

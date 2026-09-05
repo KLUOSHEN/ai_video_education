@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -52,8 +52,8 @@
             width: var(--sidebar-w);
             min-width: var(--sidebar-w);
             height: 100vh;
-            background: #FBFCFE;
-            border-right: 1px solid var(--border);
+            background: #F9FAFB;
+            border-right: 1px solid #EEF0F3;
             display: flex;
             flex-direction: column;
             transition: width 0.3s, min-width 0.3s, opacity 0.3s;
@@ -71,135 +71,109 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 18px 12px;
+            padding: 14px 14px 8px;
             flex-shrink: 0;
         }
         .sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-        }
-        .sidebar-logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
-            color: white;
-        }
-        .sidebar-logo-text {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
+            color: #111827;
+            cursor: pointer;
             white-space: nowrap;
+            letter-spacing: -0.01em;
         }
         .sidebar-collapse-btn {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 8px;
-            border: 1px solid var(--border);
-            background: #fff;
-            color: #6f87b0;
+            border: none;
+            background: transparent;
+            color: #6B7280;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 18px;
+            line-height: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: background 0.15s, color 0.15s;
         }
         .sidebar-collapse-btn:hover {
-            color: var(--primary);
-            border-color: var(--primary);
-            background: var(--primary-soft);
+            background: #EEF0F3;
+            color: #111827;
         }
         .sidebar-new-search {
-            margin: 4px 14px 14px;
-            padding: 10px 0;
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(79,107,240,0.06), rgba(109,131,245,0.04));
-            border: 1px dashed #c8dfff;
+            margin: 8px 12px 12px;
+            padding: 9px 0;
+            border-radius: 8px;
+            background: #F1F3F5;
+            border: none;
             cursor: pointer;
             text-align: center;
             font-size: 13px;
-            color: var(--primary);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            font-weight: 500;
+            color: #111827;
+            transition: background 0.15s;
             flex-shrink: 0;
         }
         .sidebar-new-search:hover {
-            background: linear-gradient(135deg, rgba(79,107,240,0.12), rgba(109,131,245,0.08));
-            border-color: var(--primary);
+            background: #E8EAED;
         }
 
         /* 历史列表 */
         .sidebar-history-wrap {
             flex: 1;
             overflow-y: auto;
-            padding: 0 8px 12px;
+            padding: 6px 8px 12px;
         }
         .sidebar-history-title {
             font-size: 11px;
-            font-weight: 600;
-            color: #a0b4d0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 10px 6px;
+            font-weight: 500;
+            color: #9CA3AF;
+            padding: 10px 10px 6px;
         }
         .sidebar-history-list {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 1px;
         }
         .sidebar-history-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 9px 10px;
-            border-radius: 10px;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: background 0.15s;
             position: relative;
             font-size: 13px;
-            color: #2c3e65;
+            color: #374151;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .sidebar-history-item:hover {
-            background: var(--primary-soft);
-            color: var(--primary);
+            background: #EEF0F3;
+            color: #111827;
         }
         .sidebar-history-item.active {
-            background: #e8f2ff;
+            background: #E8EDF9;
             color: var(--primary);
-            font-weight: 500;
         }
-        .sidebar-history-item i {
-            font-size: 12px;
-            color: #bcc8dc;
-            flex-shrink: 0;
-        }
-        .sidebar-history-item:hover i { color: var(--primary); }
         .sidebar-history-item-text {
             flex: 1;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .sidebar-history-del {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             border: none;
             background: transparent;
             color: transparent;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 12px;
+            line-height: 1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -207,108 +181,66 @@
             transition: all 0.15s;
         }
         .sidebar-history-item:hover .sidebar-history-del {
-            color: #c0cfde;
+            color: #9CA3AF;
         }
         .sidebar-history-item:hover .sidebar-history-del:hover {
-            color: #e0555a;
-            background: rgba(224, 85, 90, 0.08);
+            color: #DC2626;
+            background: #FEE2E2;
         }
 
         .sidebar-footer {
-            padding: 10px 14px;
-            border-top: 1px solid var(--border);
+            padding: 10px 12px;
+            border-top: 1px solid #EEF0F3;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
         .sidebar-clear-all {
-            font-size: 11px;
-            color: #a0b4d0;
+            font-size: 12px;
+            color: #6B7280;
             background: none;
             border: none;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
             font-family: inherit;
-            transition: color 0.2s;
+            transition: color 0.15s;
         }
-        .sidebar-clear-all:hover { color: #e0555a; }
+        .sidebar-clear-all:hover { color: #DC2626; }
         .sidebar-count {
-            font-size: 11px;
-            color: #c0cfde;
+            font-size: 12px;
+            color: #9CA3AF;
         }
         .sidebar-feature-entry {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin: 6px 14px 14px;
-            padding: 14px 14px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, rgba(79,107,240,0.1), rgba(124,92,240,0.06));
-            border: 1px solid rgba(79,107,240,0.22);
+            gap: 10px;
+            margin: 0;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.25s;
-            flex-shrink: 0;
-            box-shadow: 0 2px 12px rgba(79,107,240,0.1), 0 1px 3px rgba(0,0,0,0.04);
-            position: relative;
+            transition: background 0.15s;
+            white-space: nowrap;
             overflow: hidden;
         }
-        .sidebar-feature-entry::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(79,107,240,0.06), transparent 60%);
-            pointer-events: none;
+        .sidebar-feature-entry svg {
+            width: 18px;
+            height: 18px;
+            color: #4B5563;
+            flex-shrink: 0;
+            transition: color 0.15s;
         }
         .sidebar-feature-entry:hover {
-            background: linear-gradient(135deg, rgba(79,107,240,0.16), rgba(124,92,240,0.1));
-            border-color: rgba(79,107,240,0.45);
-            box-shadow: 0 4px 20px rgba(79,107,240,0.18), 0 2px 6px rgba(0,0,0,0.06);
-            transform: translateY(-1px);
+            background: #EEF0F3;
         }
-        .sfe-icon {
-            width: 42px;
-            height: 42px;
-            min-width: 42px;
-            border-radius: 12px;
-            background: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: #fff;
-            box-shadow: 0 3px 10px rgba(79,107,240,0.3);
+        .sidebar-feature-entry:hover svg {
+            color: #111827;
         }
-        .sfe-body {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .sfe-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: 0.3px;
-        }
-        .sfe-desc {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-        .sfe-arrow {
-            font-size: 12px;
-            color: var(--primary);
-            opacity: 0.5;
-            transition: all 0.25s;
-        }
-        .sidebar-feature-entry:hover .sfe-arrow {
-            opacity: 1;
-            transform: translateX(2px);
+        .sidebar-feature-entry:active {
+            background: #E5E8EB;
         }
 
         /* ── 右侧主区域 ── */
@@ -507,6 +439,38 @@
         .chat-avatar--teacher { background: linear-gradient(135deg, #f59e0b, #ef4444); }
         .chat-chip-caret { font-size: 10px; color: #a0b4d0; transition: transform .2s; }
         .chat-header-chip:hover .chat-chip-caret { transform: translateY(2px); }
+
+        /* 右侧入口：仿「AI教师」行样式 —— 头像 + 喇叭 + 上折箭头 */
+        .chat-header-chip--right {
+            padding: 6px 10px 6px 12px;
+            background: #fff;
+            border: 1px solid #ece7fb;
+            box-shadow: 0 2px 10px rgba(124, 92, 240, .10);
+        }
+        .chat-header-chip--right:hover {
+            border-color: #C7BDF2;
+            background: #faf8ff;
+            box-shadow: 0 4px 14px rgba(124, 92, 240, .18);
+        }
+        .chip-trailing {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 2px;
+        }
+        .chip-voice-icon {
+            font-size: 12px;
+            color: #7C5CF0;
+            background: rgba(124, 92, 240, .10);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-header-chip--right .chat-avatar--teacher { width: 26px; height: 26px; font-size: 12px; }
+        .chat-header-chip--right .chat-chip-caret { color: #b9a8ec; }
 
         /* ── 聊天流气泡 ── */
         .chat-stream {
@@ -746,6 +710,74 @@
             font-size: 14px;
             color: var(--text-muted);
             margin-bottom: 32px;
+        }
+        /* 生成进度条：随 progress% 平滑填充 */
+        .ai-loading-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: -18px auto 18px;
+            width: min(300px, 80%);
+        }
+        .ai-loading-progress[hidden] { display: none; }
+        .ai-loading-progress-track {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #e8f1ff;
+            overflow: hidden;
+        }
+        .ai-loading-progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            transition: width 0.6s ease;
+        }
+        .ai-loading-progress-pct {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            min-width: 36px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        /* 逐页点阵：每生成完一页点亮一个点 */
+        .ai-loading-pages {
+            margin: -8px auto 22px;
+        }
+        .ai-loading-pages[hidden] { display: none; }
+        .ai-loading-pages-label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+        .ai-loading-page-dots {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .ai-loading-page-dots i {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: #e3ecfb;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+        .ai-loading-page-dots i.done {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            box-shadow: 0 2px 6px rgba(79, 107, 240, 0.35);
+        }
+        .ai-loading-page-dots i.doing {
+            background: #c8dfff;
+            animation: aiPageDot 1s ease-in-out infinite;
+        }
+        @keyframes aiPageDot {
+            0%, 100% { transform: scale(0.85); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 1; }
         }
         .ai-loading-footer {
             display: inline-flex;
@@ -1194,6 +1226,7 @@
         .cf-option input { position: absolute; opacity: 0; pointer-events: none; }
         .cf-option.checked { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 2px 10px rgba(79,107,240,.12); }
         .cf-option-icon { font-size: 18px; }
+        .cf-option-icon.cf-swatch { display:inline-block; width:16px; height:16px; border-radius:50%; font-size:0; margin-right:6px; vertical-align:-3px; box-shadow:0 0 0 1px rgba(0,0,0,.08); }
         .cf-check {
             display: flex !important;
             align-items: center;
@@ -1270,7 +1303,7 @@
         *::-webkit-scrollbar-track { background: transparent; }
 
         /* ── 参赛增强：logo 呼吸 ── */
-        .sidebar-logo-icon, .brand-icon { animation: iconGlow 3.4s ease-in-out infinite; }
+        .brand-icon { animation: iconGlow 3.4s ease-in-out infinite; }
         @keyframes iconGlow {
             0%, 100% { box-shadow: 0 0 0 rgba(79,107,240,0); }
             50% { box-shadow: 0 0 18px rgba(79,107,240,.4); }
@@ -1768,57 +1801,31 @@
 
     <div class="app-layout">
 
-        <!-- ====== 左侧历史面板 ====== -->
+        <!-- ====== 左侧导航栏（DeepSeek 风格 · 纯文字） ====== -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-logo" onclick="location.href='1.html'">
-                    <div class="sidebar-logo-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
-                    <span class="sidebar-logo-text">栈知映</span>
-                </div>
-                <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="收起侧栏">
-                    <i class="fas fa-panel-ews"></i>
-                </button>
+                <div class="sidebar-logo" onclick="location.href='search.html'">栈知映</div>
+                <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="收起侧栏">‹</button>
             </div>
 
-            <div class="sidebar-new-search" onclick="startNewSearch()">
-                <i class="fas fa-plus"></i> 新建搜索
-            </div>
+            <div class="sidebar-new-search" onclick="startNewSearch()">新建搜索</div>
 
             <a href="skill/index.html" class="sidebar-feature-entry">
-                <div class="sfe-icon"><i class="fas fa-diagram-project"></i></div>
-                <div class="sfe-body">
-                    <span class="sfe-title">职业加点图</span>
-                    <span class="sfe-desc">技能树 · 职业匹配</span>
-                </div>
-                <div class="sfe-arrow"><i class="fas fa-chevron-right"></i></div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="m8.1 7.5 2.4 7.1M15.9 7.5l-2.4 7.1"/></svg>
+                <span>职业加点图</span>
             </a>
-
             <a href="forum/index.html" class="sidebar-feature-entry">
-                <div class="sfe-icon"><i class="fas fa-comments"></i></div>
-                <div class="sfe-body">
-                    <span class="sfe-title">学习论坛</span>
-                    <span class="sfe-desc">发帖讨论 · 打卡 · 进度</span>
-                </div>
-                <div class="sfe-arrow"><i class="fas fa-chevron-right"></i></div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a7.4 7.4 0 0 1-8 7.4 8.7 8.7 0 0 1-3.1-.6L4 20l1.5-4.1A7.2 7.2 0 0 1 4 11.5 7.4 7.4 0 0 1 12 4a7.4 7.4 0 0 1 8 7.5Z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>
+                <span>学习论坛</span>
             </a>
-
             <a href="skilltree-app/skilltree.html" class="sidebar-feature-entry">
-                <div class="sfe-icon"><i class="fas fa-sitemap"></i></div>
-                <div class="sfe-body">
-                    <span class="sfe-title">技能树</span>
-                    <span class="sfe-desc">前端 · 后端 · 算法 · AI Agent</span>
-                </div>
-                <div class="sfe-arrow"><i class="fas fa-chevron-right"></i></div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M12 7H6v5M12 7h6v5M6 12v5M18 12v5"/><rect x="3.5" y="17" width="5" height="3.5" rx="1"/><rect x="15.5" y="17" width="5" height="3.5" rx="1"/><rect x="9.5" y="3" width="5" height="3.5" rx="1"/></svg>
+                <span>技能树</span>
             </a>
-
-            <div class="sidebar-feature-entry" onclick="openMistakes()" title="查看错题本" style="cursor:pointer;">
-                <div class="sfe-icon"><i class="fas fa-book-medical"></i></div>
-                <div class="sfe-body">
-                    <span class="sfe-title">错题本</span>
-                    <span class="sfe-desc">错题归因 · 复习巩固</span>
-                </div>
-                <div class="sfe-arrow"><i class="fas fa-chevron-right"></i></div>
-            </div>
+            <a href="mistake.html" class="sidebar-feature-entry">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h9l3 3V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/><path d="M14.5 3.5V7H18M8.5 11h7M8.5 15h5"/></svg>
+                <span>错题本</span>
+            </a>
 
             <div class="sidebar-history-wrap">
                 <div class="sidebar-history-title">搜索历史</div>
@@ -1826,7 +1833,7 @@
             </div>
 
             <div class="sidebar-footer">
-                <button class="sidebar-clear-all" onclick="clearAllHistory()"><i class="fas fa-trash-can"></i> 清除全部历史</button>
+                <button class="sidebar-clear-all" onclick="clearAllHistory()">清除全部历史</button>
                 <span class="sidebar-count" id="historyCount">0 条历史</span>
             </div>
         </aside>
@@ -1834,9 +1841,7 @@
         <!-- ====== 右侧主内容 ====== -->
         <main class="main-area">
             <!-- 展开侧栏按钮 -->
-            <button class="expand-sidebar-btn" id="expandBtn" onclick="toggleSidebar()" title="展开侧栏">
-                <i class="fas fa-panel-ews"></i>
-            </button>
+            <button class="expand-sidebar-btn" id="expandBtn" onclick="toggleSidebar()" title="展开侧栏">›</button>
 
             <!-- 搜索容器 -->
             <div class="search-container">
@@ -1859,8 +1864,11 @@
                         </div>
                         <div class="chat-header-chip chat-header-chip--right" onclick="openClassConfig()" title="选择课堂配置">
                             <span>准备好一起学习了吗？</span>
-                            <i class="fas fa-chevron-down chat-chip-caret"></i>
-                            <div class="chat-avatar chat-avatar--teacher"><i class="fas fa-robot"></i></div>
+                            <div class="chip-trailing">
+                                <div class="chat-avatar chat-avatar--teacher"><i class="fas fa-robot"></i></div>
+                                <i class="fas fa-volume-high chip-voice-icon"></i>
+                                <i class="fas fa-chevron-up chat-chip-caret"></i>
+                            </div>
                         </div>
                     </div>
 
@@ -1957,6 +1965,17 @@
                 <div class="ai-loading-spinner" id="aiLoadingSpinner" hidden></div>
                 <div class="ai-loading-title" id="aiLoadingTitle">生成课程大纲</div>
                 <div class="ai-loading-subtitle" id="aiLoadingSubtitle">正在构建学习路径…</div>
+                <!-- 生成进度：细进度条 + 逐页点阵（仅视频生成轮询时显示） -->
+                <div class="ai-loading-progress" id="aiLoadingProgress" hidden>
+                    <div class="ai-loading-progress-track">
+                        <div class="ai-loading-progress-fill" id="aiLoadingProgressFill"></div>
+                    </div>
+                    <div class="ai-loading-progress-pct" id="aiLoadingProgressPct">0%</div>
+                </div>
+                <div class="ai-loading-pages" id="aiLoadingPages" hidden>
+                    <span class="ai-loading-pages-label" id="aiLoadingPagesLabel">第 0/0 页</span>
+                    <div class="ai-loading-page-dots" id="aiLoadingPageDots"></div>
+                </div>
             </div>
             <div class="ai-loading-dots">
                 <span></span><span></span><span></span>
@@ -2049,40 +2068,33 @@
             <div class="drawer-title">课堂角色配置</div>
             <button class="drawer-close" onclick="closeDrawers()" aria-label="关闭"><i class="fas fa-xmark"></i></button>
         </div>
-        <div class="drawer-desc">选择你的 AI 老师音色，以及课堂里陪你学习的同学们。</div>
+        <div class="drawer-desc">选择课堂的视觉风格，以及课堂里陪你学习的同学们。</div>
         <div class="drawer-body">
-            <span class="drawer-label">AI 老师音色</span>
+            <span class="drawer-label">视觉风格</span>
             <div class="cf-option-list">
                 <label class="cf-option">
-                    <input type="radio" name="voice" value="longanyang" checked>
-                    <span class="cf-option-icon">🎤</span> 龙小羊（温和耐心）
+                    <input type="radio" name="style" value="电子演播室" checked>
+                    <span class="cf-option-icon cf-swatch" style="background:linear-gradient(135deg,#4361ee, #e9edff);"></span> 电子演播室 · 白/蓝
                 </label>
                 <label class="cf-option">
-                    <input type="radio" name="voice" value="luoxin">
-                    <span class="cf-option-icon">🎧</span> 洛心（沉稳专业）
+                    <input type="radio" name="style" value="复古编辑">
+                    <span class="cf-option-icon cf-swatch" style="background:linear-gradient(135deg,#f5f3ee, #a45a3a);"></span> 复古编辑 · 奶油米
                 </label>
                 <label class="cf-option">
-                    <input type="radio" name="voice" value="haiyang">
-                    <span class="cf-option-icon">🎙️</span> 海洋（活力热情）
-                </label>
-            </div>
-            <span class="drawer-label" style="display:block;margin:18px 0 8px;">课堂学生角色</span>
-            <div class="cf-option-list">
-                <label class="cf-option">
-                    <input type="radio" name="role" value="显眼包">
-                    <span class="cf-option-icon">🤹</span> 显眼包（活跃气氛）
+                    <input type="radio" name="style" value="分栏粉彩">
+                    <span class="cf-option-icon cf-swatch" style="background:linear-gradient(135deg,#f5e6dc, #e4dff0);"></span> 分栏粉彩 · 桃/薰衣草
                 </label>
                 <label class="cf-option">
-                    <input type="radio" name="role" value="好奇宝宝" checked>
-                    <span class="cf-option-icon">🧐</span> 好奇宝宝（追问到底）
+                    <input type="radio" name="style" value="粉彩几何">
+                    <span class="cf-option-icon cf-swatch" style="background:linear-gradient(135deg,#c8d9e6, #7c6aad);"></span> 粉彩几何 · 浅粉彩
                 </label>
                 <label class="cf-option">
-                    <input type="radio" name="role" value="笔记员">
-                    <span class="cf-option-icon">📝</span> 笔记员（整理要点）
+                    <input type="radio" name="style" value="笔记本标签">
+                    <span class="cf-option-icon cf-swatch" style="background:linear-gradient(135deg,#98d4bb, #f4b8c5);"></span> 笔记本标签 · 米纸彩签
                 </label>
                 <label class="cf-option">
-                    <input type="radio" name="role" value="思考者">
-                    <span class="cf-option-icon">💭</span> 思考者（深度思考）
+                    <input type="radio" name="style" value="创意电压">
+                    <span class="cf-option-icon cf-swatch" style="background:linear-gradient(135deg,#0066ff, #d4ff00);"></span> 创意电压 · 电蓝/霓虹
                 </label>
             </div>
             <label class="cf-check" style="margin-top:16px;">
@@ -2263,8 +2275,7 @@
             closeDrawers();
             const c = loadClassConfig();
             if (c) {
-                document.querySelectorAll('input[name="voice"]').forEach(r => { r.checked = r.value === c.voice; });
-                document.querySelectorAll('input[name="role"]').forEach(r => { r.checked = r.value === c.role; });
+                document.querySelectorAll('input[name="style"]').forEach(r => { r.checked = r.value === c.style; });
                 const cb = document.getElementById('cfInteractive');
                 if (cb) cb.checked = !!c.interactive;
             }
@@ -2294,14 +2305,13 @@
         }
 
         function saveClassConfig() {
-            const voice = (document.querySelector('input[name="voice"]:checked') || {}).value || 'longanyang';
-            const role = (document.querySelector('input[name="role"]:checked') || {}).value || '好奇宝宝';
             const cb = document.getElementById('cfInteractive');
             const interactive = !!(cb && cb.checked);
-            localStorage.setItem(CLASS_KEY, JSON.stringify({ voice, role, interactive }));
+            const style = (document.querySelector('input[name="style"]:checked') || {}).value || '电子演播室';
+            localStorage.setItem(CLASS_KEY, JSON.stringify({ interactive, style }));
             closeDrawers();
             const status = document.getElementById('searchStatus');
-            if (status) status.textContent = '已保存课堂配置：' + role + ' · ' + voice + (interactive ? ' · 深度交互' : '');
+            if (status) status.textContent = '已保存课堂配置：' + style + (interactive ? ' · 深度交互' : '');
         }
 
         function closeDrawers() {
@@ -2324,8 +2334,8 @@
                 if (p.traits && p.traits.length) bits.push('性格：' + p.traits.join('、'));
                 if (bits.length) parts.push('学员背景与性格：' + bits.join('；'));
             }
-            if (c) {
-                parts.push('讲解音色：' + c.voice + '；课堂学生角色：' + c.role + (c.interactive ? '（开启深度交互提问）' : ''));
+            if (c && c.interactive) {
+                parts.push('开启深度交互提问');
             }
             return parts.join('。');
         }
@@ -2425,14 +2435,49 @@
                 window.__aiLoadingInterval = null;
             }
         }
+        // 生成进度条 + 逐页点阵：由视频轮询按 status 数据驱动
+        function setGenProgress(pct) {
+            const wrap = document.getElementById('aiLoadingProgress');
+            if (!wrap) return;
+            wrap.hidden = false;
+            document.getElementById('aiLoadingProgressFill').style.width = Math.max(0, Math.min(100, pct || 0)) + '%';
+            document.getElementById('aiLoadingProgressPct').textContent = Math.max(0, Math.min(100, pct || 0)) + '%';
+        }
+        function setGenPages(total, done) {
+            const wrap = document.getElementById('aiLoadingPages');
+            if (!wrap) return;
+            if (!total) { wrap.hidden = true; return; }
+            wrap.hidden = false;
+            document.getElementById('aiLoadingPagesLabel').textContent = '第 ' + (done || 0) + '/' + total + ' 页';
+            const dots = document.getElementById('aiLoadingPageDots');
+            if (dots.childElementCount !== total) {
+                dots.innerHTML = '';
+                for (let i = 0; i < total; i++) dots.appendChild(document.createElement('i'));
+            }
+            Array.from(dots.children).forEach((d, i) => {
+                d.className = i < (done || 0) ? 'done' : (i === done ? 'doing' : '');
+            });
+        }
+        function resetGenProgress() {
+            const p = document.getElementById('aiLoadingProgress');
+            const g = document.getElementById('aiLoadingPages');
+            if (p) p.hidden = true;
+            if (g) g.hidden = true;
+        }
         function hideAILoading() {
             document.getElementById('aiLoadingOverlay').classList.remove('active');
             stopAILoadingCycle();
+            resetGenProgress();
             // 加载完成：移除 busy 标记（指示器已被替换/隐藏）
             document.getElementById('aiLoadingRegion').setAttribute('aria-busy', 'false');
         }
 
         // ===== AI 视频生成 =====
+        // 生成方式固定为分阶段流水线（大纲→逐页并发→收尾），不再提供切换入口
+
+        // 真课件模式（交互场景 + 逐句配音 + spotlight）——默认开启且固定为真课件，不再提供切换按钮
+        const _cwMode = true;
+
         async function doVideoGenerate() {
             const q = document.getElementById('searchInput').value.trim();
             if (!q) {
@@ -2452,10 +2497,11 @@
             showAILoading('生成教学视频', '正在构建「' + q + '」的学习路径…', { busyText: '视频生成中 · ' + q });
 
             try {
-                const response = await fetch('/api/v1/video/generate', {
+                const genUrl = _cwMode ? '/api/v1/courseware/generate' : '/api/v1/video/generate';
+                const response = await fetch(genUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: q, source: 'search-page', persona: buildPersonaContext() })
+                    body: JSON.stringify({ query: q, source: 'search-page', persona: buildPersonaContext(), style: ((loadClassConfig() || {}).style) || '电子演播室', mode: 'staged' })
                 });
                 const payload = await response.json();
                 if (!response.ok) throw new Error(payload.error?.message || '视频生成请求失败');
@@ -2490,14 +2536,33 @@
                     if (st === 'slides_ready') { done = true; break; }
                     // 更新副标题为实时进度
                     const sub = document.getElementById('aiLoadingSubtitle');
+                    setGenProgress(sp.data.progress || 0);
                     if (st === 'queued') {
                         sub.textContent = '任务已提交，正在排队…';
+                    } else if (st === 'generating_outline') {
+                        sub.textContent = 'AI 正在规划课程大纲… (' + (sp.data.progress || 8) + '%)';
+                        document.getElementById('aiLoadingSkeletonText').textContent = '正在设计页面结构与布局分配…';
+                        setGenPages(0, 0);
+                    } else if (st === 'generating_pages') {
+                        const pt = sp.data.pages_total || 0, pd = sp.data.pages_done || 0;
+                        sub.textContent = '逐页生成中' + (pt ? '：第 ' + pd + '/' + pt + ' 页' : '') + ' (' + (sp.data.progress || 15) + '%)';
+                        document.getElementById('aiLoadingSkeletonText').textContent = 'AI 正在逐页撰写要点、图表与讲解…';
+                        setGenPages(pt, pd);
                     } else if (st === 'generating') {
                         sub.textContent = 'Qwen-Max 正在生成教学讲稿… (' + (sp.data.progress || 20) + '%)';
                         document.getElementById('aiLoadingSkeletonText').textContent = '正在生成讲稿文本…';
+                        setGenPages(0, 0);
+                    } else if (st === 'generating_narration') {
+                        const pt = sp.data.pages_total || 0, pd = sp.data.pages_done || 0;
+                        sub.textContent = 'AI 正在撰写逐句讲解脚本' + (pt ? '：第 ' + pd + '/' + pt + ' 页' : '') + ' (' + (sp.data.progress || 45) + '%)';
+                        document.getElementById('aiLoadingSkeletonText').textContent = '正在为每页生成讲解脚本与 spotlight 动作…';
+                        setGenPages(pt, pd);
                     } else if (st === 'generating_tts') {
                         // 语音合成阶段无有意义的内容形状：切换为 role=status 的 spinner
-                        showAILoading('生成教学视频', 'Qwen CosyVoice 正在合成语音配音… (' + (sp.data.progress || 50) + '%)', { cycle: false, mode: 'spinner' });
+                        const tt = sp.data.tts_total || 0, td = sp.data.tts_done || 0;
+                        showAILoading('生成教学视频', (_cwMode ? 'Edge-TTS 正在逐句合成配音' : 'Qwen CosyVoice 正在合成语音配音') + (tt ? '：' + td + '/' + tt + ' 句' : '') + ' (' + (sp.data.progress || 50) + '%)', { cycle: false, mode: 'spinner' });
+                        setGenProgress(sp.data.progress || 50);
+                        setGenPages(0, 0);
                     }
                     await new Promise(r => setTimeout(r, 2000));
                 }
@@ -2631,16 +2696,11 @@
             }
             listEl.innerHTML = list.map((item, i) => {
                 const hasVideo = Boolean(item.task_id);
-                // 有已生成视频的历史项：播放图标 + 点击直接打开；否则仍回填输入框
-                const icon = hasVideo ? 'fa-circle-play' : 'fa-message';
                 const title = escapeHTML(item.query) + (hasVideo ? '（点击打开已生成视频）' : '');
                 return `
                 <div class="sidebar-history-item" onclick="historySearch(${i})" title="${title}">
-                    <i class="fas ${icon}"></i>
                     <span class="sidebar-history-item-text">${escapeHTML(truncate(item.query, 22))}</span>
-                    <button class="sidebar-history-del" onclick="event.stopPropagation();deleteHistoryItem(${i})" title="删除">
-                        <i class="fas fa-xmark"></i>
-                    </button>
+                    <button class="sidebar-history-del" onclick="event.stopPropagation();deleteHistoryItem(${i})" title="删除">×</button>
                 </div>
             `;
             }).join('');
@@ -3530,3 +3590,4 @@
 
 </body>
 </html>
+

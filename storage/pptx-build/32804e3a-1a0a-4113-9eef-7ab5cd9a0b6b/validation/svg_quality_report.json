@@ -1,0 +1,650 @@
+{
+  "schema": "ppt-master.svg-quality-report.v1",
+  "stage": "final",
+  "target": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b",
+  "source_fingerprint": {
+    "algorithm": "sha256",
+    "digest": "bb6dbe06cd82efa74881661c9b83224ffc8ef5cb54fee6640c6b63bdf6d8cedc",
+    "file_count": 8,
+    "files": [
+      {
+        "file": "01_slide.svg",
+        "sha256": "c3cf7e747deb071f26ff524cb597e5220d272e6e584a7722e7e4edc46186b3a2"
+      },
+      {
+        "file": "02_slide.svg",
+        "sha256": "8004b52db8bea5998c7d6f6a43c0520022a371e3809cae1e1f3319faf45a1af9"
+      },
+      {
+        "file": "03_slide.svg",
+        "sha256": "57f8f1a7a5b2a3f18b585c094f1c6e86a280c98d1c8d3fa8054950ac3d672a92"
+      },
+      {
+        "file": "04_slide.svg",
+        "sha256": "f603a3fd08750ccf0c7ecd0ddcc4ffe2b7ab326c9329d17f08181b3a77be188c"
+      },
+      {
+        "file": "05_slide.svg",
+        "sha256": "5941baace81c09b9e681912a1849a2b8dfdcb23f0906f20c57806bf76e0b6899"
+      },
+      {
+        "file": "06_slide.svg",
+        "sha256": "0e320bfe0d32d72903af4ec8bd640a285e29de5ec4947b0ceefc355813c4217a"
+      },
+      {
+        "file": "07_slide.svg",
+        "sha256": "fd3d1815804fd7117a7444f325eb729544990ec50812b2e7afb2a0c9321b7caa"
+      },
+      {
+        "file": "08_slide.svg",
+        "sha256": "5c5ad722f69920613f9468e195968e782b8f8bbcaac3095144305bcd5c2eb462"
+      }
+    ]
+  },
+  "summary": {
+    "total": 8,
+    "passed": 4,
+    "warnings": 1,
+    "errors": 3
+  },
+  "issue_types": {
+    "Other": 3
+  },
+  "categories": {
+    "blocking": {
+      "count": 3,
+      "issues": [
+        {
+          "file": "01_slide.svg",
+          "message": "<g id=\"header\"> data-pptx-bounds overlaps <g id=\"art\"> data-pptx-bounds by 524.0px x 10.0px; keep ordinary direct-root module zones disjoint beyond the 1px tolerance"
+        },
+        {
+          "file": "02_slide.svg",
+          "message": "<g id=\"header\"> data-pptx-bounds overlaps <g id=\"art\"> data-pptx-bounds by 524.0px x 10.0px; keep ordinary direct-root module zones disjoint beyond the 1px tolerance"
+        },
+        {
+          "file": "03_slide.svg",
+          "message": "<g id=\"header\"> data-pptx-bounds overlaps <g id=\"art\"> data-pptx-bounds by 524.0px x 10.0px; keep ordinary direct-root module zones disjoint beyond the 1px tolerance"
+        }
+      ]
+    },
+    "introduced": {
+      "count": 4,
+      "issues": [
+        {
+          "file": "01_slide.svg",
+          "message": "Noncanonical compact authoring: Authoring SVG contains noncanonical or redundant inherited style declarations (10 change(s)); examples: content:fill None -> '#E6EDF7'; content:font-size None -> '22'; text[8]:fill '#E6EDF7' -> None (advisory; normalize with `python3 scripts/compact_svg_styles.py <svg_output> --inplace` and rerun the final gate, or leave the explicit form)"
+        },
+        {
+          "file": "01_slide.svg",
+          "message": "Detected 2 paragraph-like line run(s) split across sibling <text> elements (<g id=\"content\"> x=72.0, y=264.0..298.0, 2 lines; <g id=\"content\"> x=72.0, y=332.0..366.0, 2 lines). If each run is one prose paragraph, combine it into one <text>: keep its first line as direct text and use direct <tspan> children with the parent x and positive relative dy values for later lines. An all-<tspan> form may start with dy=\"0\". Keep semantically independent text frames separate."
+        },
+        {
+          "file": "08_slide.svg",
+          "message": "Noncanonical compact authoring: Authoring SVG contains noncanonical or redundant inherited style declarations (10 change(s)); examples: content:fill None -> '#E6EDF7'; content:font-size None -> '22'; text[8]:fill '#E6EDF7' -> None (advisory; normalize with `python3 scripts/compact_svg_styles.py <svg_output> --inplace` and rerun the final gate, or leave the explicit form)"
+        },
+        {
+          "file": "08_slide.svg",
+          "message": "Detected 1 paragraph-like line run(s) split across sibling <text> elements (<g id=\"content\"> x=72.0, y=264.0..300.0, 2 lines). If each run is one prose paragraph, combine it into one <text>: keep its first line as direct text and use direct <tspan> children with the parent x and positive relative dy values for later lines. An all-<tspan> form may start with dy=\"0\". Keep semantically independent text frames separate."
+        }
+      ]
+    },
+    "inherited": {
+      "count": 0,
+      "issues": []
+    },
+    "source-import": {
+      "count": 0,
+      "summary": {
+        "warning_count": 0,
+        "by_code": {}
+      }
+    }
+  },
+  "drift": {
+    "colors": {},
+    "fonts": {},
+    "sizes": {}
+  },
+  "carrier_receipt": {
+    "scope": "informational-not-a-quota",
+    "pages": 8,
+    "totals": {
+      "text_elements": 40,
+      "image_placements": 3,
+      "icons": 0,
+      "svg_geometry_elements": 32,
+      "preset_shapes": 0,
+      "page_frame_elements": 17,
+      "marker_uses": 0,
+      "inline_emphasis_runs": 0,
+      "gradient_uses": 0,
+      "filter_uses": 0,
+      "text_effects": 0
+    },
+    "pages_with": {
+      "images": 3,
+      "icons": 0,
+      "presets": 0,
+      "charts": 1,
+      "tables": 0,
+      "formulas": 0,
+      "inline_emphasis_runs": 0,
+      "gradient_uses": 0,
+      "filter_uses": 0,
+      "text_effects": 0
+    },
+    "geometry_elements": {
+      "circle": 14,
+      "ellipse": 0,
+      "line": 0,
+      "path": 1,
+      "polygon": 0,
+      "polyline": 0,
+      "rect": 17
+    },
+    "preset_names": {},
+    "native_objects": {
+      "chart": 1,
+      "formula_block": 0,
+      "formula_inline": 0,
+      "other": 0,
+      "table": 0
+    },
+    "image_page_max_frame_share_range": [
+      0.2637,
+      0.2637
+    ]
+  },
+  "project_issues": {
+    "template": [],
+    "animation": [],
+    "illustration": [],
+    "communication_trace": [],
+    "pptx_structure": []
+  },
+  "files": [
+    {
+      "file": "01_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b\\svg_output\\01_slide.svg",
+      "exists": true,
+      "errors": [
+        "<g id=\"header\"> data-pptx-bounds overlaps <g id=\"art\"> data-pptx-bounds by 524.0px x 10.0px; keep ordinary direct-root module zones disjoint beyond the 1px tolerance"
+      ],
+      "warnings": [
+        "Noncanonical compact authoring: Authoring SVG contains noncanonical or redundant inherited style declarations (10 change(s)); examples: content:fill None -> '#E6EDF7'; content:font-size None -> '22'; text[8]:fill '#E6EDF7' -> None (advisory; normalize with `python3 scripts/compact_svg_styles.py <svg_output> --inplace` and rerun the final gate, or leave the explicit form)",
+        "Detected 2 paragraph-like line run(s) split across sibling <text> elements (<g id=\"content\"> x=72.0, y=264.0..298.0, 2 lines; <g id=\"content\"> x=72.0, y=332.0..366.0, 2 lines). If each run is one prose paragraph, combine it into one <text>: keep its first line as direct text and use direct <tspan> children with the parent x and positive relative dy values for later lines. An all-<tspan> form may start with dy=\"0\". Keep semantically independent text frames separate."
+      ],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 6,
+          "images": {
+            "placements": 1,
+            "files": [
+              "img-0.png"
+            ],
+            "max_frame_share": 0.2637
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 0,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 6,
+        "tspan_elements": 0
+      },
+      "passed": false,
+      "source_sha256": "c3cf7e747deb071f26ff524cb597e5220d272e6e584a7722e7e4edc46186b3a2"
+    },
+    {
+      "file": "02_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b\\svg_output\\02_slide.svg",
+      "exists": true,
+      "errors": [
+        "<g id=\"header\"> data-pptx-bounds overlaps <g id=\"art\"> data-pptx-bounds by 524.0px x 10.0px; keep ordinary direct-root module zones disjoint beyond the 1px tolerance"
+      ],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 5,
+          "images": {
+            "placements": 1,
+            "files": [
+              "img-1.png"
+            ],
+            "max_frame_share": 0.2637
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 3,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 5,
+        "tspan_elements": 0
+      },
+      "passed": false,
+      "source_sha256": "8004b52db8bea5998c7d6f6a43c0520022a371e3809cae1e1f3319faf45a1af9"
+    },
+    {
+      "file": "03_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b\\svg_output\\03_slide.svg",
+      "exists": true,
+      "errors": [
+        "<g id=\"header\"> data-pptx-bounds overlaps <g id=\"art\"> data-pptx-bounds by 524.0px x 10.0px; keep ordinary direct-root module zones disjoint beyond the 1px tolerance"
+      ],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 3,
+          "images": {
+            "placements": 1,
+            "files": [
+              "img-2.png"
+            ],
+            "max_frame_share": 0.2637
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 1,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 3,
+        "tspan_elements": 0
+      },
+      "passed": false,
+      "source_sha256": "57f8f1a7a5b2a3f18b585c094f1c6e86a280c98d1c8d3fa8054950ac3d672a92"
+    },
+    {
+      "file": "04_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b\\svg_output\\04_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 6,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 3,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 1
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 1,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 6,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "f603a3fd08750ccf0c7ecd0ddcc4ffe2b7ab326c9329d17f08181b3a77be188c"
+    },
+    {
+      "file": "05_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b\\svg_output\\05_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 4,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 2,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 4,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "5941baace81c09b9e681912a1849a2b8dfdcb23f0906f20c57806bf76e0b6899"
+    },
+    {
+      "file": "06_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b\\svg_output\\06_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 6,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 4,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 6,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "0e320bfe0d32d72903af4ec8bd640a285e29de5ec4947b0ceefc355813c4217a"
+    },
+    {
+      "file": "07_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b\\svg_output\\07_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 3,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 2,
+              "circle": 1,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 2,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 3,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "fd3d1815804fd7117a7444f325eb729544990ec50812b2e7afb2a0c9321b7caa"
+    },
+    {
+      "file": "08_slide.svg",
+      "path": "C:\\Users\\ASUS\\Desktop\\前端\\网页.html\\storage\\pptx-build\\32804e3a-1a0a-4113-9eef-7ab5cd9a0b6b\\svg_output\\08_slide.svg",
+      "exists": true,
+      "errors": [],
+      "warnings": [
+        "Noncanonical compact authoring: Authoring SVG contains noncanonical or redundant inherited style declarations (10 change(s)); examples: content:fill None -> '#E6EDF7'; content:font-size None -> '22'; text[8]:fill '#E6EDF7' -> None (advisory; normalize with `python3 scripts/compact_svg_styles.py <svg_output> --inplace` and rerun the final gate, or leave the explicit form)",
+        "Detected 1 paragraph-like line run(s) split across sibling <text> elements (<g id=\"content\"> x=72.0, y=264.0..300.0, 2 lines). If each run is one prose paragraph, combine it into one <text>: keep its first line as direct text and use direct <tspan> children with the parent x and positive relative dy values for later lines. An all-<tspan> form may start with dy=\"0\". Keep semantically independent text frames separate."
+      ],
+      "info": {
+        "viewbox": "0 0 1280 720",
+        "carrier_receipt": {
+          "text_elements": 7,
+          "images": {
+            "placements": 0,
+            "files": [],
+            "max_frame_share": 0.0
+          },
+          "icons": 0,
+          "effects": {
+            "inline_emphasis_runs": 0,
+            "gradient_uses": 0,
+            "filter_uses": 0,
+            "text_effects": 0
+          },
+          "geometry": {
+            "svg_elements": {
+              "rect": 3,
+              "circle": 0,
+              "ellipse": 0,
+              "line": 0,
+              "polyline": 0,
+              "polygon": 0,
+              "path": 0
+            },
+            "preset_shapes": 0,
+            "preset_names": {},
+            "page_frame_elements": 3,
+            "marker_uses": {
+              "start": 0,
+              "mid": 0,
+              "end": 0
+            }
+          },
+          "native_objects": {
+            "chart": 0,
+            "table": 0,
+            "formula_block": 0,
+            "formula_inline": 0,
+            "other": 0
+          }
+        },
+        "fonts": [
+          "Microsoft YaHei, Arial, sans-serif"
+        ],
+        "text_elements": 7,
+        "tspan_elements": 0
+      },
+      "passed": true,
+      "source_sha256": "5c5ad722f69920613f9468e195968e782b8f8bbcaac3095144305bcd5c2eb462"
+    }
+  ]
+}

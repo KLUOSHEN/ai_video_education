@@ -1,0 +1,2 @@
+﻿{"time":"2026-09-05T05:54:50.364Z","event":"server.started","port":3002,"url":"http://localhost:3002"}
+{"time":"2026-09-05T05:54:57.719Z","event":"request","id":"dd9f9de0-c9de-4e66-94d0-3ee7b6cdc1da","method":"GET","path":"/search.html","ms":3}

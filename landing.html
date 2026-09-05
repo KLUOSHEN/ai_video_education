@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>栈知映 · 以 AI 光影，筑程序学习之路</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbit&family=Rajdhani:wght@700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --text: #ffffff;
+    --muted: rgba(255,255,255,0.66);
+    --dim: rgba(255,255,255,0.48);
+    --line: #333333;
+    --rail: rgba(255,255,255,0.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── 星空背景 ── */
+  .stars {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(1px 1px at 20% 30%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 80% 20%, #fff, transparent 100%),
+      radial-gradient(1.5px 1.5px at 40% 70%, #cbd5e1, transparent 100%),
+      radial-gradient(1px 1px at 60% 45%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 90% 65%, #94a3b8, transparent 100%),
+      radial-gradient(1.5px 1.5px at 15% 80%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 70% 12%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 30% 55%, #e2e8f0, transparent 100%);
+    background-size: 600px 600px;
+    animation: drift 120s linear infinite;
+    opacity: 0.7;
+  }
+  .stars::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(1px 1px at 50% 50%, #fff, transparent 100%),
+      radial-gradient(1px 1px at 10% 10%, #fff, transparent 100%),
+      radial-gradient(1.2px 1.2px at 85% 85%, #cbd5e1, transparent 100%),
+      radial-gradient(1px 1px at 25% 90%, #fff, transparent 100%);
+    background-size: 900px 900px;
+    animation: twinkle 4s ease-in-out infinite alternate;
+  }
+  @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-300px); } }
+  @keyframes twinkle { from { opacity: 0.4; } to { opacity: 1; } }
+
+  /* ── 顶部导航 ── */
+  nav {
+    position: relative;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 80px;
+    padding: 0 72px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: #fff;
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+  }
+  .brand svg { width: 24px; height: 24px; }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 17px;
+    letter-spacing: -0.02em;
+    transition: opacity 0.2s ease;
+  }
+  .nav-links a:hover { opacity: 0.7; }
+
+  /* ── 主区 ── */
+  main {
+    position: relative;
+    z-index: 10;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    padding: 0 72px;
+  }
+  .hero {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 48px;
+  }
+  .copy { max-width: 620px; }
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "Orbit", "Noto Sans SC", sans-serif;
+    font-size: 18px;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 14px;
+  }
+  .kicker svg { width: 24px; height: 24px; }
+  h1 {
+    font-family: "Noto Serif SC", Georgia, "Songti SC", serif;
+    font-size: clamp(48px, 6vw, 72px);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+  }
+  .tagline {
+    margin-top: 14px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .desc {
+    margin-top: 12px;
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--dim);
+    max-width: 480px;
+  }
+  .modules {
+    margin-top: 14px;
+    font-family: "Orbit", "Noto Sans SC", sans-serif;
+    font-size: 15px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .cta {
+    margin-top: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    font-family: "Rajdhani", "Noto Sans SC", sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.5);
+    text-decoration: none;
+    position: relative;
+    transition: opacity 0.2s ease;
+  }
+  .cta:hover { opacity: 0.9; }
+  .cta::before, .cta::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+  .cta::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .cta::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+  /* ── 火箭区 ── */
+  .rocket-stage {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .rocket-wrap { position: relative; }
+  .rocket {
+    width: 120px;
+    height: 320px;
+    animation: hover 4s ease-in-out infinite;
+  }
+  @keyframes hover {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  .flame {
+    position: absolute;
+    left: 50%;
+    bottom: -56px;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 70px;
+    background: linear-gradient(to bottom, #fff8e1, #ffc247, #ff8b18, transparent);
+    border-radius: 50% 50% 20% 20%;
+    filter: blur(4px);
+    animation: flame 0.6s ease-in-out infinite alternate;
+    transform-origin: top center;
+  }
+  @keyframes flame {
+    from { transform: translateX(-50%) scaleY(1) scaleX(1); }
+    to { transform: translateX(-50%) scaleY(1.25) scaleX(0.9); }
+  }
+
+  /* ── 响应式 ── */
+  @media (max-width: 900px) {
+    nav { padding: 0 24px; height: 64px; }
+    .nav-links { display: none; }
+    main { padding: 40px 24px; min-height: auto; }
+    .hero { flex-direction: column; text-align: center; }
+    .copy { max-width: 100%; }
+    .kicker, .cta { justify-content: center; }
+    h1 { font-size: 42px; }
+    .rocket { width: 80px; height: 220px; }
+  }
+</style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+
+  <nav aria-label="主导航">
+    <a class="brand" href="/search.html">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M21.867 12.566 12 2.633 2.133 12.566h9.736L2.133 22.367h19.734L12.132 12.566h9.735z" fill="#fff"/>
+      </svg>
+      栈知映
+    </a>
+    <ul class="nav-links">
+      <li><a href="/skill/index.html">职业加点图</a></li>
+      <li><a href="/forum/index.html">学习论坛</a></li>
+      <li><a href="/skilltree-app/skilltree.html">技能树</a></li>
+      <li><a href="/mistake.html">错题本</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div class="copy">
+        <div class="kicker">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="8" stroke="#fff" stroke-width="1.5"/>
+            <ellipse cx="12" cy="12" rx="11" ry="4" stroke="#fff" stroke-width="1" fill="none"/>
+          </svg>
+          AI LEARNING STUDIO
+        </div>
+        <h1>栈知映</h1>
+        <p class="tagline">以 AI 光影，筑程序学习之路</p>
+        <p class="desc">从知识搜索出发，生成可观看的 AI 视频课堂；再以测评、学习诊断、职业技能树与学习论坛，让每一次探索沉淀为清晰的成长路径。</p>
+        <p class="modules">搜索 · 生成 · 测评 · 技能树 · 社区</p>
+        <a class="cta" href="/search.html">立即试用 <span aria-hidden="true">→</span></a>
+      </div>
+
+      <div class="rocket-stage" aria-hidden="true">
+        <div class="rocket-wrap">
+          <svg class="rocket" viewBox="0 0 120 320" fill="none">
+            <!-- 机身 -->
+            <path d="M60 0 C38 26 28 60 28 110 L28 220 C28 240 34 250 46 254 L46 280 L60 292 L74 280 L74 254 C86 250 92 240 92 220 L92 110 C92 60 82 26 60 0 Z"
+                  fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+            <!-- 窗户 -->
+            <circle cx="60" cy="120" r="18" fill="#0a0a0a" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+            <circle cx="60" cy="120" r="12" fill="rgba(255,255,255,0.18)"/>
+            <!-- 尾翼 -->
+            <path d="M28 230 L8 272 L34 264 Z" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+            <path d="M92 230 L112 272 L86 264 Z" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+            <!-- 底部喷口 -->
+            <path d="M46 292 L60 304 L74 292 Z" fill="rgba(255,255,255,0.4)"/>
+          </svg>
+          <div class="flame"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

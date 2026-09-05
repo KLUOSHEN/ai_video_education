@@ -1,0 +1,24 @@
+@import url("https://fonts.googleapis.com/css2?family=Orbit&family=Rajdhani:wght@700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap");
+
+@import "tailwindcss";
+@import "./originkit-section-theme.css";
+@import "./originkit-section-themes.css";
+
+/* 中文回退字体：标题用衬线，正文/按钮用黑体，保证中英混排美观 */
+@theme {
+  --font-instrument-serif: "Instrument Serif", "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+  --font-tight: "Inter Tight", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Inter, sans-serif;
+  --font-orbit: "Orbit", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Inter, sans-serif;
+  --font-rajdhani: "Rajdhani", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Inter, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #0a0a0a;
+}

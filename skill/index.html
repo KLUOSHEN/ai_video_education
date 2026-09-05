@@ -203,6 +203,7 @@
         <div id="currentSkills" class="current-skills">尚未选择技能</div>
         <div class="section-label">推荐方向</div>
         <div id="topCareers"></div>
+        <button id="skillTreeBtn" onclick="goSkillTree()" disabled style="display:block;width:100%;margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg-2,#fff);color:var(--muted,#8a929e);font-size:14px;font-weight:700;cursor:not-allowed;transition:.2s;">🌳 技能树学习</button>
         <div class="section-label" id="videoRecLabel" style="display:none;">推荐学习</div>
         <div id="videoRecs"></div>
         <div class="log" id="log">SYSTEM · 等待分配技能点…</div>
@@ -918,15 +919,11 @@
         const s=skills.find(x=>x.n===sn); if(!s)return;
         const d=detailFor(s);
         const pc=careers.find(c=>c.id===d.primary)||careers[0];
-        const stars='★'.repeat(d.difficulty)+'☆'.repeat(Math.max(0,5-d.difficulty));
         const box=el('nodeDetail');
         box.innerHTML=
           '<div class="nd-head"><div class="nd-ico" style="background:linear-gradient(135deg,'+pc.color+',var(--primary2))">'+pc.icon+'</div>'+
           '<div class="nd-head-main"><h3 class="nd-title">'+s.n+'</h3><div class="nd-tags">'+
             '<span class="nd-tag">'+d.category+'</span>'+
-            '<span class="nd-tag depth">'+DEPTH_LABELS[d.recommended_depth]+' · '+d.recommended_depth+'</span>'+
-            '<span class="nd-tag hard">难度 '+stars+'</span>'+
-            '<span class="nd-tag">约 '+d.estimated_minutes+' 分钟</span>'+
           '</div></div>'+
           '<button class="nd-close" data-act="nd-close" aria-label="关闭详情">×</button></div>'+
           (d.description?'<p class="nd-desc">'+d.description+'</p>':'')+
@@ -966,7 +963,8 @@
       }
 
       /* ── 面板 ── */
-      function updatePanel(){
+      window.goSkillTree=function(){ if(!window._topCareer)return; location.href='/generate.html?topic='+encodeURIComponent(window._topCareer); };
+function updatePanel(){
         const scores=getScores();
         const countEl=el('count');
         countEl.textContent=String(selected.size).padStart(2,'0');
@@ -982,7 +980,7 @@
 
         /* 推荐方向 —— 只展示匹配度最高的 3 个大项 */
         const tcEl=el('topCareers');
-        if(!selected.size){tcEl.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 0">点亮技能后自动计算匹配方向</div>';}
+        if(selected.size < 3){tcEl.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 0">再选 '+(3-selected.size)+' 个技能点以显示推荐方向</div>';}
         else{
           tcEl.innerHTML='';
           top3.forEach(([cid,sc],idx)=>{
@@ -996,6 +994,25 @@
             stat.innerHTML='<div class="stat-top"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:'+c.color+'"></span>'+c.name+'</span><span>'+sc+'/'+total+' ('+pct+'%)</span></div><div class="bar"><div class="fill" style="width:'+bar+'%;background:'+c.color+'"></div></div>';
             tcEl.appendChild(stat);
           });
+        }
+
+        /* 技能树学习按钮：≥3 个技能点亮起，填入 top1 方向 */
+        const btn=el('skillTreeBtn');
+        if(selected.size>=3 && top3.length){
+          const c0=careers.find(x=>x.id===top3[0][0]);
+          window._topCareer = c0 ? c0.name : '';
+          btn.disabled=false;
+          btn.style.background='var(--primary,#4F6BF0)';
+          btn.style.color='#fff';
+          btn.style.borderColor='var(--primary,#4F6BF0)';
+          btn.style.cursor='pointer';
+        } else {
+          window._topCareer='';
+          btn.disabled=true;
+          btn.style.background='var(--bg-2,#fff)';
+          btn.style.color='var(--muted,#8a929e)';
+          btn.style.borderColor='var(--line)';
+          btn.style.cursor='not-allowed';
         }
 
         if(curCareer){

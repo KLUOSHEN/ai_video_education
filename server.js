@@ -10,10 +10,17 @@ const fssync = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { URL } = require("node:url");
+const { buildPptx, buildZip } = require("./pptx");
+const PPT_SCHEMA = require("./ppt-schema");
+const COURSEWARE_SCHEMA = require("./courseware-schema");
+const { spawn } = require("node:child_process");
+const { slidesToSvgs, parseChart } = require("./pptx-svg");
 
 loadEnv(path.join(__dirname, ".env"));
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
+// Next.js 静态导出产物（Hero 落地页及其资源），作为静态托管的第二根目录
+const OUT_DIR = path.join(ROOT, "out");
 const DATA_DIR = path.resolve(
   process.env.APP_DATA_DIR || path.join(ROOT, "data"),
 );
@@ -60,10 +67,12 @@ class JsonStore {
       searches: [],
       tasks: [],
       videoTasks: [],
+      coursewareTasks: [],
       questions: [],
       attempts: [],
       mistakes: [],
       diagnostics: [],
+      notes: [],
     };
     this.writeQueue = Promise.resolve();
   }
@@ -142,10 +151,35 @@ function cleanText(value, name = "text") {
 // 裸反斜杠加倍后重试。视为合法转义、原样保留的只有：\\、\"、\/、\n、\r、\uXXXX（b/f/t 也当作
 // LaTeX 加倍，因为该场景下几乎不可能是有意的退格/换页/制表转义），已格式良好的 JSON 直接返回。
 const JSON_ESCAPE = /["\\/nru]/;
+// 把 JSON 字符串【内部】的原始控制字符（<0x20）转义为 \uXXXX。
+// LLM 常在多行 text 里直接输出换行/制表等原始控制符，导致 JSON.parse 抛
+// "Bad control character in string literal"。此函数只改字符串内、不影响
+// JSON 结构空白（结构空白在字符串外，原样保留）。
+function sanitizeControlChars(json) {
+  let out = '', inStr = false, esc = false;
+  for (let i = 0; i < json.length; i++) {
+    const ch = json[i];
+    if (inStr) {
+      if (esc) { out += ch; esc = false; }
+      else if (ch === '\\') { out += ch; esc = true; }
+      else if (ch === '"') { inStr = false; out += ch; }
+      else {
+        const code = ch.charCodeAt(0);
+        out += code < 0x20 ? '\\u' + ('000' + code.toString(16)).slice(-4) : ch;
+      }
+    } else {
+      if (ch === '"') inStr = true;
+      out += ch;
+    }
+  }
+  return out;
+}
 function parseLLMJson(raw) {
-  const cleaned = String(raw || "")
-    .replace(/```json\n?|\n?```/g, "")
-    .trim();
+  const cleaned = sanitizeControlChars(
+    String(raw || "")
+      .replace(/```json\n?|\n?```/g, "")
+      .trim()
+  );
   try {
     return JSON.parse(cleaned);
   } catch (error) {
@@ -170,6 +204,24 @@ function enumValue(value, allowed, fallback, name) {
       `${name} 必须为 ${allowed.join("、")} 之一`,
     );
   return value;
+}
+// 把 LLM 返回的任意嵌套 JSON 渲染成可读 Markdown（AI 笔记兜底）
+function jsonToMarkdown(obj, depth) {
+  depth = depth || 0;
+  if (obj === null || obj === undefined) return "";
+  if (typeof obj !== "object") return String(obj);
+  if (Array.isArray(obj))
+    return obj.map((v) => "- " + jsonToMarkdown(v, depth + 1).replace(/\n/g, "\n  ")).join("\n");
+  const lines = [];
+  for (const [k, v] of Object.entries(obj)) {
+    if (v && typeof v === "object") {
+      lines.push((depth > 0 ? "#".repeat(Math.min(6, depth + 2)) : "##") + " " + k);
+      lines.push(jsonToMarkdown(v, depth + 1));
+    } else {
+      lines.push("**" + k + "**：" + String(v));
+    }
+  }
+  return lines.join("\n");
 }
 function safeFileName(prefix, ext) {
   return `${prefix}-${Date.now()}-${crypto.randomUUID()}${ext}`;
@@ -292,6 +344,9 @@ function mime(file) {
       ".woff2": "font/woff2",
       ".ttf": "font/ttf",
       ".eot": "application/vnd.ms-fontobject",
+      ".pptx":
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ".zip": "application/zip",
     }[path.extname(file).toLowerCase()] || "application/octet-stream"
   );
 }
@@ -815,7 +870,61 @@ async function getDoubaoTaskStatus(taskId) {
 }
 
 // ── 豆包 LLM 生成讲稿幻灯片 ──
-async function generateSlides(query, persona) {
+// 视觉风格规则：生成 PPT 时按所选风格注入 prompt（A+B：参数化风格）
+const PPT_STYLES = {
+  教学清新: "整体背景浅灰/白柔和，主体为圆角白卡片+细微阴影；标题深蓝 #1e3a8a 粗体、副标题灰 #64748b；图表用专业色系 蓝#4a8eff/绿#22c55e/橙#f59e0b/红#ef4444。",
+  极简白: "纯白背景、大量留白；黑白灰为主（标题 #111827、正文 #4b5563、弱化 #9ca3af），仅用单一强调色 #2563eb；细分割线、无阴影、字号更大更疏朗，避免多余装饰。",
+  深色科技: "深色背景 #0b1220 或 #111b2f；霓虹强调色 #22d3ee/#a78bfa/#34d399；卡片为半透明深色+细描边，标题用高亮色，可用发光感图表；适合 AI/算法/科技类。",
+  商务蓝: "稳重商务蓝灰：背景 #f5f7fa、标题 #1e3a5f、正文 #334155，强调色 #2563eb；卡片白底+轻阴影，图表配色沉稳（蓝/灰/深青）；适合汇报、面试、职场。",
+  活泼多彩: "明亮多彩：彩色底色或大面积色块（#f472b6/#f59e0b/#22c55e/#6366f1），圆角更大更卡通，标题活泼可配 emoji 风格图标；适合入门科普、学生向。",
+  // —— frontend-slides 预置风格（浅色阅读友好为主，深浅均衡）——
+  电子演播室: "白底深黑高对比的演播室分栏感，主色电蓝 #4361ee；上半白/下半深色或蓝条强调，标题用加粗现代无衬线（Manrope 系）偏大，正文深色 #0a0a0a、次要 #555；图表用蓝/白/黑三色，色块与细线干脆利落。",
+  复古编辑: "奶油米底 #f5f3ee，正文墨黑 #1a1a1a、次要 #555；标题用有气质的衬线字（Fraunces 系）偏大有力，暖杏色 #e8d4c0 做强调块与几何圆+线的点缀；整体偏杂志报刊、克制成巧，克制留白。",
+  分栏粉彩: "双拼底色分栏（蜜桃 #f5e6dc 与薰衣草 #e4dff0）；正文深色 #1a1a1a，标题用圆润无衬线（Outfit 系）加粗偏大；徽章/标签用薄荷 #c8f0d8、鹅黄 #f0f0c8、樱粉 #f0d4e0 等粉彩，圆角大、活泼亲和。",
+  粉彩几何: "浅粉彩背景 #c8d9e6，米白卡片 #faf9f7；标题用圆润加粗无衬线（Plus Jakarta Sans 系）偏大，主强调深紫 #7c6aad；辅助色薄荷 #a8d4c4、樱粉 #f0b4d4、鼠尾草绿 #5a7c6a、薰衣草 #9b8dc4；可在边缘用竖色条/色柱作点缀。",
+  笔记本标签: "深灰外底 #2d2d2d + 米色纸张卡片 #f8f6f1，正文字色 #1a1a1a；标题用古典衬线（Bodoni Moda 系）偏大；右侧缘用彩色标签（薄荷 #98d4bb/薰衣草 #c7b8ea/樱粉 #f4b8c5/天蓝 #a8d8ea/奶油 #ffe6a7）作栏目分隔，像手账/笔记本分区。",
+  创意电压: "电蓝 #0066ff 主色与深蓝紫 #1a1a2e 搭配，霓虹黄 #d4ff00 高亮强调；标题用现代有力的无衬线（Syne 系）偏大，正文白色/浅色；用荧光黄高亮框/徽章强调关键公式、名词与数字，科技感强，适合 AI/算法/编程类。",
+};
+
+// —— 布局去重：保证每一页版式互不相同（LLM 提示词约束不可靠，此处程序化兜底）——
+// 布局池等格式约定统一来自 ppt-schema.js（单一事实来源）
+const LAYOUT_POOL = PPT_SCHEMA.LAYOUT_POOL;
+
+function enforceDistinctLayouts(slides) {
+  const n = slides.length;
+  const count = new Map();
+  slides.forEach((s) => {
+    const l = LAYOUT_POOL.includes(String(s.layout || "").trim()) ? String(s.layout).trim() : "two_col";
+    s.layout = l;
+    count.set(l, (count.get(l) || 0) + 1);
+  });
+  slides.forEach((s, i) => {
+    if ((count.get(s.layout) || 0) <= 1) return;
+    const hasDia = !!(s.diagram && s.diagram.type && s.diagram.type !== "none" && s.diagram.data);
+    const rank = (l) => {
+      let r = 0;
+      if (l === "two_col" || l === "split") r += 60; // 尽量少用两栏版式，避免页面雷同
+      if (l === "default") r += i === 0 ? -100 : 20;
+      if (l === "focus" || l === "bottom_bar") r += i === n - 1 ? -60 : 3;
+      if (hasDia && (l === "chart_top" || l === "chart_left" || l === "left_text" || l === "cards" || l === "timeline")) r -= 10;
+      if (!hasDia && (l === "cards" || l === "timeline" || l === "triple")) r -= 4;
+      return r;
+    };
+    let best = null, bestRank = Infinity;
+    LAYOUT_POOL.forEach((l) => {
+      const cur = count.get(l) || 0;
+      const r = rank(l) + (cur === 0 ? -50 : cur * 15);
+      if (r < bestRank) { bestRank = r; best = l; }
+    });
+    if (!best) return;
+    count.set(s.layout, (count.get(s.layout) || 0) - 1);
+    s.layout = best;
+    count.set(best, (count.get(best) || 0) + 1);
+  });
+  return slides;
+}
+
+async function generateSlides(query, persona, style) {
   const useQwen = !!process.env.QWEN_API_KEY;
   // 先试 Qwen，失败回退豆包
   const tryProvider = async (provider) => {
@@ -833,68 +942,54 @@ async function generateSlides(query, persona) {
     const endpoint = isQwen
       ? "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
       : "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
-    const prompt = `你是一名资深计算机科学教育专家，也是顶尖的教学 PPT 视觉设计师。请严格参考下列视觉样例，为知识点"${query}"生成 6-8 页 HTML 教学幻灯片，整体风格必须与参考样例保持高度一致。
+    const styleRules = PPT_STYLES[style] || PPT_STYLES["教学清新"];
+    const spec = PPT_SCHEMA.buildPromptSpec();
+    const prompt = `你是一名资深计算机科学教育专家，也是顶尖的教学 PPT 视觉设计师。请为知识点"${query}"生成一份教学幻灯片（页数 3-12 页，由你按知识点复杂度自行决定，不要套固定模板）。
 
-参考样例风格（必须遵循）：
-- 整体背景：浅灰/白色柔和背景，幻灯片主体为圆角白色卡片，带有细微阴影
-- 页面标题：居中或顶部，使用深蓝色（#1e3a8a）粗体大字，简洁有力
-- 副标题：标题下方，使用灰色（#64748b）中等字号，补充说明本页核心问题
-- 主体布局：优先采用【左侧文字说明 + 右侧可视化图表】的 two_col 结构；也可用 split 做左右对比、bottom_bar 在底部加蓝色强调条
-- 左侧文字：用小标题（深蓝粗体）+ 1-3 行说明文字（深灰 #334155），信息密度高但不拥挤
-- 右侧图表：必须出现 line_chart（折线图）、bar_chart（柱状图）、table（表格）、complexity_curve（复杂度曲线）、array（数组状态图）等可视化，配色为蓝(#4a8eff)、绿(#22c55e)、橙(#f59e0b)、红(#ef4444) 等专业色系
-- 底部：若使用 bottom_bar 布局，底部必须是蓝色渐变强调条，内含一句关键结论（15 字以内），左侧可配小圆点或图标
-- 视觉元素：每页至少 3 个 visual，必须包含 1 个主 diagram + 2 个辅助 visuals（如 highlight/list/table/formula/quote/badge），避免页面空旷
-- 字体：中文使用微软雅黑/思源黑体，标题 28-32px，正文 14-16px，小标签 12px
-- 强调：关键术语用蓝色高亮，重要数字用加粗或彩色，结论用卡片/阴影框突出
+视觉风格（本次采用，务必遵循）：
+${styleRules}
+
+字体：中文用微软雅黑/思源黑体；标题偏大、正文适中、小标签更小；关键术语高亮、重要数字加粗或彩色，结论用卡片/强调框突出。
 
 输出格式（必须是合法 JSON，不要任何 JSON 之外的内容）：
-{"slides":[{"title":"深蓝大标题","subtitle":"灰色副标题","text":"120-180 字中文讲解，口语化但信息密集，必须具体到公式、数字和关键步骤，像老师授课一样把公式读出来","layout":"two_col / split / bottom_bar / triple / left_text / default","left":"左侧内容：3-5 个要点或定义，每行一个，要点必须具体（含公式/数字/术语）","right":"右侧内容：图表数据或表格，data 格式见下","bottom":"底部蓝色强调条文字（15 字以内）","visuals":[{"type":"list/table/formula/highlight/quote/badge/code","data":"对应数据，code 类型时 data 为代码文本并配 lang 字段指定语言","caption":"说明文字"}],"diagram":{"type":"line_chart / bar_chart / complexity_curve / array / flow / tree / compare","data":"对应数据","caption":"图表下方说明"}}]}
+${spec.outputFormat}
 
-页面规划（共 6-8 页；第 4、6 页由知识点性质决定，其余各页按顺序覆盖）：
-1. 概述引入：明确定义（含严谨表述）+ 为什么重要（2-3 个理由）+ 2-3 个具体应用场景
-2. 核心概念：关键术语逐一解释 + 通俗类比 + 结构图
-3. 原理推导：深入逻辑链 + 步骤流程图，每一步配一句"为什么这么做"的说明
-4. 【算法/编程类知识点】算法/公式：给出完整伪代码（含注释）+ 核心公式（明确每个符号的含义与推导来源）+ 逐行解释；【理论/概念类知识点】核心机制详解：逐步拆解工作流程/协议步骤/状态转换，配流程图、状态图或时序图
-5. 实例演示：用具体数值或真实场景示例分步演算，每一步展示状态变化，务必给出数字和计算结果
-6. 【算法/编程类知识点】复杂度分析：时间/空间复杂度，写明每个复杂度的含义、适用场景与推导过程 + 复杂度曲线图；【理论/概念类知识点】常见问题与易错点：高频疑问、易混淆概念辨析、典型踩坑案例（用对比表、状态图、FAQ 列表表达，不得生硬套用时间复杂度公式）
-7. 对比辨析：与其他方案/方案的横向对比表，每行注明关键差异
-8. 总结回顾：要点清单（含核心公式与关键数字，如涉及）+ 面试考点 + 底部蓝色结论条
+页面规划（由你自行决定，不要套固定模板）：
+- 页数按知识点复杂度 3-12 页，由浅入深自然组织；简单知识点页数少、复杂知识点页数多。
+- 算法/编程类知识点：务必覆盖「核心思想 → 算法/公式推导（含伪代码与符号解释）→ 实例数字演算 → 复杂度分析」。
+- 理论/概念类知识点：务必覆盖「定义与重要性 → 核心机制/工作流程（配流程图/状态图）→ 实例 → 对比辨析/易错点」。
+- 开头一页引入、结尾一页总结（含要点与面试考点），中间章节顺序由你按认知逻辑安排。
 
-布局使用规则：
-- two_col：左文字要点 + 右 diagram 图表（最常用）
-- split：左右两栏对比，每栏都有小标题和要点
-- bottom_bar：在页面底部增加蓝色渐变强调条，用于结论页或重点页
-- triple：顶部标题 + 下方左中右三卡片，每张卡片含小标题、图标、要点
-- left_text：左侧文字 + 右侧多个小 visuals 组合
-- default：单栏居中，仅用于开篇或结尾封面
+内容丰富度（硬性要求：每页必须信息密度高、画面饱满，禁止大面积留白）：
+- left 必须给出 4-6 个具体要点（含数字/公式/术语/步骤），每行一个，不能只写 2-3 条就停。
+- 每页必须有一个 diagram（line_chart/bar_chart/pie_chart/area_chart/scatter_chart/donut_chart/funnel/radar_chart/bubble_chart/waterfall/gauge/heatmap/flow/tree/array/compare/complexity_curve 任选其一，给出具体 data），让右侧有可视化。
+- 图表类型务必多样化：整份 PPT 尽量轮换使用多种不同图表，相邻页不要重复用同一种图表，同一图表在一份 PPT 中最多出现 2 次；尤其鼓励使用 scatter_chart 散点图、donut_chart 环形图、funnel 漏斗图、radar_chart 雷达图、bubble_chart 气泡图、waterfall 瀑布图、gauge 仪表盘、heatmap 热力图 这类相对新颖的图表，让每页可视化都有新鲜感。
+- 每页必须写 3-5 个 visuals；有对比/数据/步骤的页面必须含至少 1 个 table（3 行以上），其余用 list/formula/highlight/quote 填充。
+- 有对比/数据/步骤的页面，优先用 visuals 里的 table（用 | 分隔列、\\n 分隔行）表达；每页写 3-5 个 visuals（table/list/formula/highlight 等，不要只写 caption 没数据）。
+- text 讲解要长且具体：把思路、关键公式、数字实例逐步讲透，简单页 ≥120 字、复杂页 250-400 字。
+- 【重要】禁止生成或引用任何图片、插画、图标与大面积纯装饰背景；所有空间一律用文字、要点、表格、图表、公式填满。每页必须由「标题 + 副标题 + 左右要点/正文 + 图表或表格 + 底部强调条」构成，画面饱满、无空洞、无大面积留白。
+- right 在有 diagram 时给图表数据；无 diagram 时给与 left 互补的要点或表格说明，避免留空。
+
+布局使用规则（硬性要求：整份 PPT 每一页版式都必须不同，禁止任何两页用同一种布局）：
+${spec.layoutRules}
+- 轮换要求：每一页布局都不同，优先让全部页面布局互不重复（页数 ≤ 11 时每页用一种新布局，全篇无重复）；仅当页数超过布局数时才允许少量复用，且复用间隔尽量远。开篇用 default、结尾总结用 focus 或 bottom_bar。中间页优先使用 chart_top / chart_left / cards / timeline / triple / left_text / bottom_bar / focus 等布局；**尽量少用 two_col 与 split（两栏版式极易让页面观感雷同，整份 PPT 中至多各出现 1 次，且仅当确实需要左文右图对比、其它布局都不合适时才用）**。
 
 数据格式约定：
-- table: 用 | 分隔列，\\n 分隔行，如 "维度|时间|空间\\n最优|O(1)|O(1)\\n最差|O(n)|O(n)"
-- list: 每行以 - 开头，如 "- 原地排序\\n- 稳定排序"
-- formula: LaTeX 风格字符串，可含推导过程与符号说明，如 "T(n)=2T(n/2)+O(n)" 或 "T(n) = O(n log n)，n 为数据规模"
-- code: 代码或伪代码，data 为代码文本（含注释，逐行换行），另配 lang 字段指定语言（如 "python" / "java" / "c" / "pseudocode"）
-- highlight: 一句核心结论，如 "空间复杂度为 O(1)，适合内存受限场景"
-- quote: 一句关键提示或面试口诀
-- badge: 逗号分隔关键词，如 "原地,稳定,分治,递归"
-- line_chart/bar_chart: 用 "x1,y1;x2,y2;x3,y3" 或 "标签1:5|标签2:8|标签3:3"
-- complexity_curve: 多组 "O(1)=1,4,16,64,256;O(n)=1,4,16,64,256;O(n²)=1,16,256,1024,4096"，横坐标点为 n=1,4,16,64,256
-- array: 数组状态图，如 "5,2,8,1,9|0,2" 表示数组和选中下标
-- flow: 流程图，用 -> 连接，如 "输入 -> 分治 -> 合并 -> 输出"
-- tree: 树形结构，用缩进 / 或 -> 表示层级
-- compare: 对比表格，格式同 table
+${spec.dataFormats}
 
 硬性要求：
-1. 每页必须包含主 diagram + 至少 2 个辅助 visuals，保证画面充实饱满
+1. 优先用图表/表格/公式等可视化表达，仅在有助于理解时使用，允许要点式文字页
 2. 优先用图表、表格、数组状态图表达，避免大段纯文字
 3. 配色严格参考样例：深蓝 #1e3a8a 标题、浅蓝 #dbeafe 背景点缀、深灰 #334155 正文、彩色图表
 4. 每页内容密度要高，但排版清晰、留白合理，适合 PPT 演示
 5. 文字简洁有力，避免口语化废话，标题和要点使用术语化表达
 6. 涉及算法/公式/复杂度的页面，公式必须具体完整（如 T(n)=2T(n/2)+O(n)），并逐项解释每个符号的含义；禁止只写"时间复杂度为 O(n)"这类笼统表述。纯理论/概念类知识点（如 TCP 握手、进程与线程、数据库事务等）不得生硬套用时间复杂度公式，改用流程图、状态图、对比表、FAQ 表达
 7. 实例演示必须用具体数字逐步演算（如对数组 [5,2,8,1,9] 的每一轮操作都给出中间结果和计算结果）；禁止泛泛描述流程
-8. text 字段必须充实具体（120-180 字），把公式读出来、把演算过程讲出来，涵盖定义、关键公式、数字实例，使讲解像真实课堂一样有内容
+8. text 字段必须充实具体，长度按内容需要（简单页可短、复杂页可长），把公式读出来、把演算过程讲出来，涵盖定义、关键公式、数字实例，使讲解像真实课堂一样有内容
 9. 算法/公式、实例演示、复杂度分析页（第 4/5/6 页）必须各包含至少 1 个 formula 类型的 visual 或 diagram（仅当知识点涉及算法/公式/复杂度时；纯理论/概念类页面改用流程/状态/对比图，不强求 formula）；公式用 KaTeX 可渲染的 LaTeX 书写（下标用 _、上标用 ^、分数用 \\frac、根号用 \\sqrt，如 T(n)=2T(n/2)+O(n)、O(n\\log n)、\\frac{n(n-1)}{2}）
 10. 涉及公式的页面，text 讲解中必须把公式完整读一遍（如"由递推式 T(n)=2T(n/2)+O(n) 解得 T(n)=O(n log n)"），并在 visuals 中用公式卡片呈现推导过程
-11. 代码是否生成取决于知识点本身的性质：若知识点与编程实现相关（算法、数据结构、编程语言、代码语法、排序、查找、遍历等），则算法/公式页与实例演示页应包含带注释的 code 代码块（配 lang 字段），并与公式、实例一一对应；若知识点是纯理论或概念类（如 TCP 三次握手、进程与线程、数据库事务、网络协议等），则不强求代码，改用流程图、对比表、状态图表达核心逻辑`;
+11. 代码是否生成取决于知识点本身的性质：若知识点与编程实现相关（算法、数据结构、编程语言、代码语法、排序、查找、遍历等），则算法/公式页与实例演示页应包含带注释的 code 代码块（配 lang 字段），并与公式、实例一一对应；若知识点是纯理论或概念类（如 TCP 三次握手、进程与线程、数据库事务、网络协议等），则不强求代码，改用流程图、对比表、状态图表达核心逻辑
+12. 图表类型尽量多样化不重复：整份 PPT 中优先轮换使用 line_chart、bar_chart、pie_chart、area_chart、scatter_chart、donut_chart、funnel、radar_chart、bubble_chart、waterfall、gauge、heatmap、complexity_curve、flow、tree、array、compare 等不同图表，相邻页避免用同一种图表，让每页可视化都有新鲜感`;
     const personaNote = persona
       ? `\n\n【个性化教学要求】学员背景：${persona}。请据此调整讲解的用词深浅、案例选择与节奏：面向初学者用词通俗、多举生活化例子；已有基础者可适当提升深度、减少铺垫。只调整表达方式，不要改变知识的正确性与结构。`
       : "";
@@ -934,7 +1029,14 @@ async function generateSlides(query, persona) {
     if (!raw) throw new Error("LLM 未返回讲稿");
     const json = parseLLMJson(raw);
     if (!json.slides?.length) throw new Error("slides empty");
-    return json.slides;
+    // schema 校验+归一化（非法枚举回退、类型纠正、非法 visuals/diagram 降级），再程序化布局去重
+    const validated = PPT_SCHEMA.validateSlides(json.slides);
+    if (validated.errors.length)
+      log("slides.schema_fixed", { provider, count: validated.errors.length, sample: validated.errors.slice(0, 5) });
+    if (!validated.slides.length) throw new Error("slides 校验后为空");
+    // 生成结果不再保留底部强调条（bottom）字段，防止横幅出现
+    validated.slides.forEach((s) => delete s.bottom);
+    return enforceDistinctLayouts(validated.slides);
   };
 
   try {
@@ -957,12 +1059,602 @@ async function generateSlides(query, persona) {
   }
 }
 
-async function generateScript(query, persona) {
-  const slides = await generateSlides(query, persona);
+async function generateScript(query, persona, style) {
+  const slides = await generateSlides(query, persona, style);
   return {
     slides,
     fullText: slides.map((s) => `${s.title}。${s.text}`).join(""),
   };
+}
+
+// ══════════════ 分阶段生成流水线（大纲 → 逐页 → 收尾）══════════════
+// 与单次大调用（generateSlides）并存：每阶段可路由不同模型，单页失败只重试该页。
+
+// provider 配置集中：qwen（默认）/ ark（豆包回退）
+function llmProviderConfig(provider) {
+  const isQwen = provider !== "ark";
+  const apiKey = isQwen ? process.env.QWEN_API_KEY : process.env.ARK_API_KEY;
+  if (!apiKey)
+    throw new ApiError(503, "SERVICE_UNAVAILABLE", `未配置 ${isQwen ? "QWEN" : "ARK"}_API_KEY`);
+  return {
+    apiKey,
+    model: isQwen
+      ? process.env.QWEN_CHAT_MODEL || "qwen-max"
+      : process.env.ARK_CHAT_MODEL || "doubao-1-5-pro-32k-250115",
+    endpoint: isQwen
+      ? "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+      : "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+  };
+}
+
+// 一次 chat 调用，返回解析后的 JSON（自动走 parseLLMJson 容错）
+async function llmJson({ provider = "qwen", model, system, user, maxTokens = 4096, temperature = 0.4, timeoutMs = 120_000, label = "" }) {
+  const cfg = llmProviderConfig(provider);
+  const res = await fetch(cfg.endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
+    body: JSON.stringify({
+      model: model || cfg.model,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      max_tokens: maxTokens,
+      temperature,
+    }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new ApiError(502, "PROVIDER_ERROR", `${provider} 返回 ${res.status}: ${err.error?.message || "未知错误"}`);
+  }
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content?.trim();
+  if (!raw) throw new Error(`LLM 未返回内容${label ? `（${label}）` : ""}`);
+  return parseLLMJson(raw);
+}
+
+// Stage A：课程大纲（页数、每页目标与布局/图表提示）
+async function generateOutline(query, persona, style) {
+  const spec = PPT_SCHEMA.buildPromptSpec();
+  const system = "你是计算机科学教育课程设计师。输出必须是合法 JSON，不要任何解释。";
+  const user = `请为知识点"${query}"规划一份教学 PPT 大纲。
+页数按知识点复杂度自行决定（3-12 页），由浅入深组织：开头引入、中间展开、结尾总结（含要点与面试考点）。
+算法/编程类务必覆盖「核心思想 → 算法/公式推导 → 实例数字演算 → 复杂度分析」；理论/概念类务必覆盖「定义与重要性 → 核心机制/工作流程 → 实例 → 对比辨析/易错点」。
+${persona ? `\n【个性化教学要求】学员背景：${persona}。据此决定深浅与顺序。` : ""}
+
+严格按如下 JSON 输出（不要任何 JSON 之外的内容）：
+{"pages":[{"title":"页面标题","goal":"这一页要讲透什么（1-2 句，含关键公式/数字/术语）","layout":"${LAYOUT_POOL.join(" / ")}","diagram_hint":"建议图表类型：${PPT_SCHEMA.DIAGRAM_TYPES.join(" / ")}"}]}
+
+要求：
+1. 每一页 layout 互不相同（页数 ≤ 11 时全篇不重复）；尽量少用 two_col 与 split；开篇用 default，结尾用 focus 或 bottom_bar
+2. 相邻页 diagram_hint 不要用同一种图表
+3. 各页 layout 的语义：
+${spec.layoutRules}`;
+  const json = await llmJson({
+    provider: "qwen",
+    model: process.env.STAGE_OUTLINE_MODEL || process.env.QWEN_OUTLINE_MODEL || undefined,
+    system,
+    user,
+    maxTokens: 2048,
+    temperature: 0.5,
+    timeoutMs: 60_000,
+    label: "大纲",
+  });
+  const pages = Array.isArray(json.pages) ? json.pages : Array.isArray(json.slides) ? json.slides : [];
+  if (!pages.length) throw new Error("大纲生成失败：未返回 pages");
+  return pages.slice(0, 12).map((p, i) => ({
+    title: String(p.title || `第 ${i + 1} 页`).slice(0, 60),
+    goal: String(p.goal || p.text || "").slice(0, 500),
+    layout: PPT_SCHEMA.LAYOUT_POOL.includes(String(p.layout || "").trim()) ? String(p.layout).trim() : "",
+    diagram_hint: String(p.diagram_hint || p.diagram || "").trim().slice(0, 40),
+  }));
+}
+
+// Stage B：按大纲单页生成（校验失败带错误信息重试一次）
+async function generateOneSlide(page, idx, ctx) {
+  const spec = PPT_SCHEMA.buildPromptSpec();
+  const system = "你是计算机科学教育专家与专业 PPT 视觉设计师。输出单页幻灯片 JSON 对象，必须是合法 JSON，不要任何 Markdown 或解释。";
+  const buildUser = (note) => `知识点：${ctx.query}
+整份 PPT 共 ${ctx.total} 页，你正在写第 ${idx + 1} 页（${idx === 0 ? "开篇引入页" : idx === ctx.total - 1 ? "结尾总结页" : "中间展开页"}）。
+本页标题：${page.title}
+本页目标：${page.goal || "按标题展开讲解"}
+指定版式 layout：${page.layout || "（未指定，按内容自行从下列布局中选一种，且不要用 two_col）"}
+${page.diagram_hint ? `建议图表类型：${page.diagram_hint}` : ""}
+${ctx.usedLayouts?.length ? `前面各页已用过的布局：${ctx.usedLayouts.join("、")}（本页必须避开这些）` : ""}
+${ctx.usedDiagrams?.length ? `前面各页已用过的图表类型：${ctx.usedDiagrams.join("、")}（本页尽量换一种，让每页可视化都有新鲜感）` : ""}
+${ctx.persona ? `\n【个性化教学要求】学员背景：${ctx.persona}。据此调整用词深浅与案例，但不要改变知识正确性。` : ""}
+
+视觉风格（务必遵循）：
+${ctx.styleRules}
+
+只输出这一个页面对象（不要外层数组、不要 slides 包裹）：
+${spec.outputFormat.replace('{"slides":[', "").replace("]}", "")}
+
+内容硬性要求：
+1. left 给出 4-6 个具体要点（含数字/公式/术语/步骤），每行一个
+2. 除开篇/结尾页外必须有一个 diagram，data 按下面格式约定填写具体数值
+3. 写 3-5 个 visuals（table 用 | 分隔列、\\n 分隔行，须 3 行以上；其余 list/formula/highlight/quote/badge/code）
+4. text 讲解要长且具体：把思路、关键公式、数字实例逐步讲透，简单页 ≥120 字、复杂页 250-400 字
+5. bottom 是底部强调条文字（15 字以内）
+6. 禁止生成任何图片/插画/图标；所有空间用文字、要点、表格、图表、公式填满
+7. 涉及公式的页面，公式必须完整（如 T(n)=2T(n/2)+O(n)）并逐项解释符号；纯理论概念类改用流程图/状态图/对比表，不强求公式与代码
+8. 实例演示必须用具体数字逐步演算
+
+数据格式约定：
+${spec.dataFormats}
+${note ? `\n【上一次输出未通过校验，请修正后重新输出】\n- ${note}` : ""}`;
+  let lastNote = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const json = await llmJson({
+      provider: "qwen",
+      model: process.env.STAGE_PAGE_MODEL || process.env.QWEN_CHAT_MODEL || undefined,
+      system,
+      user: buildUser(lastNote),
+      maxTokens: 3000,
+      temperature: 0.45,
+      timeoutMs: 90_000,
+      label: `第${idx + 1}页`,
+    });
+    const one = Array.isArray(json?.slides) ? json.slides[0] : json;
+    const { slide, errors } = PPT_SCHEMA.validateSlide(one, idx);
+    if (slide && !errors.some((e) => /缺失或为空|不是对象/.test(e))) return slide;
+    lastNote = errors.join("\n- ") || "输出结构无法解析";
+    log("stage.page.invalid", { idx, attempt, errors });
+  }
+  throw new ApiError(502, "STAGE_PAGE_FAILED", `第 ${idx + 1} 页（${page.title}）多次生成均未通过校验`);
+}
+
+// 流水线编排：Stage A → Stage B（并发受限）→ Stage C（去重收尾）
+async function generateSlidesStaged(query, persona, style, onProgress) {
+  const styleRules = PPT_STYLES[style] || PPT_STYLES["教学清新"];
+  const report = (patch) => {
+    try { onProgress && onProgress(patch); } catch (e) { /* 进度上报失败不影响生成 */ }
+  };
+
+  report({ status: "generating_outline", progress: 8 });
+  let outline;
+  try {
+    outline = await generateOutline(query, persona, style);
+  } catch (e) {
+    log("stage.outline.failed", { message: e.message });
+    report({ status: "generating", progress: 20, fallback: "single_shot" });
+    const slides = await generateSlides(query, persona, style); // 大纲失败：回退单次调用
+    return { slides, mode: "single_shot_fallback" };
+  }
+  const total = outline.length;
+  report({ status: "generating_pages", progress: 15, total, done: 0 });
+
+  const results = new Array(total).fill(null);
+  let cursor = 0;
+  let done = 0;
+  const worker = async () => {
+    while (cursor < total) {
+      const i = cursor++;
+      const prior = results.slice(0, i).filter(Boolean);
+      try {
+        results[i] = await generateOneSlide(outline[i], i, {
+          query, persona, styleRules, total,
+          usedLayouts: prior.map((s) => s.layout),
+          usedDiagrams: prior.map((s) => s.diagram?.type).filter(Boolean),
+        });
+      } catch (e) {
+        log("stage.page.failed", { idx: i, message: e.message });
+        // 单页兜底：用大纲信息拼一页最小可用内容，保证整份不中断
+        results[i] = {
+          title: outline[i].title,
+          subtitle: "",
+          text: outline[i].goal || outline[i].title,
+          layout: outline[i].layout || "left_text",
+          left: outline[i].goal || "",
+          right: "",
+          bottom: "",
+          visuals: [],
+        };
+      }
+      done++;
+      report({ status: "generating_pages", progress: 15 + Math.round((done / total) * 30), total, done });
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, total) }, worker));
+
+  const slides = results.filter(Boolean);
+  const { slides: validated, errors } = PPT_SCHEMA.validateSlides(slides);
+  if (errors.length) log("stage.schema_fixed", { count: errors.length, sample: errors.slice(0, 5) });
+  const final = enforceDistinctLayouts(validated.length ? validated : slides);
+  // 生成结果不再保留底部强调条（bottom）字段，防止横幅出现
+  final.forEach((s) => delete s.bottom);
+  report({ status: "generating_pages", progress: 48, total, done: total });
+  return { slides: final, mode: "staged" };
+}
+
+// ════════════ 真课件 v2：大纲(scene_hint) → 逐页(scene) → 逐页讲稿(narration) → 逐句 edge-tts ════════════
+
+// Stage A2：课程大纲（在 v1 大纲基础上增补 scene_hint：约 1/3 动态过程类页面给交互场景）
+async function generateCoursewareOutline(query, persona) {
+  const spec = PPT_SCHEMA.buildPromptSpec();
+  const cw = COURSEWARE_SCHEMA.buildCoursewarePromptSpec();
+  const system = "你是计算机科学教育课程设计师。输出必须是合法 JSON，不要任何解释。";
+  const user = `请为知识点"${query}"规划一份互动教学课件大纲（讲解同步配音 + 可交互场景）。
+页数按知识点复杂度自行决定（3-10 页），由浅入深：开头引入、中间展开、结尾总结。
+算法/编程类务必覆盖「核心思想 → 算法推导 → 实例演算 → 复杂度分析」；理论概念类覆盖「定义 → 机制 → 实例 → 辨析」。
+${persona ? `\n【个性化教学要求】学员背景：${persona}。据此决定深浅与顺序。` : ""}
+
+严格按如下 JSON 输出（不要任何 JSON 之外的内容）：
+{"pages":[{"title":"页面标题","goal":"这一页要讲透什么（1-2 句，含关键公式/数字/术语）","layout":"${LAYOUT_POOL.join(" / ")}","diagram_hint":"建议图表类型：${PPT_SCHEMA.DIAGRAM_TYPES.join(" / ")}","scene_hint":"交互场景模板 id 或空字符串"}]}
+
+要求：
+1. 每一页 layout 互不相同（页数 ≤ 11 时全篇不重复）；尽量少用 two_col 与 split；开篇用 default，结尾用 focus 或 bottom_bar
+2. 相邻页 diagram_hint 不要用同一种图表
+3. scene_hint：挑约 1/3 最适合"动态演示"的页（排序过程、查找区间收缩、数学曲面/波形等）填模板 id，其余页留空字符串。可选模板：
+${cw.sceneLines}
+4. 各页 layout 的语义：
+${spec.layoutRules}`;
+  const json = await llmJson({
+    provider: "qwen",
+    model: process.env.STAGE_OUTLINE_MODEL || process.env.QWEN_OUTLINE_MODEL || undefined,
+    system,
+    user,
+    maxTokens: 2048,
+    temperature: 0.5,
+    timeoutMs: 60_000,
+    label: "课件大纲",
+  });
+  const pages = Array.isArray(json.pages) ? json.pages : Array.isArray(json.slides) ? json.slides : [];
+  if (!pages.length) throw new Error("大纲生成失败：未返回 pages");
+  return pages.slice(0, 10).map((p, i) => ({
+    title: String(p.title || `第 ${i + 1} 页`).slice(0, 60),
+    goal: String(p.goal || p.text || "").slice(0, 500),
+    layout: PPT_SCHEMA.LAYOUT_POOL.includes(String(p.layout || "").trim()) ? String(p.layout).trim() : "",
+    diagram_hint: String(p.diagram_hint || p.diagram || "").trim().slice(0, 40),
+    scene_hint: COURSEWARE_SCHEMA.SCENE_REGISTRY[String(p.scene_hint || "").trim()]
+      ? String(p.scene_hint).trim()
+      : "",
+  }));
+}
+
+// Stage B2：单页生成（v1 prompt + scene 输出要求）
+async function generateOneCoursewarePage(page, idx, ctx) {
+  const spec = PPT_SCHEMA.buildPromptSpec();
+  const cw = COURSEWARE_SCHEMA.buildCoursewarePromptSpec();
+  const system = "你是计算机科学教育专家与专业课件视觉设计师。输出单页 JSON 对象，必须是合法 JSON，不要任何 Markdown 或解释。";
+  const sceneSection = page.scene_hint
+    ? `\n【本页必须包含交互场景】scene = {"template":"${page.scene_hint}","params":{...},"caption":"一句话场景说明"}。有 scene 时 diagram 置 null、visuals 至多 1 个，版面留给场景。`
+    : `\nscene：本页不适合动态演示时输出 null。${page.diagram_hint ? `建议图表类型：${page.diagram_hint}` : ""}`;
+  const buildUser = (note) => `知识点：${ctx.query}
+整份课件共 ${ctx.total} 页，你正在写第 ${idx + 1} 页（${idx === 0 ? "开篇引入页" : idx === ctx.total - 1 ? "结尾总结页" : "中间展开页"}）。
+本页标题：${page.title}
+本页目标：${page.goal || "按标题展开讲解"}
+指定版式 layout：${page.layout || "（未指定，按内容自行从下列布局中选一种，且不要用 two_col）"}
+${ctx.usedLayouts?.length ? `前面各页已用过的布局：${ctx.usedLayouts.join("、")}（本页必须避开这些）` : ""}
+${ctx.usedDiagrams?.length ? `前面各页已用过的图表类型：${ctx.usedDiagrams.join("、")}（本页尽量换一种）` : ""}
+${ctx.persona ? `\n【个性化教学要求】学员背景：${ctx.persona}。据此调整用词深浅与案例，但不要改变知识正确性。` : ""}
+视觉风格（务必遵循）：
+${ctx.styleRules}
+
+${cw.sceneRules}
+${sceneSection}
+
+只输出这一个页面对象（不要外层数组、不要 slides 包裹），在 v1 字段之外必须含 scene 字段：
+{"title":"…","subtitle":"…","text":"…","layout":"…","left":"…","right":"…","visuals":[…],"diagram":{…}或null,"scene":{…}或null}
+
+内容硬性要求：
+1. left 给出 4-6 个具体要点（含数字/公式/术语/步骤），每行一个
+2. 除开篇/结尾页与 scene 页外必须有一个 diagram
+3. 写 3-5 个 visuals（table 用 | 分隔列、\\n 分隔行；其余 list/formula/highlight/quote/badge/code）
+4. text 讲解要长且具体：思路、关键公式、数字实例逐步讲透，简单页 ≥120 字、复杂页 250-400 字
+5. 禁止输出 bottom 字段（底部强调条已废弃，不要再生成任何底部横条/横幅）
+6. 禁止生成任何图片/插画/图标；所有空间用文字、要点、表格、图表、公式填满
+7. 实例演示必须用具体数字逐步演算
+
+数据格式约定：
+${spec.dataFormats}
+${note ? `\n【上一次输出未通过校验，请修正后重新输出】\n- ${note}` : ""}`;
+  let lastNote = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const json = await llmJson({
+      provider: "qwen",
+      model: process.env.STAGE_PAGE_MODEL || process.env.QWEN_CHAT_MODEL || undefined,
+      system,
+      user: buildUser(lastNote),
+      maxTokens: 3000,
+      temperature: 0.45,
+      timeoutMs: 90_000,
+      label: `课件第${idx + 1}页`,
+    });
+    const one = Array.isArray(json?.slides) ? json.slides[0] : json;
+    const { slide, errors } = PPT_SCHEMA.validateSlide(one, idx);
+    if (slide && !errors.some((e) => /缺失或为空|不是对象/.test(e))) {
+      const scene = COURSEWARE_SCHEMA.validateScene(one.scene);
+      if (page.scene_hint && !scene) errors.push("scene 校验失败");
+      if (page.scene_hint && !scene && attempt === 0) {
+        lastNote = `scene 字段非法或缺失：必须输出 {"template":"${page.scene_hint}","params":{…},"caption":"…"}`;
+        continue;
+      }
+      if (scene) {
+        slide.scene = scene;
+        slide.diagram = null;
+        if (Array.isArray(slide.visuals) && slide.visuals.length > 1) slide.visuals = slide.visuals.slice(0, 1);
+      }
+      delete slide.bottom; // 底部强调条已废弃，生成端彻底移除
+      return slide;
+    }
+    lastNote = errors.join("\n- ") || "输出结构无法解析";
+    log("courseware.page.invalid", { idx, attempt, errors });
+  }
+  // 单页兜底：大纲信息拼最小可用页，保证整份不中断
+  return {
+    title: page.title,
+    subtitle: "",
+    text: page.goal || page.title,
+    layout: page.layout || "left_text",
+    left: page.goal || "",
+    right: "",
+    bottom: "",
+    visuals: [],
+    diagram: null,
+    scene: page.scene_hint
+      ? COURSEWARE_SCHEMA.validateScene({ template: page.scene_hint })
+      : null,
+  };
+}
+
+// Stage C2：逐页分句讲稿（narration）：注入本页内容 + 合法锚点清单，输出 [{text,target,fx}]
+async function generateNarration(slide, idx, ctx) {
+  const cw = COURSEWARE_SCHEMA.buildCoursewarePromptSpec();
+  const elements = COURSEWARE_SCHEMA.deriveElements(slide);
+  const system = "你是授课风格生动的计算机老师，为课件单页编写分句讲解脚本。输出必须是合法 JSON，不要任何解释。";
+  const contentDigest = [
+    `标题：${slide.title}`,
+    slide.subtitle ? `副标题：${slide.subtitle}` : "",
+    slide.left ? `要点：\n${String(slide.left).slice(0, 600)}` : "",
+    slide.text ? `正文：${String(slide.text).slice(0, 700)}` : "",
+    slide.diagram?.type ? `图表：${slide.diagram.type}（${String(slide.diagram.caption || "").slice(0, 80)}）` : "",
+    Array.isArray(slide.visuals) && slide.visuals.length
+      ? `可视化卡片（按顺序编号 vis-0 起）：${slide.visuals.map((v) => `${v.type}:${String(v.data || "").slice(0, 40)}`).join("；").slice(0, 400)}`
+      : "",
+    slide.scene ? `交互场景：${slide.scene.template}（${slide.scene.caption || ""}）` : "",
+    slide.bottom ? `底部强调：${slide.bottom}` : "",
+  ].filter(Boolean).join("\n");
+  const buildUser = (note) => `本页（第 ${idx + 1} 页，主题：${ctx.query}）内容：
+${contentDigest}
+
+本页可高亮的元素清单（target 只能取这些 id 或 null）：
+${elements.map((e) => `- ${e.id}：${e.label}`).join("\n")}
+
+${cw.narrationRules}
+${ctx.persona ? `\n【个性化】学员背景：${ctx.persona}。用词深浅与之匹配。` : ""}
+
+只输出 JSON：{"narration":[{"text":"…","target":"…","fx":"…"}]}
+${note ? `\n【上一次输出未通过校验，请修正】\n- ${note}` : ""}`;
+  let lastNote = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const json = await llmJson({
+      provider: "qwen",
+      model: process.env.STAGE_NARRATION_MODEL || process.env.QWEN_CHAT_MODEL || undefined,
+      system,
+      user: buildUser(lastNote),
+      maxTokens: 1500,
+      temperature: 0.6,
+      timeoutMs: 60_000,
+      label: `第${idx + 1}页讲稿`,
+    });
+    const { narration, errors } = COURSEWARE_SCHEMA.validateNarration(
+      Array.isArray(json?.narration) ? json.narration : Array.isArray(json) ? json : [],
+      elements,
+    );
+    if (narration.length >= 2) return narration;
+    lastNote = (errors.length ? errors.join("\n- ") : "有效句子不足 2 句") + "\nnarration 必须是 3-8 句的对象数组。";
+    log("courseware.narration.invalid", { idx, attempt, errors });
+  }
+  // 降级：整页正文前 80 字做单句，无高亮
+  const fallbackText = String(slide.text || slide.title).replace(/\s+/g, " ").trim().slice(0, 80);
+  return fallbackText ? [{ text: fallbackText, target: null, fx: "none" }] : [];
+}
+
+// 真课件流水线编排
+async function generateCoursewareStaged(query, persona, style, onProgress) {
+  const styleRules = PPT_STYLES[style] || PPT_STYLES["教学清新"];
+  const report = (patch) => {
+    try { onProgress && onProgress(patch); } catch (e) { /* 进度上报失败不影响生成 */ }
+  };
+
+  report({ status: "generating_outline", progress: 6 });
+  const outline = await generateCoursewareOutline(query, persona);
+  const total = outline.length;
+  report({ status: "generating_pages", progress: 12, total, done: 0 });
+
+  const results = new Array(total).fill(null);
+  let cursor = 0;
+  let done = 0;
+  const worker = async () => {
+    while (cursor < total) {
+      const i = cursor++;
+      const prior = results.slice(0, i).filter(Boolean);
+      try {
+        results[i] = await generateOneCoursewarePage(outline[i], i, {
+          query, persona, styleRules, total,
+          usedLayouts: prior.map((s) => s.layout),
+          usedDiagrams: prior.map((s) => s.diagram?.type).filter(Boolean),
+        });
+      } catch (e) {
+        log("courseware.page.failed", { idx: i, message: e.message });
+        results[i] = {
+          title: outline[i].title, subtitle: "", text: outline[i].goal || outline[i].title,
+          layout: outline[i].layout || "left_text", left: outline[i].goal || "",
+          right: "", bottom: "", visuals: [], diagram: null,
+          scene: outline[i].scene_hint ? COURSEWARE_SCHEMA.validateScene({ template: outline[i].scene_hint }) : null,
+        };
+      }
+      done++;
+      report({ status: "generating_pages", progress: 12 + Math.round((done / total) * 28), total, done });
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, total) }, worker));
+  const pages = results.filter(Boolean);
+  const { slides: validated } = PPT_SCHEMA.validateSlides(pages.map(({ scene, narration, ...v1 }) => v1));
+  validated.forEach((v1, i) => {
+    if (pages[i].scene) v1.scene = pages[i].scene;
+  });
+  const final = enforceDistinctLayouts(validated.length ? validated : pages);
+
+  // 逐页讲稿（并发 3）
+  report({ status: "generating_narration", progress: 42, total, done: 0 });
+  let nCursor = 0;
+  const narrWorker = async () => {
+    while (nCursor < final.length) {
+      const i = nCursor++;
+      try {
+        final[i].narration = await generateNarration(final[i], i, { query, persona });
+      } catch (e) {
+        log("courseware.narration.failed", { idx: i, message: e.message });
+        final[i].narration = [{ text: String(final[i].text || final[i].title).slice(0, 80), target: null, fx: "none" }];
+      }
+      report({ status: "generating_narration", progress: 42 + Math.round((nCursor / final.length) * 18), total, done: nCursor });
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, final.length) }, narrWorker));
+  return { pages: final };
+}
+
+// 逐句 edge-tts 合成：按页聚合回填 audio，每页一次 store.update（避免单文件 JSON 写放大）
+async function createCoursewareTTS(taskId, pages, voice, onProgress) {
+  const jobs = [];
+  pages.forEach((p, i) => {
+    (p.narration || []).forEach((s, j) => jobs.push({ i, j, text: s.text }));
+  });
+  const results = {}; // "i-j" → url|null
+  let done = 0;
+  const MAX_CONCURRENCY = 1; // edge-tts 并发子进程易触发限流，串行最稳
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < jobs.length) {
+      const k = cursor++;
+      const job = jobs[k];
+      try {
+        const buf = await edgeTtsBuffer(job.text, { voice });
+        if (buf && buf.length) {
+          const file = path.join("audio", `cw-${String(taskId).slice(0, 8)}-p${job.i}-s${job.j}.mp3`);
+          await fs.writeFile(path.join(STORAGE_DIR, file), buf);
+          results[`${job.i}-${job.j}`] = publicAsset(file);
+        } else {
+          results[`${job.i}-${job.j}`] = null;
+        }
+      } catch (e) {
+        log("courseware.tts.sentence_failed", { i: job.i, j: job.j, message: e.message });
+        results[`${job.i}-${job.j}`] = null;
+      }
+      done++;
+      try { onProgress && onProgress({ done, total: jobs.length }); } catch (e) {}
+      // 句间间隔：缓解微软限流（连续请求会被强制断开连接）
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(MAX_CONCURRENCY, Math.max(jobs.length, 1)) }, worker));
+  // 回填 + 按页写回
+  for (let i = 0; i < pages.length; i++) {
+    (pages[i].narration || []).forEach((s, j) => {
+      s.audio = results[`${i}-${j}`] || null;
+    });
+    await store.update("coursewareTasks", taskId, { pages });
+  }
+}
+
+// ── Edit with AI：对单页做增量 JSON Patch（RFC 6902 子集），带 schema 校验与一次重试 ──
+// 输入当前页 slide + 自然语言指令，输出校验过的 patch 与新 slide。
+async function patchSlideViaLLM(slide, instruction, ctx = {}) {
+  const apiKey = process.env.QWEN_API_KEY;
+  if (!apiKey) throw new ApiError(503, "SERVICE_UNAVAILABLE", "未配置 QWEN_API_KEY");
+  const model = process.env.PPT_EDIT_MODEL || process.env.QWEN_CHAT_MODEL || "qwen-max";
+  const endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
+  const spec = PPT_SCHEMA.buildPromptSpec();
+  const system =
+    "你是 PPT 内容编辑助手。你只能对给定的一页幻灯片做最小增量修改，" +
+    "输出一组 RFC 6902 JSON Patch 操作（op 仅限 add/replace/remove）。" +
+    "禁止改动 layout 字段；只允许改这些顶层字段：title、subtitle、text、left、right、bottom、code，" +
+    "以及 visuals 数组与 diagram 对象。不要输出 patch 之外的任何内容。";
+  const userPrompt = `当前页幻灯片（JSON）：
+${JSON.stringify(slide)}
+
+可编辑字段与数据格式约定（务必符合，否则会被判为非法）：
+${spec.dataFormats}
+
+布局语义（仅供理解，layout 字段本身不可改）：
+${spec.layoutRules}
+
+${ctx.query ? `整份 PPT 主题：${ctx.query}\n` : ""}编辑指令：${instruction}
+
+请只输出一个 JSON 对象，形如 {"patch":[{"op":"replace","path":"/text","value":"新讲解文字"}]}。
+要求：
+1. path 用 JSON Pointer，指向当前页对象内部（如 /title、/left、/visuals/0/data、/diagram/data）
+2. 只改指令涉及的字段，其余保持不动；文字类字段值为字符串
+3. 若改 diagram，须同时保证 type 合法（${PPT_SCHEMA.DIAGRAM_TYPES.join("/")}）且 data 非空、符合上面格式
+4. 若改 visuals 项，type 须为 ${PPT_SCHEMA.VISUAL_TYPES.join("/")} 之一且 data 非空`;
+
+  const callOnce = async (extraNote) => {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: userPrompt + (extraNote ? `\n\n${extraNote}` : "") },
+        ],
+        max_tokens: 2048,
+        temperature: 0.3,
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new ApiError(502, "PROVIDER_ERROR", `Qwen 返回 ${res.status}: ${err.error?.message || "未知错误"}`);
+    }
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content?.trim();
+    if (!raw) throw new Error("LLM 未返回编辑结果");
+    const json = parseLLMJson(raw);
+    const patch = Array.isArray(json) ? json : json.patch;
+    if (!Array.isArray(patch)) throw new Error("LLM 未返回 patch 数组");
+    return patch;
+  };
+
+  let lastErrors = [];
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let patch;
+    try {
+      patch = await callOnce(
+        attempt === 1 && lastErrors.length
+          ? `上一次生成的 patch 校验未通过，请修正后重试。问题：\n- ${lastErrors.join("\n- ")}`
+          : "",
+      );
+    } catch (e) {
+      if (attempt === 1) throw e;
+      lastErrors = [e.message];
+      continue;
+    }
+    let patched;
+    try {
+      patched = PPT_SCHEMA.applyPatch(slide, patch);
+    } catch (e) {
+      lastErrors = [`patch 应用失败：${e.message}`];
+      if (attempt === 0) continue;
+      throw new ApiError(400, "INVALID_PATCH", lastErrors[0]);
+    }
+    const { slide: validated, errors } = PPT_SCHEMA.validateSlide(patched, 0);
+    if (!validated) {
+      lastErrors = errors.length ? errors : ["校验后该页为空"];
+      if (attempt === 0) continue;
+      throw new ApiError(400, "INVALID_PATCH", lastErrors.join("；"));
+    }
+    // layout 防篡改：强制回退原 layout（即便 LLM 违规改了也还原）
+    validated.layout = slide.layout || validated.layout || "two_col";
+    return { patch, slide: validated, errors };
+  }
+  throw new ApiError(400, "INVALID_PATCH", "多次尝试后 patch 仍不合法");
 }
 
 // ── AI 生成选择题（Qwen LLM，失败由调用方回退本地规则） ──
@@ -1140,7 +1832,13 @@ function slidesToMarkdown(slides, fullText, query) {
   const diagramNames = {
     line_chart: "折线图",
     bar_chart: "柱状图",
+    pie_chart: "饼图",
+    area_chart: "面积图",
     complexity_curve: "复杂度曲线",
+    scatter_chart: "散点图",
+    donut_chart: "环形图",
+    funnel: "漏斗图",
+    radar_chart: "雷达图",
     array: "数组状态图",
     flow: "流程图",
     tree: "树形结构",
@@ -1459,6 +2157,104 @@ async function createSlideTTS(slides) {
   return out.filter(Boolean);
 }
 
+// ── Edge-TTS（python -m edge_tts，免费神经网络语音）──
+// 探测用真实短句合成：--list-voices 在 Windows/Python3.13 会抛 asyncio 错误，不可用作探测
+let EDGE_TTS_OK = null; // null=未探测 true/false
+async function probeEdgeTts() {
+  if (EDGE_TTS_OK !== null) return EDGE_TTS_OK;
+  const tmp = path.join(STORAGE_DIR, "audio", safeFileName("edge-tts-probe", ".mp3"));
+  EDGE_TTS_OK = await new Promise((resolve) => {
+    const child = spawn(
+      "python",
+      ["-m", "edge_tts", "--voice", "zh-CN-XiaoxiaoNeural", "--text", "测试语音", "--write-media", tmp],
+      { stdio: ["ignore", "ignore", "pipe"] },
+    );
+    const timer = setTimeout(() => {
+      child.kill();
+      resolve(false);
+    }, 20_000);
+    child.on("error", () => {
+      clearTimeout(timer);
+      resolve(false);
+    });
+    child.on("close", async (code) => {
+      clearTimeout(timer);
+      if (code !== 0) return resolve(false);
+      try {
+        const buf = await fs.readFile(tmp);
+        await fs.unlink(tmp).catch(() => {});
+        resolve(buf.length > 0);
+      } catch {
+        resolve(false);
+      }
+    });
+  });
+  log("edge_tts.probe", { ok: EDGE_TTS_OK });
+  return EDGE_TTS_OK;
+}
+
+// 单句合成 → mp3 Buffer；失败重试 3 次（0.5s/1.7s/3.4s 退避），仍失败返回 null（该句静音）。
+// 绝不跨引擎回退到 qwenTtsBuffer：真课件必须全篇同一种音色，混音听感就是"两个语音重叠"。
+async function edgeTtsBuffer(text, opts = {}) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if (!clean) throw new ApiError(400, "EMPTY_TEXT", "TTS 文本为空");
+  const voice = opts.voice || process.env.EDGE_TTS_VOICE || "zh-CN-XiaoxiaoNeural";
+  const rate = opts.rate || process.env.EDGE_TTS_RATE || "+8%";
+  // probe 仅作健康提示，不作硬门槛：启动瞬间网络抖动会让 EDGE_TTS_OK 缓存为 false，
+  // 若在此直接 503 则整个进程生命周期内 TTS 全废；改为直接尝试合成（自带重试）更鲁棒。
+  probeEdgeTts().catch(() => {});
+  const tmp = path.join(STORAGE_DIR, "audio", safeFileName("edge-tts", ".mp3"));
+  const wrap = path.join(__dirname, "edge_tts_wrap.py");
+  const runOnce = () =>
+    new Promise((resolve, reject) => {
+      const child = spawn(
+        "python",
+        [wrap, "--voice", voice, "--rate", rate, "--text", clean, "--write-media", tmp],
+        { stdio: ["ignore", "ignore", "pipe"] },
+      );
+      let stderr = "";
+      child.stderr.on("data", (d) => {
+        stderr += String(d);
+      });
+      const timer = setTimeout(() => {
+        child.kill();
+        reject(new Error("edge-tts 合成超时"));
+      }, 60_000);
+      child.on("error", (e) => {
+        clearTimeout(timer);
+        reject(e);
+      });
+      child.on("close", async (code) => {
+        clearTimeout(timer);
+        if (code !== 0)
+          return reject(
+            new Error(
+              "edge-tts 退出码 " + code + (stderr ? "：" + stderr.trim().slice(0, 200) : ""),
+            ),
+          );
+        try {
+          const buf = await fs.readFile(tmp);
+          await fs.unlink(tmp).catch(() => {});
+          if (!buf.length) return reject(new Error("edge-tts 输出为空"));
+          resolve(buf);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+  // 微软对连续高频请求限流（远程主机强制关闭连接），串行 + 指数退避重试 4 次
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      return await runOnce();
+    } catch (e) {
+      log("edge_tts.retry", { attempt, message: e.message });
+      await new Promise((r) => setTimeout(r, 500 + 1200 * (attempt - 1)));
+    }
+  }
+  log("edge_tts.failed", { text: clean.slice(0, 40) });
+  return null;
+}
+
 async function createPoster(text, topic, lessonPlan) {
   const escape = (value) =>
     value.replace(
@@ -1715,6 +2511,125 @@ function parseTreeJson(text) {
   return JSON.parse(m[0]);
 }
 
+// ── 用 ppt-master（Python + python-pptx）生成富 PPTX：原生图表/样式/切换 ──
+// ── AI 配图：封面 + 空白页，用 Qwen 图片生成（CN 端点） ──
+const IMG_STYLE_HINT = {
+  教学清新: "浅色蓝白清新的扁平教育插画，柔和色块",
+  极简白: "极简黑白灰插画，少量蓝色点缀，大量留白",
+  深色科技: "深色科技感插画，深蓝黑底、青紫霓虹点缀，扁平矢量",
+  商务蓝: "稳重商务风格扁平插画，蓝灰色调，简洁几何",
+  活泼多彩: "明亮多彩卡通插画，圆润活泼形状",
+};
+function runPy(args, env) {
+  return new Promise((resolve, reject) => {
+    const child = spawn("python", args, { stdio: "ignore", env });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error("python 退出码 " + code + ": " + args[0]));
+    });
+  });
+}
+async function ensureSlideImages(slides, style, taskId) {
+  const key = process.env.QWEN_IMAGE_API_KEY || process.env.QWEN_API_KEY;
+  const images = {};
+  if (!key || !slides.length) return images;
+  const env = { ...process.env, QWEN_API_KEY: key, QWEN_BASE_URL: "https://dashscope.aliyuncs.com" };
+  const gen = path.join(ROOT, ".trae", "skills", "ppt-master", "scripts", "image_gen.py");
+  const cacheDir = path.join(STORAGE_DIR, "imgcache");
+  await fs.mkdir(cacheDir, { recursive: true });
+  const pages = [0]; // 封面
+  for (let i = 1; i < slides.length && pages.length < 3; i++) {
+    if (!parseChart(slides[i] && slides[i].diagram)) pages.push(i); // 无图表的空白页
+  }
+  const hint = IMG_STYLE_HINT[style] || IMG_STYLE_HINT["教学清新"];
+  const jobs = [];
+  for (const idx of pages) {
+    const base = String(taskId || "x").slice(0, 12) + "-" + idx + "-" + (style || "default");
+    if (await fs.stat(path.join(cacheDir, base + ".png")).catch(() => null)) {
+      images[idx] = "/storage/imgcache/" + base + ".png"; // 已有缓存
+    } else {
+      const slide = slides[idx] || {};
+      const prompt = "为教学幻灯片生成一页" + hint + "，主题：" + String(slide.title || "编程与算法学习").slice(0, 40) + "。只画插画，不写任何文字，构图简洁、四周留白。";
+      jobs.push({ idx: idx, base: base, prompt: prompt });
+    }
+  }
+  // 并行生成缺失图片
+  await Promise.all(jobs.map((jb) => runPy([gen, jb.prompt, "--backend", "qwen", "--aspect_ratio", "4:3", "--image_size", "512px", "-o", cacheDir, "--filename", jb.base], env).catch((e) => log("img.gen_failed", { index: jb.idx, message: e.message }))));
+  for (const jb of jobs) {
+    if (await fs.stat(path.join(cacheDir, jb.base + ".png")).catch(() => null)) images[jb.idx] = "/storage/imgcache/" + jb.base + ".png";
+  }
+  return images;
+}
+async function buildPptxViaPython(slides, query, style, taskId, cachedImages) {
+  const python = process.env.PYTHON || "python";
+  const skillDir = path.join(ROOT, ".trae", "skills", "ppt-master");
+  const taskDir = path.join(STORAGE_DIR, "pptx-build", crypto.randomUUID());
+  const svgDir = path.join(taskDir, "svg_output");
+  const imgDir = path.join(taskDir, "images");
+  await fs.mkdir(svgDir, { recursive: true });
+  await fs.mkdir(imgDir, { recursive: true });
+  // 取图：优先任务缓存 URL，缺则现生成（生成到缓存）
+  const imageUrls = cachedImages && Object.keys(cachedImages).length
+    ? cachedImages
+    : await ensureSlideImages(slides, style, taskId).catch((e) => { log("img.pre_fail", { message: e.message }); return {}; });
+  const images = {};
+  for (const idxStr of Object.keys(imageUrls)) {
+    const url = imageUrls[idxStr];
+    const rel = String(url).replace(/^\/storage\//, "");
+    const src = path.resolve(STORAGE_DIR, rel);
+    if (!src.startsWith(path.resolve(STORAGE_DIR))) continue;
+    const ext = path.extname(src) || ".png";
+    const dest = path.join(imgDir, "img-" + idxStr + ext);
+    try { await fs.copyFile(src, dest); images[idxStr] = "img-" + idxStr + ext; } catch (e) {}
+  }
+  const svgs = slidesToSvgs(slides, { style: style, images: images });
+  for (let i = 0; i < svgs.length; i++) {
+    await fs.writeFile(
+      path.join(svgDir, String(i + 1).padStart(2, "0") + "_slide.svg"),
+      svgs[i],
+      "utf8",
+    );
+  }
+  const run = (args) =>
+    new Promise((resolve, reject) => {
+      const child = spawn(python, args, { stdio: "ignore" });
+      child.on("error", reject);
+      child.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error("python 退出码 " + code + ": " + args[0]));
+      });
+    });
+  const s = path.join(skillDir, "scripts");
+  await run([path.join(s, "stamp_native_fallbacks.py"), svgDir, "--write"]);
+  await run([
+    path.join(s, "svg_quality_checker.py"),
+    taskDir,
+    "--quick-generate",
+    "--canonical-authoring",
+    "--stage",
+    "final",
+    "--json",
+  ]);
+  const outPath = path.join(taskDir, "slides.pptx");
+  await run([
+    path.join(s, "svg_to_pptx.py"),
+    taskDir,
+    "--quick-generate",
+    "--no-notes",
+    "--native-charts-and-tables",
+    "-t",
+    "fade",
+    "-a",
+    "entrance_fade",
+    "-o",
+    outPath,
+  ]);
+  const buf = await fs.readFile(outPath);
+  await fs.rm(taskDir, { recursive: true, force: true }).catch(() => {});
+  return buf;
+}
+
 async function api(req, res, url, id) {
   const route = url.pathname.slice(API_PREFIX.length);
   if (!allowRequest(req))
@@ -1778,14 +2693,23 @@ async function api(req, res, url, id) {
       typeof input.persona === "string" && input.persona.trim()
         ? cleanText(input.persona, "persona").slice(0, 500)
         : "";
+    const style =
+      typeof input.style === "string" && input.style.trim()
+        ? input.style.trim().slice(0, 32)
+        : "";
+    // mode=staged：分阶段流水线（大纲→逐页→收尾），单页失败可局部重试；默认仍为单次大调用
+    const staged = String(input.mode || "") === "staged";
     const taskId = requestId();
     await store.add("videoTasks", {
       id: taskId,
       query: text,
+      style: style || "",
       slides: [],
       audioUrl: null,
       status: "queued",
       progress: 0,
+      pagesTotal: 0,
+      pagesDone: 0,
       createdAt: now(),
       updatedAt: now(),
     });
@@ -1801,24 +2725,40 @@ async function api(req, res, url, id) {
       let slides = [];
       let fullText = "";
       try {
-        await store.update("videoTasks", taskId, {
-          status: "generating",
-          progress: 20,
-        });
-        const result = await generateScript(text, persona);
-        slides = result.slides;
-        fullText = result.fullText || "";
+        let result;
+        if (staged) {
+          // 进度回写：status 轮询时透出 pagesTotal/pagesDone
+          result = await generateSlidesStaged(text, persona, style, (p) => {
+            store
+              .update("videoTasks", taskId, {
+                status: p.status,
+                progress: p.progress,
+                ...(p.total ? { pagesTotal: p.total, pagesDone: p.done ?? 0 } : {}),
+              })
+              .catch(() => {});
+          });
+          slides = result.slides;
+        } else {
+          await store.update("videoTasks", taskId, {
+            status: "generating",
+            progress: 20,
+          });
+          result = await generateScript(text, persona, style);
+          slides = result.slides;
+        }
+        fullText = slides.map((s) => `${s.title}。${s.text}`).join("");
         await store.update("videoTasks", taskId, {
           slides,
           fullText,
           progress: 50,
           status: "generating_tts",
         });
-        // 逐页合成语音：每页一段音频，语音与 PPT 文字逐页严格一致
+        // 第1步：合成语音（已移除 AI 配图生成阶段，slides_ready 直接收尾）
         const slideAudio = await createSlideTTS(slides);
         await store.update("videoTasks", taskId, {
           slideAudio,
           audioUrl: null,
+          images: {},
           progress: 100,
           status: "slides_ready",
         });
@@ -1857,6 +2797,32 @@ async function api(req, res, url, id) {
   if (videoStatusMatch && req.method === "GET") {
     const taskId = url.searchParams.get("task_id");
     if (!taskId) throw new ApiError(400, "MISSING_PARAM", "缺少 task_id 参数");
+    // 双读：先查 v1 videoTasks，未命中回退 v2 coursewareTasks（真课件，format:2）
+    const cwTask = store.find("coursewareTasks", taskId);
+    if (cwTask) {
+      return send(
+        res,
+        200,
+        {
+          data: {
+            format: 2,
+            status: cwTask.status,
+            pages: cwTask.pages || [],
+            voice: cwTask.voice || "",
+            style: cwTask.style || "",
+            query: cwTask.query,
+            progress: cwTask.progress || 0,
+            pages_total: cwTask.pagesTotal || 0,
+            pages_done: cwTask.pagesDone || 0,
+            tts_total: cwTask.ttsTotal || 0,
+            tts_done: cwTask.ttsDone || 0,
+            ...(cwTask.error ? { error: cwTask.error } : {}),
+          },
+          requestId: id,
+        },
+        id,
+      );
+    }
     const videoTask = store.find("videoTasks", taskId);
     if (!videoTask) throw new ApiError(404, "TASK_NOT_FOUND", "未找到该任务");
     return send(
@@ -1867,15 +2833,131 @@ async function api(req, res, url, id) {
           status: videoTask.status,
           audio_url: videoTask.audioUrl,
           slide_audio: videoTask.slideAudio || [],
+          images: videoTask.images || {},
+          style: videoTask.style || "",
           slides: videoTask.slides,
           query: videoTask.query,
           progress: videoTask.progress || 0,
+          pages_total: videoTask.pagesTotal || 0,
+          pages_done: videoTask.pagesDone || 0,
           ...(videoTask.error ? { error: videoTask.error } : {}),
         },
         requestId: id,
       },
       id,
     );
+  }
+  // ── 真课件 v2：生成（异步 job）──
+  if (route === "/courseware/generate" && req.method === "POST") {
+    const input = await body(req);
+    const text = cleanText(input.query ?? input.text, "query");
+    const persona =
+      typeof input.persona === "string" && input.persona.trim()
+        ? cleanText(input.persona, "persona").slice(0, 500)
+        : "";
+    const style =
+      typeof input.style === "string" && input.style.trim()
+        ? input.style.trim().slice(0, 32)
+        : "";
+    const VOICES = ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-CN-YunjianNeural", "zh-CN-XiaoyiNeural"];
+    const voice = VOICES.includes(input.voice) ? input.voice : (process.env.EDGE_TTS_VOICE || "zh-CN-XiaoxiaoNeural");
+    const taskId = requestId();
+    await store.add("coursewareTasks", {
+      id: taskId,
+      query: text,
+      style: style || "",
+      voice,
+      pages: [],
+      status: "queued",
+      progress: 0,
+      pagesTotal: 0,
+      pagesDone: 0,
+      ttsTotal: 0,
+      ttsDone: 0,
+      createdAt: now(),
+      updatedAt: now(),
+    });
+    setImmediate(async () => {
+      try {
+        const { pages } = await generateCoursewareStaged(text, persona, style, (p) => {
+          store
+            .update("coursewareTasks", taskId, {
+              status: p.status,
+              progress: p.progress,
+              ...(p.total ? { pagesTotal: p.total, pagesDone: p.done ?? 0 } : {}),
+            })
+            .catch(() => {});
+        });
+        await store.update("coursewareTasks", taskId, {
+          pages,
+          progress: 62,
+          status: "generating_tts",
+        });
+        await createCoursewareTTS(taskId, pages, voice, (t) => {
+          store
+            .update("coursewareTasks", taskId, {
+              ttsTotal: t.total,
+              ttsDone: t.done,
+              progress: 62 + Math.round((t.done / Math.max(t.total, 1)) * 38),
+            })
+            .catch(() => {});
+        });
+        await store.update("coursewareTasks", taskId, { status: "slides_ready", progress: 100 });
+      } catch (e) {
+        log("courseware.generate.failed", { taskId, message: e.message });
+        await store.update("coursewareTasks", taskId, {
+          status: "failed",
+          error: { code: e.code || "GENERATION_FAILED", message: e.message },
+        });
+      }
+    });
+    return send(
+      res,
+      201,
+      { data: { task_id: taskId }, requestId: id },
+      id,
+    );
+  }
+  // ── 真课件 v2：换音色重新合成配音（仅重跑 TTS 阶段）──
+  if (route === "/courseware/resynth" && req.method === "POST") {
+    const input = await body(req);
+    const taskId = String(input.task_id || "");
+    const cwTask = store.find("coursewareTasks", taskId);
+    if (!cwTask) throw new ApiError(404, "TASK_NOT_FOUND", "未找到该课件任务");
+    const VOICES = ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-CN-YunjianNeural", "zh-CN-XiaoyiNeural"];
+    if (!VOICES.includes(input.voice))
+      throw new ApiError(400, "INVALID_INPUT", "voice 必须为 " + VOICES.join("、"));
+    if (cwTask.status === "generating_tts")
+      throw new ApiError(409, "BUSY", "该任务正在合成配音，请稍候");
+    if (!cwTask.pages?.length)
+      throw new ApiError(404, "NO_CONTENT", "该任务暂无课件内容");
+    await store.update("coursewareTasks", taskId, {
+      voice: input.voice,
+      status: "generating_tts",
+      progress: 62,
+      ttsDone: 0,
+    });
+    setImmediate(async () => {
+      try {
+        await createCoursewareTTS(taskId, cwTask.pages, input.voice, (t) => {
+          store
+            .update("coursewareTasks", taskId, {
+              ttsTotal: t.total,
+              ttsDone: t.done,
+              progress: 62 + Math.round((t.done / Math.max(t.total, 1)) * 38),
+            })
+            .catch(() => {});
+        });
+        await store.update("coursewareTasks", taskId, { status: "slides_ready", progress: 100 });
+      } catch (e) {
+        log("courseware.resynth.failed", { taskId, message: e.message });
+        await store.update("coursewareTasks", taskId, {
+          status: "slides_ready",
+          error: { code: "RESYNTH_FAILED", message: e.message },
+        });
+      }
+    });
+    return send(res, 202, { data: { task_id: taskId, status: "generating_tts" }, requestId: id }, id);
   }
   // 按知识点查最近一次生成的视频任务（供搜索历史点击时定位已生成视频，latest wins）
   const videoTasksMatch = route.match(/^\/video\/tasks$/);
@@ -1935,6 +3017,179 @@ async function api(req, res, url, id) {
         },
         requestId: id,
       },
+      id,
+    );
+  }
+  // ── 单页 SVG 缩略图（与 .pptx 同一套渲染，不含 AI 配图） ──
+  if (route === "/video/slide-svg" && req.method === "GET") {
+    const taskId = url.searchParams.get("task_id");
+    const index = Number(url.searchParams.get("index") || "0");
+    if (!taskId) throw new ApiError(400, "MISSING_PARAM", "缺少 task_id 参数");
+    const videoTask = store.find("videoTasks", taskId) || store.find("coursewareTasks", taskId);
+    if (!videoTask) throw new ApiError(404, "TASK_NOT_FOUND", "未找到该任务");
+    const slides = videoTask.slides || videoTask.pages;
+    if (!slides || !slides.length)
+      throw new ApiError(404, "NO_CONTENT", "该任务暂无幻灯片");
+    const slide = slides[index];
+    if (!slide) throw new ApiError(404, "NOT_FOUND", "页码不存在");
+    const svg = slidesToSvgs([slide], { style: videoTask.style || "" })[0];
+    res.writeHead(200, {
+      "content-type": "image/svg+xml; charset=utf-8",
+      "cache-control": "no-cache",
+      "x-request-id": id,
+    });
+    return res.end(svg);
+  }
+  // ── 导出真实 PPT（.pptx，PowerPoint/WPS 可直接打开） ──
+  if (route === "/video/pptx" && req.method === "GET") {
+    const taskId = url.searchParams.get("task_id");
+    if (!taskId) throw new ApiError(400, "MISSING_PARAM", "缺少 task_id 参数");
+    const videoTask = store.find("videoTasks", taskId);
+    if (!videoTask) throw new ApiError(404, "TASK_NOT_FOUND", "未找到该任务");
+    if (!videoTask.slides || !videoTask.slides.length)
+      throw new ApiError(404, "NO_CONTENT", "该任务暂无幻灯片内容");
+    const slides = videoTask.slides;
+    const query = videoTask.query || "AI 教学幻灯片";
+    let pptx;
+    try {
+      pptx = await buildPptxViaPython(slides, query, videoTask.style || "", videoTask.id, videoTask.images);
+    } catch (e) {
+      log("pptx.python.fallback", { message: e.message });
+      pptx = buildPptx(slides, query); // Node 零依赖兜底
+    }
+    await fs.mkdir(path.join(STORAGE_DIR, "pptx"), { recursive: true });
+    const file = path.join("pptx", safeFileName("slides", ".pptx"));
+    await fs.writeFile(path.join(STORAGE_DIR, file), pptx);
+    const filename =
+      "教学幻灯片-" + String(videoTask.query || "slides").slice(0, 30) + ".pptx";
+    return send(
+      res,
+      200,
+      { data: { url: publicAsset(file), filename }, requestId: id },
+      id,
+    );
+  }
+  // ── 导出逐页朗读音频（每页一段 mp3，打包 zip 下载） ──
+  if (route === "/video/audio" && req.method === "GET") {
+    const taskId = url.searchParams.get("task_id");
+    if (!taskId) throw new ApiError(400, "MISSING_PARAM", "缺少 task_id 参数");
+    const videoTask = store.find("videoTasks", taskId);
+    if (!videoTask) throw new ApiError(404, "TASK_NOT_FOUND", "未找到该任务");
+    const slideAudio = videoTask.slideAudio || [];
+    const audios = slideAudio
+      .filter((a) => a && a.url)
+      .sort((a, b) => a.index - b.index);
+    if (!audios.length)
+      throw new ApiError(404, "NO_CONTENT", "该任务暂无朗读音频");
+    const entries = [];
+    for (const a of audios) {
+      const rel = String(a.url).replace(/^\/storage\//, "");
+      const abs = path.resolve(STORAGE_DIR, rel);
+      if (!abs.startsWith(path.resolve(STORAGE_DIR))) continue;
+      try {
+        const data = await fs.readFile(abs);
+        entries.push({
+          name: "slide-" + String(a.index + 1).padStart(2, "0") + ".mp3",
+          data,
+        });
+      } catch (e) {
+        /* 单个音频缺失则跳过 */
+      }
+    }
+    if (!entries.length)
+      throw new ApiError(404, "NO_CONTENT", "朗读音频文件缺失");
+    const zip = buildZip(entries);
+    const file = path.join("audio", safeFileName("narration", ".zip"));
+    await fs.writeFile(path.join(STORAGE_DIR, file), zip);
+    const filename =
+      "朗读音频-" + String(videoTask.query || "slides").slice(0, 30) + ".zip";
+    return send(
+      res,
+      200,
+      { data: { url: publicAsset(file), filename }, requestId: id },
+      id,
+    );
+  }
+  // ── PPT Schema（只读）：枚举与字段规格，前端渲染兜底可对齐 ──
+  if (route === "/ppt/schema" && req.method === "GET") {
+    return send(
+      res,
+      200,
+      {
+        data: {
+          layouts: PPT_SCHEMA.LAYOUT_POOL,
+          visualTypes: PPT_SCHEMA.VISUAL_TYPES,
+          diagramTypes: PPT_SCHEMA.DIAGRAM_TYPES,
+          fields: PPT_SCHEMA.SLIDE_FIELDS,
+          patchableFields: PPT_SCHEMA.PATCHABLE_FIELDS,
+        },
+        requestId: id,
+      },
+      id,
+    );
+  }
+  // ── Edit with AI：对任务中某一页做增量 JSON Patch（校验通过才返回） ──
+  if (route === "/ppt/patch" && req.method === "POST") {
+    const input = await body(req);
+    const taskId = String(input.task_id || "").slice(0, 64);
+    const idx = Number(input.slide_index);
+    const instruction =
+      typeof input.instruction === "string" ? input.instruction.trim() : "";
+    if (!taskId) throw new ApiError(400, "MISSING_PARAM", "缺少 task_id 参数");
+    if (!Number.isInteger(idx) || idx < 0)
+      throw new ApiError(400, "INVALID_INPUT", "slide_index 必须为非负整数");
+    if (!instruction)
+      throw new ApiError(400, "MISSING_PARAM", "缺少 instruction 编辑指令");
+    const videoTask = store.find("videoTasks", taskId);
+    if (!videoTask) throw new ApiError(404, "TASK_NOT_FOUND", "未找到该任务");
+    const slides = Array.isArray(videoTask.slides) ? videoTask.slides : [];
+    if (!slides.length)
+      throw new ApiError(404, "NO_CONTENT", "该任务暂无幻灯片内容");
+    if (idx >= slides.length)
+      throw new ApiError(400, "INVALID_INPUT", `slide_index 超出范围（共 ${slides.length} 页）`);
+    const safeInstruction = cleanText(instruction.slice(0, 500), "instruction");
+    const startedAt = Date.now();
+    const { patch, slide, errors } = await patchSlideViaLLM(slides[idx], safeInstruction, {
+      query: videoTask.query,
+    });
+    log("ppt.patch.done", {
+      taskId,
+      slideIndex: idx,
+      ops: patch.length,
+      fixes: errors.length,
+      ms: Date.now() - startedAt,
+    });
+    return send(
+      res,
+      200,
+      { data: { patch, slide, slide_index: idx, warnings: errors }, requestId: id },
+      id,
+    );
+  }
+  // ── 保存编辑后的幻灯片（watch.html 编辑落库；服务端重校验后写入任务） ──
+  if (route === "/video/save" && req.method === "POST") {
+    const input = await body(req);
+    const taskId = String(input.task_id || "").slice(0, 64);
+    if (!taskId) throw new ApiError(400, "MISSING_PARAM", "缺少 task_id 参数");
+    if (!Array.isArray(input.slides) || !input.slides.length)
+      throw new ApiError(400, "INVALID_INPUT", "slides 必须为非空数组");
+    if (input.slides.length > 30)
+      throw new ApiError(400, "INVALID_INPUT", "slides 页数过多（上限 30）");
+    const videoTask = store.find("videoTasks", taskId);
+    if (!videoTask) throw new ApiError(404, "TASK_NOT_FOUND", "未找到该任务");
+    const { slides: validated, errors } = PPT_SCHEMA.validateSlides(input.slides);
+    if (!validated.length)
+      throw new ApiError(400, "INVALID_INPUT", "slides 校验后为空：" + (errors[0] || ""));
+    await store.update("videoTasks", taskId, {
+      slides: validated,
+      fullText: validated.map((s) => `${s.title}。${s.text}`).join(""),
+      editedAt: now(),
+    });
+    log("video.saved", { taskId, pages: validated.length, fixes: errors.length });
+    return send(
+      res,
+      200,
+      { data: { saved: validated.length, warnings: errors }, requestId: id },
       id,
     );
   }
@@ -2206,6 +3461,100 @@ async function api(req, res, url, id) {
       },
       id,
     );
+  }
+  // ── 学习笔记（参考 OpenMAIC 内置笔记系统：随学随记 + 锚点跳转 + AI 生成 + Markdown 导出）──
+  if (route === "/notes" && req.method === "GET") {
+    const clientId = getClientId(req);
+    const taskId = cleanText(url.searchParams.get("task_id") || "", "task_id").slice(0, 64);
+    if (!taskId) throw new ApiError(400, "INVALID_INPUT", "缺少 task_id");
+    const notes = store.data.notes
+      .filter((n) => n.clientId === clientId && n.taskId === taskId)
+      .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+    return send(res, 200, { data: notes }, id);
+  }
+  if (route === "/notes" && req.method === "POST") {
+    const input = await body(req);
+    const clientId = getClientId(req);
+    const taskId = cleanText(input.task_id || input.taskId || "", "task_id").slice(0, 64);
+    const page = Number.isInteger(input.page) ? Math.max(0, input.page) : null;
+    const title = cleanText(input.title || "", "title").slice(0, 200);
+    const text = cleanText(input.text || "", "text").slice(0, 4000);
+    if (!taskId || !text) throw new ApiError(422, "INVALID_INPUT", "缺少 task_id 或 text");
+    const note = await store.add("notes", {
+      id: requestId(),
+      clientId,
+      taskId,
+      page,
+      title,
+      text,
+      auto: !!input.auto,
+      createdAt: now(),
+    });
+    return send(res, 201, { data: note }, id);
+  }
+  if (route === "/notes" && req.method === "PUT") {
+    const input = await body(req);
+    const clientId = getClientId(req);
+    const note = store.data.notes.find((n) => n.id === cleanText(input.id || "", "id"));
+    if (!note || note.clientId !== clientId)
+      throw new ApiError(404, "NOT_FOUND", "笔记不存在");
+    if (typeof input.text === "string") note.text = cleanText(input.text, "text").slice(0, 4000);
+    if (typeof input.title === "string") note.title = cleanText(input.title, "title").slice(0, 200);
+    if (Number.isInteger(input.page)) note.page = Math.max(0, input.page);
+    note.updatedAt = now();
+    await store.persist();
+    return send(res, 200, { data: note }, id);
+  }
+  if (route === "/notes" && req.method === "DELETE") {
+    const input = await body(req);
+    const clientId = getClientId(req);
+    const idx = store.data.notes.findIndex((n) => n.id === cleanText(input.id || "", "id"));
+    if (idx < 0 || store.data.notes[idx].clientId !== clientId)
+      throw new ApiError(404, "NOT_FOUND", "笔记不存在");
+    const [removed] = store.data.notes.splice(idx, 1);
+    await store.persist();
+    return send(res, 200, { data: { deleted: removed.id } }, id);
+  }
+  // AI 生成结构化笔记：基于课件内容由 LLM 归纳，结果同时入库
+  if (route === "/notes/ai" && req.method === "POST") {
+    const input = await body(req);
+    const clientId = getClientId(req);
+    const taskId = cleanText(input.task_id || input.taskId || "", "task_id").slice(0, 64);
+    const task = store.find("coursewareTasks", taskId) || store.find("videoTasks", taskId) || store.find("tasks", taskId);
+    const pages = task && Array.isArray(task.pages) ? task.pages : [];
+    if (!taskId || !pages.length)
+      throw new ApiError(422, "INVALID_INPUT", "未找到该课件的页面内容");
+    const digest = pages
+      .slice(0, 14)
+      .map((p, i) => `【第${i + 1}页】${String(p.title || "").slice(0, 60)}：${String(p.text || p.left || "").replace(/\s+/g, " ").slice(0, 220)}`)
+      .join("\n");
+    const resJson = await llmJson({
+      system: "你是资深学习笔记整理助手，输出必须仅为一个 JSON 对象，不要 Markdown 代码块。",
+      user: `根据以下课件每页内容，生成一份结构化学习笔记（Markdown 格式），要求：1) 以 # 标题开头；2) 按「核心概念 → 关键步骤/机制 → 易错点 → 速记口诀」组织，只写干货；3) 结尾给出 3 个自测问题。\n\n课件内容：\n${digest}`,
+      maxTokens: 1600,
+      temperature: 0.4,
+    });
+    const md = String(
+      resJson.markdown || resJson.content || resJson.notes || resJson.note ||
+      resJson.result || resJson.text || resJson.outline || resJson.answer || ""
+    ).trim();
+    // 兜底：LLM 返回了其它结构时直接序列化，避免内容丢失
+    const fallbackMd = !md && resJson && typeof resJson === "object"
+      ? jsonToMarkdown(resJson).trim()
+      : "";
+    const noteMd = md || fallbackMd;
+    if (!noteMd) throw new ApiError(502, "EMPTY_AI_OUTPUT", "AI 未生成笔记");
+    const note = await store.add("notes", {
+      id: requestId(),
+      clientId,
+      taskId,
+      page: null,
+      title: "AI 结构化笔记",
+      text: noteMd.slice(0, 8000),
+      auto: true,
+      createdAt: now(),
+    });
+    return send(res, 201, { data: { note, markdown: noteMd } }, id);
   }
   // ── 学情：错题本列表 ──
   if (route === "/mistakes" && req.method === "GET") {
@@ -2483,6 +3832,17 @@ async function api(req, res, url, id) {
       id,
     );
   }
+  if (route === "/skill/explain" && req.method === "POST") {
+    const input = await body(req);
+    const topic = cleanText(input.topic ?? input.query, "query");
+    if (!topic) throw new ApiError(400, "INVALID_INPUT", "请提供知识点");
+    const context = String(input.context || "").slice(0, 1200);
+    const text = await callDeepSeek([
+      { role: "system", content: "你是计算机科学教学专家，用简洁清晰的中文讲解知识点。" },
+      { role: "user", content: `请为知识点「${topic}」生成一段中文讲解，要求：\n1) 先用一句话给出精确定义；\n2) 再列 3-5 条核心要点或原理；\n3) 给一个简单易懂的例子；\n4) 最后一句学习建议。\n用 Markdown（小标题/列表/加粗），总长 200-350 字。${context ? "\n\n补充背景：" + context : ""}` },
+    ]);
+    return send(res, 200, { data: { topic, text }, requestId: id }, id);
+  }
   if (route === "/generate-tree" && req.method === "POST") {
     const input = await body(req);
     const topic = cleanText(input.topic ?? "", "query");
@@ -2504,25 +3864,33 @@ async function staticFile(req, res, url, id) {
   } catch {
     throw new ApiError(400, "INVALID_INPUT", "无效的路径编码");
   }
-  if (requestPath === "/") requestPath = "/search.html";
+  if (requestPath === "/") requestPath = "/index.html";
   if (requestPath.includes(".."))
     throw new ApiError(403, "FORBIDDEN", "禁止访问该资源");
-  const base = requestPath.startsWith("/storage/") ? STORAGE_DIR : ROOT;
-  const relative = requestPath.startsWith("/storage/")
+  const isStorage = requestPath.startsWith("/storage/");
+  const relative = isStorage
     ? requestPath.slice("/storage/".length)
     : requestPath.slice(1);
-  const target = path.resolve(base, relative);
-  if (!target.startsWith(path.resolve(base)))
-    throw new ApiError(403, "FORBIDDEN", "禁止访问该资源");
-  let stat;
-  try {
-    stat = await fs.stat(target);
-  } catch (error) {
-    if (error.code === "ENOENT")
-      throw new ApiError(404, "NOT_FOUND", "文件不存在");
-    throw error;
+  // 静态资源解析顺序：storage 只查存储目录；其余先查项目根目录，再回退到 Next.js 导出产物 out/
+  const bases = isStorage ? [STORAGE_DIR] : [ROOT, OUT_DIR];
+  let target = null;
+  let stat = null;
+  for (const base of bases) {
+    const candidate = path.resolve(base, relative);
+    if (!candidate.startsWith(path.resolve(base))) continue;
+    try {
+      const s = await fs.stat(candidate);
+      if (s.isFile()) {
+        target = candidate;
+        stat = s;
+        break;
+      }
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
   }
-  if (stat.isDirectory()) throw new ApiError(404, "NOT_FOUND", "目录不可访问");
+  if (!target || !stat)
+    throw new ApiError(404, "NOT_FOUND", "文件不存在");
   const contentType = mime(target);
   const headers = {
     "content-type": contentType,

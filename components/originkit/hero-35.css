@@ -1,0 +1,8 @@
+/* hero-35 — AstraCore space-intelligence hero (ASCII shuttle + fire + star burst) */
+
+@import url("https://fonts.googleapis.com/css2?family=Orbit&family=Rajdhani:wght@700&display=swap");
+
+@theme {
+  --font-orbit: "Orbit", Inter, ui-sans-serif, sans-serif;
+  --font-rajdhani: "Rajdhani", Inter, ui-sans-serif, sans-serif;
+}

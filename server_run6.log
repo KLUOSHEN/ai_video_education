@@ -1,0 +1,196 @@
+﻿{"time":"2026-09-05T05:16:05.695Z","event":"server.started","port":3002,"url":"http://localhost:3002"}
+{"time":"2026-09-05T05:16:12.056Z","event":"request","id":"949cdae7-7dfb-40bb-b818-63cd53896b80","method":"GET","path":"/search.html","ms":2}
+{"time":"2026-09-05T05:18:09.858Z","event":"request","id":"999ec62c-80a5-43be-96b7-d67736e741da","method":"POST","path":"/api/v1/courseware/generate","ms":10}
+{"time":"2026-09-05T05:18:34.252Z","event":"request","id":"04b0a7b9-2a88-4563-aca6-d9332a9f0335","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:18:54.307Z","event":"request","id":"232a6a99-83f2-4d25-bf7b-34ee509b032e","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:19:14.317Z","event":"request","id":"923879ea-2e5b-4eb1-a860-696323f37fb8","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:19:20.104Z","event":"edge_tts.probe","ok":false}
+{"time":"2026-09-05T05:19:20.104Z","event":"courseware.tts.sentence_failed","i":0,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:20.410Z","event":"courseware.tts.sentence_failed","i":0,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:20.720Z","event":"courseware.tts.sentence_failed","i":0,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:21.028Z","event":"courseware.tts.sentence_failed","i":0,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:21.336Z","event":"courseware.tts.sentence_failed","i":0,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:21.647Z","event":"courseware.tts.sentence_failed","i":1,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:21.952Z","event":"courseware.tts.sentence_failed","i":1,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:22.258Z","event":"courseware.tts.sentence_failed","i":1,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:22.568Z","event":"courseware.tts.sentence_failed","i":1,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:22.877Z","event":"courseware.tts.sentence_failed","i":1,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:23.186Z","event":"courseware.tts.sentence_failed","i":1,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:23.497Z","event":"courseware.tts.sentence_failed","i":1,"j":6,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:23.806Z","event":"courseware.tts.sentence_failed","i":2,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:24.114Z","event":"courseware.tts.sentence_failed","i":2,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:24.427Z","event":"courseware.tts.sentence_failed","i":2,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:24.736Z","event":"courseware.tts.sentence_failed","i":2,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:25.047Z","event":"courseware.tts.sentence_failed","i":2,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:25.358Z","event":"courseware.tts.sentence_failed","i":2,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:25.670Z","event":"courseware.tts.sentence_failed","i":3,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:25.979Z","event":"courseware.tts.sentence_failed","i":3,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:26.289Z","event":"courseware.tts.sentence_failed","i":3,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:26.601Z","event":"courseware.tts.sentence_failed","i":3,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:26.910Z","event":"courseware.tts.sentence_failed","i":3,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:27.217Z","event":"courseware.tts.sentence_failed","i":3,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:27.527Z","event":"courseware.tts.sentence_failed","i":4,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:27.839Z","event":"courseware.tts.sentence_failed","i":4,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:28.148Z","event":"courseware.tts.sentence_failed","i":4,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:28.460Z","event":"courseware.tts.sentence_failed","i":4,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:28.768Z","event":"courseware.tts.sentence_failed","i":4,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:29.080Z","event":"courseware.tts.sentence_failed","i":4,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:29.391Z","event":"courseware.tts.sentence_failed","i":5,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:29.702Z","event":"courseware.tts.sentence_failed","i":5,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:30.011Z","event":"courseware.tts.sentence_failed","i":5,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:30.322Z","event":"courseware.tts.sentence_failed","i":5,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:30.632Z","event":"courseware.tts.sentence_failed","i":5,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:30.942Z","event":"courseware.tts.sentence_failed","i":5,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:31.251Z","event":"courseware.tts.sentence_failed","i":6,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:31.560Z","event":"courseware.tts.sentence_failed","i":6,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:31.871Z","event":"courseware.tts.sentence_failed","i":6,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:32.177Z","event":"courseware.tts.sentence_failed","i":6,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:32.486Z","event":"courseware.tts.sentence_failed","i":6,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:32.793Z","event":"courseware.tts.sentence_failed","i":6,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:33.100Z","event":"courseware.tts.sentence_failed","i":7,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:33.411Z","event":"courseware.tts.sentence_failed","i":7,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:33.720Z","event":"courseware.tts.sentence_failed","i":7,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:34.030Z","event":"courseware.tts.sentence_failed","i":7,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:34.326Z","event":"request","id":"937e9bea-de6e-4912-b614-1ab019f18933","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:19:34.340Z","event":"courseware.tts.sentence_failed","i":7,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:34.374Z","event":"request","id":"532f7d46-085e-44b8-8b66-e06c5e167798","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:19:34.650Z","event":"courseware.tts.sentence_failed","i":7,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:19:54.345Z","event":"request","id":"108a9b3c-2b8f-4d55-9fd1-f88d17d0d2fa","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:19:56.450Z","event":"request","id":"6432a138-e7af-4f18-8c17-ef20bdca8eee","method":"GET","path":"/","ms":2}
+{"time":"2026-09-05T05:19:56.496Z","event":"request","id":"876579f7-db18-40cd-b1be-7f3fe860e203","method":"GET","path":"/originkit/hero-35/logo-mark.svg","ms":2}
+{"time":"2026-09-05T05:19:56.497Z","event":"request","id":"09bf056b-5972-4b93-963e-4d3f15425abd","method":"GET","path":"/originkit/hero-35/corner-glow.svg","ms":4}
+{"time":"2026-09-05T05:19:56.498Z","event":"request","id":"3349bca1-a985-4610-8b9d-ab0bf88104af","method":"GET","path":"/_next/static/chunks/0g17nq-kn6_5v.css","ms":3}
+{"time":"2026-09-05T05:19:56.498Z","event":"request","id":"32e46945-f222-4684-84c0-dee2d9d9cbd8","method":"GET","path":"/originkit/hero-35/planet.svg","ms":2}
+{"time":"2026-09-05T05:19:56.498Z","event":"request","id":"115bb9fa-a3e8-4b01-9820-cf69555c43cc","method":"GET","path":"/originkit/hero-35/menu.svg","ms":2}
+{"time":"2026-09-05T05:19:56.499Z","event":"request","id":"6bfab1b1-bb2d-4e55-bfdb-baa5f7582460","method":"GET","path":"/_next/static/chunks/3l04zcqx63h3y.js","ms":3}
+{"time":"2026-09-05T05:19:56.503Z","event":"request","id":"8ab7b61b-94a4-4317-9dd1-a62bf7ff80df","method":"GET","path":"/_next/static/chunks/41qfcvra0dvw4.js","ms":2}
+{"time":"2026-09-05T05:19:56.504Z","event":"request","id":"a7eb3c67-a2ed-44e5-a093-7d12d4edd6a6","method":"GET","path":"/_next/static/chunks/3byuobrkyz9bj.js","ms":3}
+{"time":"2026-09-05T05:19:56.506Z","event":"request","id":"f9e3f400-d99d-43ca-ba71-fff707b4da50","method":"GET","path":"/_next/static/chunks/turbopack-2vjmaiymutzp1.js","ms":2}
+{"time":"2026-09-05T05:19:56.506Z","event":"request","id":"ff0b97a4-5c02-4bca-9d65-d0d3258707a3","method":"GET","path":"/_next/static/chunks/3fntmmi971322.js","ms":2}
+{"time":"2026-09-05T05:19:56.506Z","event":"request","id":"157410ef-0451-40ec-8c8b-61b3f7afce1c","method":"GET","path":"/_next/static/chunks/15bbj6-rh979x.js","ms":1}
+{"time":"2026-09-05T05:19:56.773Z","event":"request","id":"054f1e5b-578c-4b8a-bd08-bfea1921974d","method":"GET","path":"/originkit/hero-35/star-glow.svg","ms":1}
+{"time":"2026-09-05T05:19:56.878Z","event":"request","id":"c5de7388-06fc-4b10-8ee7-d276f1022c96","method":"GET","path":"/originkit/hero-35/rocket-rotated.png","ms":2}
+{"time":"2026-09-05T05:19:57.085Z","event":"request.error","id":"e4015ac5-0d39-4262-818c-8aab9eba565f","method":"GET","status":404,"code":"NOT_FOUND"}
+{"time":"2026-09-05T05:19:58.194Z","event":"request","id":"74ecd620-222e-436d-9403-c2c7ed4e0bf6","method":"GET","path":"/search.html","ms":1}
+{"time":"2026-09-05T05:19:58.222Z","event":"request","id":"f91ba40a-4766-45ea-ad5e-d39e30fe978b","method":"GET","path":"/mdrender.js","ms":2}
+{"time":"2026-09-05T05:19:58.222Z","event":"request","id":"5878b148-7713-4ada-8806-5b2122716c25","method":"GET","path":"/vortex.js","ms":1}
+{"time":"2026-09-05T05:19:58.229Z","event":"request","id":"969986a2-2ed6-4dfa-9ec1-d807e738e9bf","method":"GET","path":"/lucide-unify.js","ms":1}
+{"time":"2026-09-05T05:20:01.784Z","event":"request","id":"df827656-6c95-48c0-83da-bf7d91235849","method":"POST","path":"/api/v1/courseware/generate","ms":14}
+{"time":"2026-09-05T05:20:01.798Z","event":"request","id":"5b12916f-c162-4339-b7e8-b8cab1549610","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:03.815Z","event":"request","id":"b96d13d6-1949-4a72-8995-c541df6805e8","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:06.101Z","event":"request","id":"9079d16d-5c41-4910-96e2-bf509072a531","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:09.101Z","event":"request","id":"4a32cd26-0ed2-49ba-ab40-222710b7a284","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:11.108Z","event":"request","id":"a439ce20-dabe-4664-ae77-524530794cb9","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:14.107Z","event":"request","id":"57ab9987-b7d0-42a9-a9d8-ad7b5a55c9ef","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:17.107Z","event":"request","id":"b453943c-f2af-491e-9d94-413d433f8e13","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:19.116Z","event":"request","id":"917ced79-a9bb-4fe2-958f-7f270dad81cb","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:21.827Z","event":"request","id":"158a709b-3229-4b55-945a-7ce5f712bdf7","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:23.840Z","event":"request","id":"1ffffef5-f68e-4e01-adcd-bed87e8f53b5","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:25.844Z","event":"request","id":"26e059b5-5e5d-4e04-8e51-5f29776eb8be","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:27.851Z","event":"request","id":"b7394e3c-d89d-4814-a3a2-afd72bda00c1","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:29.857Z","event":"request","id":"e02a9e86-dc8a-4fc3-9838-287a1c6285da","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:31.862Z","event":"request","id":"2ab53a6c-1022-47e6-aade-8e30d45cecaa","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:33.868Z","event":"request","id":"e38b1011-f957-4e27-91f3-1ac07b585a63","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:35.872Z","event":"request","id":"015963f0-38b8-4e09-a4d6-46912ca629c8","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:37.878Z","event":"request","id":"8d0cd907-853a-4089-9c69-697c4aecce4d","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:39.884Z","event":"request","id":"e2cef5d9-ae84-4510-bb92-e6dafe9e387e","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:41.890Z","event":"request","id":"e69bfdb7-ae3b-4cb6-9707-5ad447ab85b8","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:43.895Z","event":"request","id":"d19d207c-a8fb-45ab-8e77-a20acc760abb","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:45.901Z","event":"request","id":"2e834a3c-f7aa-49c2-90b3-fa2430eecb91","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:47.906Z","event":"request","id":"ab954b38-1078-4a70-b17e-5d71775bed1a","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:49.912Z","event":"request","id":"dbb5c1fe-555c-4a3e-9746-cc7e862a0c60","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:51.917Z","event":"request","id":"0edb4a02-8d97-4597-ab42-20b06288c9b4","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:53.927Z","event":"request","id":"f82fc38d-2cdb-4b51-b705-79c223dc34d5","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:55.934Z","event":"request","id":"4fc9e541-073c-464a-9bb7-fd6d2d51207b","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:20:57.939Z","event":"request","id":"421bb447-d935-4d67-8131-9e774ba65218","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:20:59.945Z","event":"request","id":"0b3be8b0-9ea6-4e4c-86a8-064cf3fe4afb","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:01.950Z","event":"request","id":"d93fef87-79db-400e-a770-a3f8ffb75528","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:03.956Z","event":"request","id":"c6fcfe5b-b8ad-418a-a3ab-f041bba4039c","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:05.962Z","event":"request","id":"54bbbee7-c57b-4e07-aab2-7ddeec6459a9","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:07.967Z","event":"request","id":"2fe61ab9-c84f-49e4-82c4-9e39d3a55d76","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:09.973Z","event":"request","id":"f344a630-13af-4b95-98ea-7bf07f8303ae","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:11.978Z","event":"request","id":"4e4a7699-7bba-4d6e-9c2d-3621da1be164","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:13.984Z","event":"request","id":"2310c56a-dc11-4302-90fc-96f5addfc361","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:15.989Z","event":"request","id":"a3707ab2-b2c4-4811-b141-7a935e885669","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:17.995Z","event":"request","id":"efabb45e-5c40-4864-ab8d-46816ac1c3cf","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:19.469Z","event":"courseware.tts.sentence_failed","i":0,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:19.782Z","event":"courseware.tts.sentence_failed","i":0,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:20.001Z","event":"request","id":"27c26ddd-76af-4f48-b6b3-26efeb01d19a","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:20.093Z","event":"courseware.tts.sentence_failed","i":0,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:20.405Z","event":"courseware.tts.sentence_failed","i":0,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:20.714Z","event":"courseware.tts.sentence_failed","i":0,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:21.025Z","event":"courseware.tts.sentence_failed","i":1,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:21.335Z","event":"courseware.tts.sentence_failed","i":1,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:21.646Z","event":"courseware.tts.sentence_failed","i":1,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:21.955Z","event":"courseware.tts.sentence_failed","i":1,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:22.006Z","event":"request","id":"7c8c6c56-0392-47d7-8cdc-0306befa6581","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:22.267Z","event":"courseware.tts.sentence_failed","i":1,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:22.577Z","event":"courseware.tts.sentence_failed","i":2,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:22.888Z","event":"courseware.tts.sentence_failed","i":2,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:23.199Z","event":"courseware.tts.sentence_failed","i":2,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:23.511Z","event":"courseware.tts.sentence_failed","i":2,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:23.817Z","event":"courseware.tts.sentence_failed","i":2,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:24.011Z","event":"request","id":"9999ef08-7b6f-431d-a5dc-9ce0c9071427","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:24.126Z","event":"courseware.tts.sentence_failed","i":3,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:24.437Z","event":"courseware.tts.sentence_failed","i":3,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:24.748Z","event":"courseware.tts.sentence_failed","i":3,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:25.057Z","event":"courseware.tts.sentence_failed","i":3,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:25.363Z","event":"courseware.tts.sentence_failed","i":3,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:25.674Z","event":"courseware.tts.sentence_failed","i":3,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:25.984Z","event":"courseware.tts.sentence_failed","i":3,"j":6,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:26.017Z","event":"request","id":"7fd92e7d-7f7d-4a7f-aa88-1c315b17afb0","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:26.294Z","event":"courseware.tts.sentence_failed","i":4,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:26.605Z","event":"courseware.tts.sentence_failed","i":4,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:26.916Z","event":"courseware.tts.sentence_failed","i":4,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:27.227Z","event":"courseware.tts.sentence_failed","i":4,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:27.538Z","event":"courseware.tts.sentence_failed","i":4,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:27.848Z","event":"courseware.tts.sentence_failed","i":4,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:28.023Z","event":"request","id":"a2062f1c-4c8d-42c2-b61f-c4019aa84b45","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:28.160Z","event":"courseware.tts.sentence_failed","i":5,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:28.469Z","event":"courseware.tts.sentence_failed","i":5,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:28.779Z","event":"courseware.tts.sentence_failed","i":5,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:29.092Z","event":"courseware.tts.sentence_failed","i":5,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:29.401Z","event":"courseware.tts.sentence_failed","i":5,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:29.711Z","event":"courseware.tts.sentence_failed","i":5,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:30.023Z","event":"courseware.tts.sentence_failed","i":6,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:30.036Z","event":"request","id":"1496968f-220d-4ede-9989-fea9bfb57144","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:30.335Z","event":"courseware.tts.sentence_failed","i":6,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:30.647Z","event":"courseware.tts.sentence_failed","i":6,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:30.956Z","event":"courseware.tts.sentence_failed","i":6,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:31.263Z","event":"courseware.tts.sentence_failed","i":6,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:31.572Z","event":"courseware.tts.sentence_failed","i":7,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:31.880Z","event":"courseware.tts.sentence_failed","i":7,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:32.045Z","event":"request","id":"1dbc0768-9edb-4bf2-94bf-acc2d33d65d5","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:32.187Z","event":"courseware.tts.sentence_failed","i":7,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:32.496Z","event":"courseware.tts.sentence_failed","i":7,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:32.805Z","event":"courseware.tts.sentence_failed","i":7,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:33.117Z","event":"courseware.tts.sentence_failed","i":7,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:33.426Z","event":"courseware.tts.sentence_failed","i":8,"j":0,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:33.738Z","event":"courseware.tts.sentence_failed","i":8,"j":1,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:34.048Z","event":"courseware.tts.sentence_failed","i":8,"j":2,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:34.057Z","event":"request","id":"260b592e-498a-4814-988c-78a734f1a4ba","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:34.357Z","event":"courseware.tts.sentence_failed","i":8,"j":3,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:34.666Z","event":"courseware.tts.sentence_failed","i":8,"j":4,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:34.977Z","event":"courseware.tts.sentence_failed","i":8,"j":5,"message":"edge-tts 不可用"}
+{"time":"2026-09-05T05:21:36.067Z","event":"request","id":"cb3aa91b-9eb6-4ddc-8fbc-d7f95647e887","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:21:36.084Z","event":"request","id":"a495326d-b239-4e97-97d7-404e09548a5d","method":"GET","path":"/watch.html","ms":1}
+{"time":"2026-09-05T05:21:36.117Z","event":"request","id":"8fa3d435-cd09-4372-9cca-2644349c7b09","method":"GET","path":"/mdrender.js","ms":1}
+{"time":"2026-09-05T05:21:36.117Z","event":"request","id":"da41a87a-1bc4-4346-a39e-9c8b2568e319","method":"GET","path":"/lucide-unify.js","ms":1}
+{"time":"2026-09-05T05:21:36.118Z","event":"request","id":"9c9d519c-78f2-4699-95d9-e240a22508a4","method":"GET","path":"/lieflat-charts.js","ms":1}
+{"time":"2026-09-05T05:21:36.119Z","event":"request","id":"dcda6ec7-63ca-4ecc-acfd-f735b7a889a8","method":"GET","path":"/scene-templates.js","ms":1}
+{"time":"2026-09-05T05:21:36.119Z","event":"request","id":"75411536-542f-4ae4-9958-d96d073d6c3b","method":"GET","path":"/courseware-engine.js","ms":1}
+{"time":"2026-09-05T05:21:36.129Z","event":"request","id":"2c90e2c2-9a04-4208-98bd-a7db7253fd2b","method":"GET","path":"/api/v1/video/status","ms":0}
+{"time":"2026-09-05T05:21:36.331Z","event":"request","id":"b7ee6049-827f-4ff2-8db1-2ffc2c1a52fb","method":"GET","path":"/api/v1/video/slide-svg","ms":2}
+{"time":"2026-09-05T05:21:36.332Z","event":"request","id":"9d072687-576c-4305-9e32-8b8a505fd39c","method":"GET","path":"/api/v1/video/slide-svg","ms":1}
+{"time":"2026-09-05T05:21:36.332Z","event":"request","id":"eacba0ad-9baf-4bc1-be5a-071430ea7cc9","method":"GET","path":"/api/v1/video/slide-svg","ms":0}
+{"time":"2026-09-05T05:21:36.333Z","event":"request","id":"dfbd8b0b-32c3-473e-88a5-cf4cef76c197","method":"GET","path":"/api/v1/video/slide-svg","ms":1}
+{"time":"2026-09-05T05:21:36.333Z","event":"request","id":"cb2b97dd-faea-4c93-bc21-f4677c66a1c2","method":"GET","path":"/api/v1/video/slide-svg","ms":0}
+{"time":"2026-09-05T05:21:36.334Z","event":"request","id":"3985cd1f-9154-48cf-8a78-21bbadb52059","method":"GET","path":"/api/v1/video/slide-svg","ms":1}
+{"time":"2026-09-05T05:21:36.334Z","event":"request","id":"e9d817d4-91a6-4965-9b7d-93c9e727af4a","method":"GET","path":"/api/v1/video/slide-svg","ms":0}
+{"time":"2026-09-05T05:21:36.335Z","event":"request","id":"e480e841-e61e-4069-ad0b-a3507a89f660","method":"GET","path":"/api/v1/video/slide-svg","ms":0}
+{"time":"2026-09-05T05:21:36.335Z","event":"request","id":"673e9ec0-5ab5-4899-b089-f5d509e0ca44","method":"GET","path":"/api/v1/video/slide-svg","ms":0}
+{"time":"2026-09-05T05:22:52.846Z","event":"request","id":"30e5164f-dbad-4309-bdda-5035a4ebbb83","method":"GET","path":"/api/v1/video/status","ms":1}
+{"time":"2026-09-05T05:23:35.596Z","event":"request","id":"8a20ec4d-9937-4b8f-aa4e-996892f0b30d","method":"GET","path":"/search.html","ms":1}
+{"time":"2026-09-05T05:23:35.629Z","event":"request","id":"5b349432-d7be-4f12-8ef2-6ca6ccfcd4b9","method":"GET","path":"/mdrender.js","ms":1}
+{"time":"2026-09-05T05:23:35.630Z","event":"request","id":"a565f5d6-23db-4a0b-81e7-02c5ec762c9e","method":"GET","path":"/vortex.js","ms":1}
+{"time":"2026-09-05T05:23:35.630Z","event":"request","id":"e4d60320-6772-4f9e-9530-8212444862a1","method":"GET","path":"/lucide-unify.js","ms":1}

@@ -525,6 +525,8 @@
         '</div>' +
       '</div>' +
       statusActionsHtml(node) +
+      '<button class="gen-explain-btn" data-topic="' + String(node.title||'').replace(/"/g,'&quot;') + '" data-ctx="' + String([node.description, (node.key_concepts||[]).join('、'), (node.learning_objectives||[]).join('、')].filter(Boolean).join('；')).replace(/"/g,'&quot;') + '" onclick="window.genExplain(this)" style="display:block;width:100%;margin:12px 0 4px;padding:10px 12px;border-radius:10px;border:none;background:var(--primary,#4F6BF0);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✨ 生成知识点详解</button>' +
+      '<div class="explain-out" style="margin:6px 0 12px;font-size:13px;line-height:1.7;color:var(--text-dim,#475569);"></div>' +
       (node.description ? '<p class="detail-desc">' + node.description + '</p>' : '') +
       (node.depth_rationale ? '<section class="detail-section rationale"><h3>目标深度</h3><p>' + node.depth_rationale + '</p></section>' : '') +
       (objList ? '<section class="detail-section objective"><h3>学习目标</h3><ul>' + objList + '</ul></section>' : '') +
@@ -536,6 +538,26 @@
   function renderDetailEmpty() {
     detailPanel.innerHTML = '<div class="detail-empty">点击左侧节点<br>查看学习目标与掌握证据</div>';
   }
+
+  window.genExplain = function (btn) {
+    var out = btn && btn.nextElementSibling;
+    if (!out) return;
+    var topic = btn.getAttribute('data-topic') || '';
+    var ctx = btn.getAttribute('data-ctx') || '';
+    btn.disabled = true; btn.textContent = '生成中…';
+    out.innerHTML = '<div style="color:var(--muted,#8a929e)">AI 正在生成详解…</div>';
+    fetch('/api/v1/skill/explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: topic, context: ctx })
+    }).then(function (r) { return r.json(); }).then(function (p) {
+      if (!p || !p.data) throw new Error((p && p.error && p.error.message) || '生成失败');
+      var t = String(p.data.text || '');
+      out.innerHTML = '<div style="white-space:pre-wrap;">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+    }).catch(function (e) {
+      out.innerHTML = '<div style="color:var(--danger,#dc2626)">生成失败：' + String((e && e.message) || e) + '</div>';
+    }).finally(function () { btn.disabled = false; btn.textContent = '✨ 生成知识点详解'; });
+  };
 
   /* ── 状态管理 ── */
   var PROGRESS_KEY = 'dsh.skilltree.progress';
