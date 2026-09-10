@@ -4380,6 +4380,9 @@
             const fab = document.getElementById('chatFab');
             const open = panel.classList.toggle('open');
             fab.style.display = open ? 'none' : 'flex';
+            // 聊天面板打开时隐藏 PPT 右下角全屏按钮，避免被面板遮挡
+            const fsBtn = document.querySelector('.deck-fullscreen-btn');
+            if (fsBtn) fsBtn.style.display = open ? 'none' : '';
             if (open) {
                 document.getElementById('chatInput').focus();
             } else {

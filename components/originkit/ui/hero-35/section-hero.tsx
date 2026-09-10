@@ -140,13 +140,13 @@ export const SectionHero = () => (
             <p
               className={`max-w-[274px] text-center font-tight text-[14px] leading-[25px] ${TRACK_UI} text-white opacity-55 ipad:max-w-[453px] ipad:text-[16px] ipad:leading-[28px] desktop-sm:text-left`}
             >
-              从知识搜索出发，生成可观看的 AI 视频课堂；再以测评、学习诊断、职业技能树与学习论坛，让每一次探索沉淀为清晰的成长路径。
+              从知识搜索出发，生成可观看的 AI 视频课堂；再以测评、学习诊断与职业技能树，让每一次探索沉淀为清晰的成长路径。
             </p>
 
             <p
               className={`font-orbit text-[13px] leading-[normal] ${TRACK_UI} whitespace-nowrap text-white opacity-80 ipad:text-[16px]`}
             >
-              搜索 · 生成 · 测评 · 技能树 · 社区
+              搜索 · 生成 · 测评 · 技能树
             </p>
           </div>
 

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 白板小课堂 — 后端接口测试台</title>
+<style>
+  :root {
+    --bg: #0f1220; --panel: #1a1f35; --panel2: #232a47; --line: #313a5e;
+    --text: #e8ecf8; --muted: #93a0c4; --accent: #6c8cff; --ok: #3ddc84; --err: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  header {
+    padding: 20px 28px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  .badge {
+    font-size: 12px; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); background: var(--panel);
+  }
+  .badge.ok { color: var(--ok); border-color: var(--ok); }
+  .badge.err { color: var(--err); border-color: var(--err); }
+  main { padding: 24px 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card .path { font-family: Consolas, monospace; font-size: 12px; color: var(--accent); margin-bottom: 10px; word-break: break-all; }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+  label { font-size: 12px; color: var(--muted); min-width: 72px; }
+  input, select, textarea {
+    background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 6px; padding: 6px 10px; font-size: 13px; flex: 1; min-width: 120px;
+  }
+  textarea { resize: vertical; font-family: Consolas, monospace; }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+    padding: 7px 16px; font-size: 13px; cursor: pointer;
+  }
+  button:hover { filter: brightness(1.1); }
+  button.ghost { background: var(--panel2); border: 1px solid var(--line); }
+  .out {
+    margin-top: 10px; background: #0c0f1c; border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px; font-family: Consolas, monospace;
+    font-size: 12px; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+  }
+  .out .meta { color: var(--muted); margin-bottom: 4px; }
+  .out .json { color: #9fd0ff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI 白板小课堂 — 后端接口测试台</h1>
+  <span class="badge" id="healthBadge">后端状态检测中…</span>
+  <span class="badge">代理: /ai-api/* → Django :8000/api/*</span>
+</header>
+<main>
+  <!-- 健康检查 -->
+  <section class="card">
+    <h2>健康检查</h2>
+    <div class="path">GET /ai-api/health/</div>
+    <div class="row"><button class="ghost" onclick="run('health')">检测后端状态</button></div>
+    <div class="out" id="out-health">—</div>
+  </section>
+
+  <!-- 搜索输入 -->
+  <section class="card">
+    <h2>1. 搜索输入</h2>
+    <div class="path">POST /ai-api/search/</div>
+    <div class="row">
+      <label>query</label>
+      <input id="search-query" value="快速排序时间复杂度">
+    </div>
+    <div class="row"><button onclick="run('search')">提交</button></div>
+    <div class="out" id="out-search">—</div>
+  </section>
+
+  <!-- 启动生成 -->
+  <section class="card">
+    <h2>2. 启动生成</h2>
+    <div class="path">POST /ai-api/generate/</div>
+    <div class="row"><label>query</label><input id="gen-query" value="快速排序"></div>
+    <div class="row"><label>场景数</label><input id="gen-scenes" type="number" min="1" max="20" value="3"></div>
+    <div class="row"><label>画质</label>
+      <select id="gen-quality"><option value="1080p">1080p</option><option value="720p">720p</option></select>
+    </div>
+    <div class="row"><label>voice_id</label><input id="gen-voice" value="zh-CN-XiaoxiaoNeural"></div>
+    <div class="row"><button onclick="run('generate')">提交任务</button></div>
+    <div class="out" id="out-generate">—</div>
+  </section>
+
+  <!-- 任务列表 -->
+  <section class="card">
+    <h2>3. 任务列表</h2>
+    <div class="path">GET /ai-api/tasks/</div>
+    <div class="row"><button class="ghost" onclick="run('tasks')">获取列表</button></div>
+    <div class="out" id="out-tasks">—</div>
+  </section>
+
+  <!-- 任务详情 -->
+  <section class="card">
+    <h2>4. 任务详情</h2>
+    <div class="path">GET /ai-api/tasks/:id/</div>
+    <div class="row"><label>task id</label><input id="task-id" type="number" value="1"></div>
+    <div class="row"><button onclick="run('taskDetail')">获取详情</button></div>
+    <div class="out" id="out-taskDetail">—</div>
+  </section>
+
+  <!-- 生成题目 -->
+  <section class="card">
+    <h2>5. 生成题目</h2>
+    <div class="path">POST /ai-api/tasks/:id/quiz/generate/</div>
+    <div class="row"><label>task id</label><input id="qzgen-task" type="number" value="1"></div>
+    <div class="row"><label>难度</label>
+      <select id="qzgen-difficulty"><option value="medium">medium</option><option value="easy">easy</option><option value="hard">hard</option></select>
+    </div>
+    <div class="row"><label>数量</label><input id="qzgen-count" type="number" min="1" max="20" value="3"></div>
+    <div class="row"><button onclick="run('quizGen')">生成</button></div>
+    <div class="out" id="out-quizGen">—</div>
+  </section>
+
+  <!-- 获取题目 -->
+  <section class="card">
+    <h2>6. 获取题目</h2>
+    <div class="path">GET /ai-api/tasks/:id/quiz/</div>
+    <div class="row"><label>task id</label><input id="qzlst-task" type="number" value="1"></div>
+    <div class="row"><button onclick="run('quizList')">获取</button></div>
+    <div class="out" id="out-quizList">—</div>
+  </section>
+
+  <!-- 提交答案 -->
+  <section class="card">
+    <h2>7. 提交答案</h2>
+    <div class="path">POST /ai-api/tasks/:id/quiz/submit/</div>
+    <div class="row"><label>task id</label><input id="qzsub-task" type="number" value="1"></div>
+    <div class="row"><label>answers</label>
+      <textarea id="qzsub-answers" rows="3">[{"quiz_id": 1, "answer": "B"}]</textarea>
+    </div>
+    <div class="row"><button onclick="run('quizSubmit')">提交</button></div>
+    <div class="out" id="out-quizSubmit">—</div>
+  </section>
+</main>
+
+<script>
+'use strict';
+function $(id) { return document.getElementById(id); }
+
+function render(id, status, data) {
+  const el = $(id);
+  const text = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  el.innerHTML = '<div class="meta">HTTP ' + status + ' · ' + new Date().toLocaleTimeString() + '</div>'
+    + '<div class="json"></div>';
+  el.querySelector('.json').textContent = text;
+}
+
+async function call(path, opts) {
+  const res = await fetch(path, opts);
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { data = raw; }
+  return { status: res.status, data };
+}
+
+const ROUTES = {
+  health: { path: '/ai-api/health/', out: 'out-health' },
+  search: { path: '/ai-api/search/', out: 'out-search' },
+  generate: { path: '/ai-api/generate/', out: 'out-generate' },
+  tasks: { path: '/ai-api/tasks/', out: 'out-tasks' },
+  taskDetail: { path: '/ai-api/tasks/', out: 'out-taskDetail' },
+  quizGen: { path: '/ai-api/tasks/', out: 'out-quizGen' },
+  quizList: { path: '/ai-api/tasks/', out: 'out-quizList' },
+  quizSubmit: { path: '/ai-api/tasks/', out: 'out-quizSubmit' },
+};
+
+async function run(name) {
+  const r = ROUTES[name];
+  const out = $(r.out);
+  out.innerHTML = '<div class="meta">请求中…</div>';
+  try {
+    let path = r.path, opts = {};
+    if (name === 'search') {
+      opts = { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: $('search-query').value }) };
+    } else if (name === 'generate') {
+      opts = { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          query: $('gen-query').value,
+          scene_count: Number($('gen-scenes').value),
+          quality: $('gen-quality').value,
+          voice_id: $('gen-voice').value,
+        }) };
+    } else if (name === 'taskDetail') {
+      path += $('task-id').value + '/';
+    } else if (name === 'quizGen') {
+      path += $('qzgen-task').value + '/quiz/generate/';
+      opts = { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ difficulty: $('qzgen-difficulty').value, count: Number($('qzgen-count').value) }) };
+    } else if (name === 'quizList') {
+      path += $('qzlst-task').value + '/quiz/';
+    } else if (name === 'quizSubmit') {
+      path += $('qzsub-task').value + '/quiz/submit/';
+      let answers;
+      try { answers = JSON.parse($('qzsub-answers').value); }
+      catch { render(name, 400, 'answers 不是合法 JSON'); return; }
+      opts = { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ answers: answers }) };
+    }
+    const { status, data } = await call(path, opts);
+    render(name, status, data);
+    if (name === 'health') {
+      const ok = status === 200 && data && data.success;
+      const badge = $('healthBadge');
+      badge.textContent = ok ? '后端连接正常' : '后端异常 (HTTP ' + status + ')';
+      badge.className = 'badge ' + (ok ? 'ok' : 'err');
+    }
+  } catch (e) {
+    render(name, 0, '请求失败: ' + e.message);
+  }
+}
+
+// 启动时自动检测后端状态
+run('health');
+</script>
+</body>
+</html>

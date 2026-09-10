@@ -9,6 +9,9 @@ next-env.d.ts
 # ── 敏感文件（不提交） ──
 .env
 data/store.json
+
+# ── 大文件 / 测试索引（超出 GitHub 100MB 限制，不提交） ──
+data/_test3-index.json
 storage/audio/*
 storage/video/*
 storage/poster/*

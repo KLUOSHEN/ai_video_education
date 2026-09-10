@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>栈知映 · 知识库智能问答 (RAG)</title>
+<script src="mdrender.js"></script>
+<style>
+  :root {
+    --primary: #4F6BF0; --primary-light: #6D83F5; --primary-soft: #EEF2FF; --cyan: #22C3E6;
+    --bg: #F7F9FC; --panel: #FFFFFF; --panel-2: #FFFFFF; --border: #E2E8F0;
+    --border-soft: #CBD5E1; --text: #0F172A; --text-dim: #475569; --text-muted: #64748B;
+    --amber: #F59E0B; --emerald: #16A34A; --yellow: #EAB308; --danger: #DC2626;
+    --purple: #8B5CF6;
+    --ease: cubic-bezier(.23,1,.32,1); --ease-snap: cubic-bezier(0.2, 0, 0, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-fade: cubic-bezier(0.4, 0, 0.2, 1);
+    --dur-fast: 90ms; --dur-base: 180ms; --dur-slow: 260ms;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body { font-family: 'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    background:
+      radial-gradient(1100px 560px at 12% -10%, rgba(79,107,240,.10), transparent 60%),
+      radial-gradient(900px 520px at 92% -5%, rgba(109,131,245,.08), transparent 55%),
+      radial-gradient(1000px 640px at 50% 115%, rgba(34,195,230,.06), transparent 60%),
+      var(--bg);
+    color: var(--text); display: flex; flex-direction: column; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    height: 64px; padding: 0 18px; flex-shrink: 0; background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px) saturate(180%); border-bottom: 1px solid var(--border); z-index: 50; position: relative; }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .back { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+    border-radius: 10px; color: var(--text-dim); text-decoration: none; font-size: 13px;
+    background: var(--panel-2); border: 1px solid var(--border); transition: color var(--dur-fast) var(--ease-snap), border-color var(--dur-fast) var(--ease-snap), background var(--dur-fast) var(--ease-snap); }
+  .back:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+  .brand h1 { font-size: 16px; font-weight: 700; }
+  .brand .sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .mode-tag { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: var(--primary-soft);
+    border: 1px solid rgba(79,107,240,0.3); color: var(--primary); font-weight: 700; white-space: nowrap; }
+
+  .main { flex: 1; min-height: 0; display: flex; gap: 16px; padding: 16px; position: relative; z-index: 1; }
+
+  /* ── 左侧:知识库管理 ── */
+  .kb-panel { width: 330px; flex-shrink: 0; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; display: flex; flex-direction: column; overflow: hidden;
+    transition: border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
+  .kb-panel.dragover { border-color: var(--primary); border-style: dashed; box-shadow: 0 0 0 3px rgba(79,107,240,0.15); }
+  .kb-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+  .kb-head h2 { font-size: 13px; font-weight: 700; }
+  .kb-stats { display: flex; gap: 8px; margin-top: 10px; }
+  .stat-box { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+  .stat-box b { display: block; font-size: 17px; color: var(--primary); }
+  .stat-box span { font-size: 10.5px; color: var(--text-muted); }
+  .upload-row { display: flex; gap: 8px; padding: 10px 14px 0; }
+  .upload-row input[type=text] { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--bg); font-size: 12.5px; color: var(--text); outline: none; font-family: inherit;
+    transition: border-color var(--dur-fast) var(--ease-snap), box-shadow var(--dur-fast) var(--ease-snap); }
+  .upload-row input[type=text]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,107,240,0.14); }
+  .upload-row select { flex: 1; min-width: 0; height: 34px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--bg); font-size: 12px; color: var(--text-dim); padding: 0 6px; font-family: inherit; outline: none; cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease-snap); }
+  .upload-row select:focus { border-color: var(--primary); }
+  .btn { height: 34px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--border); cursor: pointer;
+    font-size: 12.5px; font-weight: 700; font-family: inherit; background: var(--panel-2); color: var(--text-dim);
+    white-space: nowrap; transition: border-color var(--dur-fast) var(--ease-snap), background var(--dur-fast) var(--ease-snap), color var(--dur-fast) var(--ease-snap); }
+  .btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+  .btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; border-color: transparent; }
+  .btn.primary:hover { box-shadow: 0 4px 16px rgba(79,107,240,0.3); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .upload-actions { display: flex; gap: 8px; padding: 10px 14px 0; }
+  .file-hint { font-size: 10.5px; color: var(--text-muted); padding: 8px 14px 10px; border-bottom: 1px solid var(--border); line-height: 1.5; }
+  .file-hint b { color: var(--primary); font-weight: 600; }
+
+  /* 分类筛选 */
+  .filter-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 0; }
+  .filter-chip { font-size: 11px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text-muted); cursor: pointer; font-family: inherit;
+    transition: all var(--dur-fast) var(--ease-snap); }
+  .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+  .filter-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; }
+  .kb-list { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 8px; }
+  .kb-group-title { font-size: 10.5px; font-weight: 700; color: var(--text-muted); letter-spacing: .05em;
+    padding: 6px 8px 6px 4px; display: flex; align-items: center; gap: 6px; }
+  .kb-group-title::before { content: ''; width: 3px; height: 10px; border-radius: 2px; background: var(--primary); }
+  .kb-item { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border-radius: 10px;
+    border: 1px solid var(--border); margin-bottom: 8px; background: #fff; transition: border-color var(--dur-fast) var(--ease-snap), transform var(--dur-fast) var(--ease-snap); }
+  .kb-item:hover { border-color: rgba(79,107,240,0.5); transform: translateX(2px); }
+  .kb-item .ico { flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px; background: var(--primary-soft);
+    display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .kb-item .info { flex: 1; min-width: 0; }
+  .kb-item .info .t { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kb-item .info .m { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 4px; font-size: 10px; color: var(--text-muted); }
+  .badge { font-size: 9.5px; padding: 1px 7px; border-radius: 999px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .badge.b-textbook { background: #EEF2FF; color: var(--primary); border: 1px solid rgba(79,107,240,0.25); }
+  .badge.b-paper { background: #F5F3FF; color: var(--purple); border: 1px solid rgba(139,92,246,0.25); }
+  .badge.b-standard { background: #ECFEFF; color: #0891B2; border: 1px solid rgba(34,195,230,0.3); }
+  .badge.b-database { background: #F0FDF4; color: var(--emerald); border: 1px solid rgba(22,163,74,0.25); }
+  .badge.b-plain { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+  .badge.b-cat { background: #FFF7ED; color: #C2410C; border: 1px solid rgba(194,65,12,0.2); }
+  .kb-item .del { border: none; background: transparent; cursor: pointer; font-size: 14px; color: var(--text-muted);
+    padding: 4px; border-radius: 6px; transition: color var(--dur-fast) var(--ease-snap), background var(--dur-fast) var(--ease-snap); flex-shrink: 0; }
+  .kb-item .del:hover { color: var(--danger); background: #FEF2F2; }
+  .kb-empty { padding: 24px 12px; text-align: center; color: var(--text-muted); font-size: 12.5px; line-height: 1.7; }
+
+  /* ── 右侧:对话式问答 ── */
+  .qa-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .qa-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .qa-head .hint { font-size: 11.5px; color: var(--text-muted); }
+  .qa-clear { font-size: 11.5px; color: var(--text-muted); background: none; border: none; cursor: pointer;
+    font-family: inherit; padding: 4px 8px; border-radius: 7px; transition: color var(--dur-fast) var(--ease-snap), background var(--dur-fast) var(--ease-snap); }
+  .qa-clear:hover { color: var(--danger); background: #FEF2F2; }
+  .chat-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px; scroll-behavior: smooth; }
+  .doc-viewer { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .doc-viewer .dv-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .doc-viewer .dv-title { font-size: 14px; font-weight: 700; color: var(--text-strong); overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .doc-viewer .dv-close { font-size: 11.5px; color: var(--primary); background: rgba(79,107,240,0.08);
+    border: none; cursor: pointer; font-family: inherit; padding: 5px 10px; border-radius: 7px; flex-shrink: 0;
+    transition: background var(--dur-fast) var(--ease-snap); }
+  .doc-viewer .dv-close:hover { background: rgba(79,107,240,0.16); }
+  .doc-viewer .dv-meta { font-size: 11.5px; color: var(--text-muted); padding: 8px 16px;
+    border-bottom: 1px dashed var(--border); }
+  .doc-viewer .dv-body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 24px; }
+  .doc-viewer .dv-content { font-size: 13.5px; line-height: 1.8; color: var(--text); word-break: break-word; }
+  .doc-viewer .dv-content p { margin: 0 0 10px; }
+  .doc-viewer .dv-pre { font-family: inherit; font-size: 13.5px; line-height: 1.85; color: var(--text);
+    white-space: pre-wrap; word-break: break-word; margin: 0; }
+  .doc-viewer .dv-loading, .doc-viewer .dv-err { color: var(--text-muted); font-size: 13px; padding: 20px 4px; }
+  .doc-viewer .dv-err { color: var(--danger); }
+  .msg { display: flex; margin-bottom: 18px; animation: msgIn var(--dur-slow) var(--ease-out); }
+  @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble { max-width: 76%; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #fff; border-radius: 14px 14px 4px 14px; padding: 11px 16px; font-size: 13.5px; line-height: 1.65;
+    box-shadow: 0 2px 10px rgba(79,107,240,0.22); word-break: break-word; }
+  .msg.ai { justify-content: flex-start; }
+  .msg.ai .bubble { max-width: 92%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px 14px 14px 14px; padding: 13px 16px; font-size: 13.5px; line-height: 1.75; color: var(--text);
+    word-break: break-word; }
+  .bubble h1,.bubble h2,.bubble h3 { margin: 12px 0 7px; line-height: 1.4; }
+  .bubble h1 { font-size: 17px; } .bubble h2 { font-size: 15px; } .bubble h3 { font-size: 13.5px; }
+  .bubble p { margin: 7px 0; }
+  .bubble ul,.bubble ol { margin: 7px 0 7px 20px; }
+  .bubble li { margin: 3px 0; }
+  .bubble code { background: #fff; padding: 1px 6px; border-radius: 5px; font-size: 12px; border: 1px solid var(--border); }
+  .bubble pre { background: #0F172A; color: #E2E8F0; padding: 13px 15px; border-radius: 10px; overflow-x: auto; margin: 9px 0; }
+  .bubble pre code { background: transparent; padding: 0; color: inherit; border: none; }
+  .bubble blockquote { border-left: 3px solid var(--border-soft); padding: 5px 13px; color: var(--text-dim); background: #fff; border-radius: 0 8px 8px 0; margin: 9px 0; }
+  .bubble table { border-collapse: collapse; margin: 9px 0; width: 100%; font-size: 12.5px; }
+  .bubble td, .bubble th { border: 1px solid var(--border); padding: 5px 9px; text-align: left; }
+  .bubble th { background: #fff; font-weight: 600; }
+  .bubble .err { color: var(--danger); }
+  .bubble .time { font-size: 10px; color: var(--text-muted); margin-bottom: 6px; }
+
+  /* 溯源卡片 */
+  .src-section { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px; }
+  .src-section .src-title { font-size: 10.5px; font-weight: 700; color: var(--text-muted); letter-spacing: .05em; margin-bottom: 8px; }
+  .src-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 7px; overflow: hidden;
+    transition: border-color var(--dur-fast) var(--ease-snap); }
+  .src-card:hover { border-color: rgba(79,107,240,0.45); }
+  .src-card .row { display: flex; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer; }
+  .src-card .rank { flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; background: var(--primary-soft);
+    color: var(--primary); font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .src-card .doc { flex: 1; min-width: 0; font-size: 12px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .src-card .score { flex-shrink: 0; font-size: 10.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .src-card .arrow { flex-shrink: 0; font-size: 10px; color: var(--text-muted); transition: transform var(--dur-base) var(--ease-out); }
+  .src-card.open .arrow { transform: rotate(90deg); }
+  .src-card .body { display: none; padding: 0 12px 10px 40px; }
+  .src-card.open .body { display: block; animation: msgIn var(--dur-base) var(--ease-out); }
+  .src-card .meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 7px; }
+  .src-card .txt { font-size: 11.5px; line-height: 1.65; color: var(--text-dim); max-height: 130px; overflow-y: auto; }
+
+  .ask-row { display: flex; gap: 10px; padding: 14px; border-top: 1px solid var(--border); }
+  .ask-row input { flex: 1; min-width: 0; height: 44px; padding: 0 16px; border-radius: 11px;
+    border: 1px solid var(--border); background: var(--bg); font-size: 14px; color: var(--text); outline: none; font-family: inherit;
+    transition: border-color var(--dur-fast) var(--ease-snap), box-shadow var(--dur-fast) var(--ease-snap); }
+  .ask-row input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,107,240,0.14); }
+  .ask-btn { height: 44px; padding: 0 22px; border-radius: 11px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; font-size: 14px; font-weight: 700;
+    font-family: inherit; white-space: nowrap; transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-fast) var(--ease-snap); }
+  .ask-btn:hover { box-shadow: 0 4px 18px rgba(79,107,240,0.35); }
+  .ask-btn:active { transform: scale(0.97); }
+  .ask-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .qa-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; color: var(--text-muted); font-size: 13px; text-align: center; line-height: 1.8; }
+  .qa-empty .big { font-size: 40px; }
+  .ex-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 520px; }
+  .ex-chip { font-size: 12px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: #fff; color: var(--text-dim); cursor: pointer; font-family: inherit;
+    transition: all var(--dur-fast) var(--ease-snap); }
+  .ex-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); transform: translateY(-1px); }
+
+  .loading-line { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 13px; }
+  .loader { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-soft); border-top-color: var(--primary); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); z-index: 300;
+    background: #0F172A; color: #fff; font-size: 12.5px; padding: 9px 18px; border-radius: 999px; opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); pointer-events: none; }
+  .toast.show { opacity: .95; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 860px) { .kb-panel { width: 252px; } .chat-scroll { padding: 14px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a class="back" href="/search.html">← 返回</a>
+      <div>
+        <h1>知识库智能问答</h1>
+        <div class="sub">检索增强生成 · 基于讲义/教材的 RAG 答疑</div>
+      </div>
+    </div>
+    <span class="mode-tag" id="modeTag">…</span>
+  </header>
+
+  <main class="main">
+    <!-- 左侧:知识库管理 -->
+    <aside class="kb-panel" id="kbPanel">
+      <div class="kb-head">
+        <h2>📚 领域知识库</h2>
+        <div class="kb-stats">
+          <div class="stat-box"><b id="docCount">0</b><span>文档</span></div>
+          <div class="stat-box"><b id="chunkCount">0</b><span>知识片段</span></div>
+        </div>
+      </div>
+      <div class="upload-row">
+        <input type="text" id="docTitle" placeholder="文档标题(可选)" maxlength="60">
+      </div>
+      <div class="upload-row">
+        <input type="text" id="docCategory" placeholder="分类(如: 数据结构)" maxlength="20">
+        <select id="docSourceType">
+          <option value="">来源类型</option>
+          <option>教材讲义</option>
+          <option>学术论文</option>
+          <option>行业标准</option>
+          <option>专业数据库</option>
+        </select>
+      </div>
+      <div class="upload-row">
+        <input type="text" id="docSourceLoc" placeholder="来源位置/出处(如 教材第3章)" maxlength="40">
+      </div>
+      <div class="upload-actions">
+        <button class="btn" onclick="document.getElementById('fileInput').click()">📄 选择文件</button>
+        <button class="btn primary" id="importBtn" onclick="doIngest()">入库</button>
+        <input type="file" id="fileInput" accept=".txt,.md,.text" style="display:none" onchange="onFileSelected(this)">
+      </div>
+      <div class="file-hint">支持 .txt / .md，或将文件<b>拖入本面板</b>；自动切片、向量化入库</div>
+      <div class="filter-row" id="filterRow"></div>
+      <div class="kb-list" id="kbList"></div>
+    </aside>
+
+    <!-- 右侧:对话式问答 -->
+    <section class="qa-panel">
+      <div class="qa-head">
+        <span class="hint">💬 基于知识库检索作答，回答附命中来源，可连续追问</span>
+        <button class="qa-clear" id="clearChat" onclick="clearChat()" style="display:none">清空对话</button>
+      </div>
+      <div class="doc-viewer" id="docViewer" style="display:none">
+        <div class="dv-head">
+          <div class="dv-title" id="dvTitle"></div>
+          <button class="dv-close" onclick="closeDocView()">✕ 返回问答</button>
+        </div>
+        <div class="dv-meta" id="dvMeta"></div>
+        <div class="dv-body" id="dvBody"></div>
+      </div>
+      <div class="chat-scroll" id="chatScroll">
+        <div class="qa-empty" id="qaEmpty">
+          <div class="big">🔍</div>
+          <div>向知识库提问，AI 将检索讲义片段并基于证据作答<br>也可以试试下面的示例问题：</div>
+          <div class="ex-chips">
+            <button class="ex-chip" onclick="askExample('遍历列表时删除元素为什么会出错？')">遍历列表时删除元素为什么会出错？</button>
+            <button class="ex-chip" onclick="askExample('二叉树的中序遍历是什么顺序？')">二叉树的中序遍历是什么顺序？</button>
+            <button class="ex-chip" onclick="askExample('什么是大模型幻觉，RAG 如何解决？')">什么是大模型幻觉，RAG 如何解决？</button>
+          </div>
+        </div>
+      </div>
+      <div class="ask-row">
+        <input id="askInput" placeholder="基于知识库提问…" onkeydown="if(event.key==='Enter')ask()">
+        <button class="ask-btn" id="askBtn" onclick="ask()">问 AI</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+var kb = { docs: [], filter: '' };
+var chat = []; // {role:'user'|'assistant', content, sources?, ms?}
+var $ = function (id) { return document.getElementById(id); };
+
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+
+function toast(msg) {
+  var t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._h); toast._h = setTimeout(function () { t.classList.remove('show'); }, 2200);
+}
+
+async function api(path, opts) {
+  var res = await fetch(path, Object.assign({ headers: { 'content-type': 'application/json' } }, opts || {}));
+  var json = await res.json().catch(function () { return {}; });
+  if (!res.ok) throw new Error(json.error || ('请求失败 ' + res.status));
+  return json.data !== undefined ? json.data : json;
+}
+
+/* 来源类型 → 徽章样式类 */
+function badgeCls(t) {
+  if (t === '教材讲义') return 'b-textbook';
+  if (t === '学术论文') return 'b-paper';
+  if (t === '行业标准') return 'b-standard';
+  if (t === '专业数据库') return 'b-database';
+  return 'b-plain';
+}
+
+/* ── 知识库管理 ── */
+async function refreshKB() {
+  var data = await api('/api/v1/knowledge');
+  kb.docs = data.documents || [];
+  $('docCount').textContent = kb.docs.length;
+  $('chunkCount').textContent = data.chunkCount || 0;
+  $('modeTag').textContent = data.embedding === 'dashscope-text-embedding'
+    ? '词向量: DashScope text-embedding' : '词向量: 本地降级(演示)';
+  renderFilters();
+  renderKB();
+}
+
+function renderFilters() {
+  var cats = [];
+  kb.docs.forEach(function (d) { if (d.category && cats.indexOf(d.category) < 0) cats.push(d.category); });
+  var row = $('filterRow');
+  if (!cats.length) { row.innerHTML = ''; return; }
+  var chips = ['<button class="filter-chip' + (kb.filter === '' ? ' on' : '') + '" onclick="setFilter(\'\')">全部</button>'];
+  cats.forEach(function (c) {
+    chips.push('<button class="filter-chip' + (kb.filter === c ? ' on' : '') + '" onclick="setFilter(\'' + esc(c) + '\')">' + esc(c) + '</button>');
+  });
+  row.innerHTML = chips.join('');
+}
+
+function setFilter(c) { kb.filter = c; renderFilters(); renderKB(); }
+
+function renderKB() {
+  var list = $('kbList');
+  var docs = kb.filter ? kb.docs.filter(function (d) { return d.category === kb.filter; }) : kb.docs;
+  if (!docs.length) {
+    list.innerHTML = '<div class="kb-empty">' + (kb.filter ? '该分类下暂无文档' : '知识库为空<br>上传讲义/教材入库，或使用内置种子') + '</div>';
+    return;
+  }
+  // 按分类分组(无分类的归入「未分类」)
+  var groups = {}, order = [];
+  docs.forEach(function (d) {
+    var g = d.category || '未分类';
+    if (!groups[g]) { groups[g] = []; order.push(g); }
+    groups[g].push(d);
+  });
+  var html = '';
+  order.forEach(function (g) {
+    html += '<div class="kb-group-title">' + esc(g) + ' · ' + groups[g].length + '</div>';
+    groups[g].forEach(function (d) {
+      html += docItemHtml(d);
+    });
+  });
+  list.innerHTML = html;
+}
+
+function docItemHtml(d) {
+  var badges = '';
+  if (d.sourceType) badges += '<span class="badge ' + badgeCls(d.sourceType) + '">' + esc(d.sourceType) + '</span>';
+  else badges += '<span class="badge b-plain">未标注</span>';
+  var extra = (d.chunkCount || 0) + ' 片段 · ' + (d.charCount || 0) + ' 字';
+  var loc = d.sourceLoc ? ' · ' + esc(d.sourceLoc) : '';
+  return '<div class="kb-item" onclick="viewDoc(\'' + d.id + '\')">' +
+    '<div class="ico">📄</div>' +
+    '<div class="info"><div class="t" title="' + esc(d.title) + (d.sourceLoc ? ' · ' + esc(d.sourceLoc) : '') + '">' + esc(d.title) + '</div>' +
+    '<div class="m">' + badges + '<span>' + extra + loc + '</span></div></div>' +
+    '<button class="del" title="删除" onclick="event.stopPropagation();delDoc(\'' + d.id + '\')">✕</button></div>';
+}
+
+/* ── 文件上传(含拖拽) ── */
+var pickedText = '';
+function onFileSelected(input) {
+  var f = input.files && input.files[0];
+  if (f) readFile(f);
+}
+
+function readFile(f) {
+  if (f.size > 5 * 1024 * 1024) { toast('文件过大，请 < 5MB'); return; }
+  var reader = new FileReader();
+  reader.onload = function () {
+    pickedText = String(reader.result || '');
+    var nm = f.name.replace(/\.(txt|md|text)$/i, '');
+    $('docTitle').value = $('docTitle').value.trim() ? $('docTitle').value : nm;
+    toast('已读取「' + f.name + '」(' + pickedText.length + ' 字符)，点击「入库」');
+  };
+  reader.onerror = function () { toast('文件读取失败'); };
+  reader.readAsText(f, 'utf-8');
+}
+
+(function initDrag() {
+  var panel = $('kbPanel');
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    panel.addEventListener(ev, function (e) { e.preventDefault(); panel.classList.add('dragover'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    panel.addEventListener(ev, function (e) { e.preventDefault(); panel.classList.remove('dragover'); });
+  });
+  panel.addEventListener('drop', function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) readFile(f);
+  });
+})();
+
+async function doIngest() {
+  if (!pickedText.trim()) { toast('请先选择或拖入文件'); return; }
+  var btn = $('importBtn'); btn.disabled = true;
+  btn.textContent = '入库中…';
+  toast('正在切片并生成向量，大文件可能需要片刻，请勿关闭页面');
+  var started = Date.now();
+  try {
+    await api('/api/v1/knowledge/ingest', { method: 'POST', body: JSON.stringify({
+      title: $('docTitle').value.trim(),
+      category: $('docCategory').value.trim(),
+      sourceType: $('docSourceType').value,
+      sourceLoc: $('docSourceLoc').value.trim(),
+      text: pickedText
+    })});
+    pickedText = ''; $('docTitle').value = ''; $('docCategory').value = ''; $('docSourceType').value = ''; $('docSourceLoc').value = ''; $('fileInput').value = '';
+    toast('已入库并完成向量化 (' + ((Date.now() - started) / 1000).toFixed(1) + 's)');
+    await refreshKB();
+  } catch (e) { toast('入库失败: ' + e.message); }
+  btn.disabled = false; btn.textContent = '入库';
+}
+
+async function delDoc(id) {
+  try {
+    await api('/api/v1/knowledge/delete', { method: 'POST', body: JSON.stringify({ id: id }) });
+    await refreshKB();
+  } catch (e) { toast('删除失败: ' + e.message); }
+}
+
+/* ── 查看文档内容 ── */
+async function viewDoc(id) {
+  var body = $('dvBody'), viewer = $('docViewer');
+  body.innerHTML = '<div class="dv-loading">正在加载文档…</div>';
+  $('dvTitle').textContent = '📄 加载中…';
+  $('dvMeta').textContent = '';
+  viewer.style.display = 'flex';
+  $('chatScroll').style.display = 'none';
+  try {
+    var d = await api('/api/v1/knowledge/doc/' + encodeURIComponent(id));
+    $('dvTitle').textContent = '📄 ' + d.title;
+    var meta = [];
+    if (d.category) meta.push('分类: ' + d.category);
+    if (d.sourceType) meta.push('来源: ' + d.sourceType);
+    if (d.sourceLoc) meta.push('出处: ' + d.sourceLoc);
+    meta.push(d.chunkCount + ' 片段');
+    meta.push(d.charCount + ' 字');
+    $('dvMeta').textContent = meta.join(' · ');
+    var txt = d.text || '（文档为空）';
+    body.innerHTML = '<pre class="dv-pre">' + esc(txt) + '</pre>';
+  } catch (e) {
+    body.innerHTML = '<div class="dv-err">加载失败: ' + esc(e.message) + '</div>';
+  }
+}
+
+function closeDocView() {
+  $('docViewer').style.display = 'none';
+  $('chatScroll').style.display = '';
+}
+
+/* ── 对话式问答 ── */
+function scrollToBottom() {
+  var s = $('chatScroll'); s.scrollTop = s.scrollHeight;
+}
+
+function appendUserMsg(q) {
+  var div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = '<div class="bubble">' + esc(q) + '</div>';
+  $('chatScroll').appendChild(div);
+}
+
+function appendLoadingMsg() {
+  var div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'pendingMsg';
+  div.innerHTML = '<div class="bubble"><div class="loading-line"><span class="loader"></span>正在 <b>检索</b> 知识片段并生成回答…</div></div>';
+  $('chatScroll').appendChild(div);
+  scrollToBottom();
+}
+
+function renderAnswer(msg, ms) {
+  var div = $('pendingMsg');
+  if (!div) return;
+  var html = window.renderMarkdown ? window.renderMarkdown(msg.content) : esc(msg.content);
+  var srcHtml = '';
+  if (msg.sources && msg.sources.length) {
+    srcHtml = '<div class="src-section"><div class="src-title">🔎 检索来源 · ' + msg.sources.length + ' 条（点击展开原文）</div>' +
+      msg.sources.map(function (s) {
+        var meta = '';
+        if (s.category) meta += '<span class="badge b-cat">' + esc(s.category) + '</span>';
+        if (s.sourceType) meta += '<span class="badge ' + badgeCls(s.sourceType) + '">' + esc(s.sourceType) + '</span>';
+        if (s.sourceLoc) meta += '<span style="font-size:10.5px;color:var(--text-muted)">' + esc(s.sourceLoc) + '</span>';
+        return '<div class="src-card">' +
+          '<div class="row" onclick="this.parentNode.classList.toggle(\'open\')">' +
+          '<span class="rank">' + s.rank + '</span>' +
+          '<span class="doc">' + esc(s.docTitle) + '</span>' +
+          '<span class="score">' + s.score + '</span>' +
+          '<span class="arrow">▶</span></div>' +
+          '<div class="body"><div class="meta">' + meta + '</div>' +
+          '<div class="txt">' + esc(s.text) + '</div></div></div>';
+      }).join('') + '</div>';
+  }
+  div.querySelector('.bubble').innerHTML =
+    '<div class="time">AI 回答' + (ms ? ' · ' + (ms / 1000).toFixed(1) + 's' : '') + '</div>' + html + srcHtml;
+  div.removeAttribute('id');
+  scrollToBottom();
+}
+
+function renderError(e) {
+  var div = $('pendingMsg');
+  if (!div) return;
+  div.querySelector('.bubble').innerHTML = '<div class="err">出错: ' + esc(e.message) + '</div>';
+  div.removeAttribute('id');
+}
+
+function askExample(q) { $('askInput').value = q; ask(); }
+
+function clearChat() {
+  chat = [];
+  $('chatScroll').innerHTML =
+    '<div class="qa-empty" id="qaEmpty"><div class="big">🔍</div>' +
+    '<div>向知识库提问，AI 将检索讲义片段并基于证据作答<br>也可以试试下面的示例问题：</div>' +
+    '<div class="ex-chips">' +
+    '<button class="ex-chip" onclick="askExample(\'遍历列表时删除元素为什么会出错？\')">遍历列表时删除元素为什么会出错？</button>' +
+    '<button class="ex-chip" onclick="askExample(\'二叉树的中序遍历是什么顺序？\')">二叉树的中序遍历是什么顺序？</button>' +
+    '<button class="ex-chip" onclick="askExample(\'什么是大模型幻觉，RAG 如何解决？\')">什么是大模型幻觉，RAG 如何解决？</button>' +
+    '</div></div>';
+  $('clearChat').style.display = 'none';
+}
+
+var asking = false;
+async function ask() {
+  var q = $('askInput').value.trim();
+  if (!q || asking) return;
+  if (!kb.docs.length) { toast('知识库为空，请先入库文档'); return; }
+  asking = true; $('askBtn').disabled = true; $('askInput').value = '';
+  var empty = $('qaEmpty'); if (empty) empty.remove();
+  $('clearChat').style.display = '';
+
+  appendUserMsg(q);
+  chat.push({ role: 'user', content: q });
+  appendLoadingMsg();
+  var started = Date.now();
+  // 取最近 6 轮历史(不含本轮)传给后端, 支持多轮追问
+  var history = chat.slice(0, -1).slice(-6).map(function (m) {
+    return { role: m.role, content: m.role === 'assistant' ? String(m.content).slice(0, 1500) : m.content };
+  });
+  try {
+    var data = await api('/api/v1/knowledge/ask', { method: 'POST', body: JSON.stringify({ query: q, history: history }) });
+    var aiMsg = { role: 'assistant', content: data.answer, sources: data.sources || [] };
+    chat.push(aiMsg);
+    renderAnswer(aiMsg, Date.now() - started);
+  } catch (e) {
+    chat.push({ role: 'assistant', content: '出错: ' + e.message });
+    renderError(e);
+  }
+  asking = false; $('askBtn').disabled = false; $('askInput').focus();
+}
+
+refreshKB().catch(function (e) { toast('加载知识库失败: ' + e.message); });
+</script>
+</body>
+</html>

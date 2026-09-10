@@ -15,9 +15,21 @@ const PPT_SCHEMA = require("./ppt-schema");
 const COURSEWARE_SCHEMA = require("./courseware-schema");
 const { spawn } = require("node:child_process");
 const { slidesToSvgs, parseChart } = require("./pptx-svg");
-
 loadEnv(path.join(__dirname, ".env"));
+// 检索增强生成(RAG)模块——文档切片/向量化/检索/持久化, 见 rag.js
+const rag = require("./rag");
+function dataRoot() {
+  return process.env.APP_DATA_DIR || path.join(__dirname, "data");
+}
+const RAG_INDEX = new rag.RagIndex(
+  process.env.RAG_INDEX_FILE || path.join(dataRoot(), "rag-index.json"),
+);
 const PORT = Number(process.env.PORT || 3000);
+// Django 后端代理: /ai-api/* → AI_CLASSROOM_BASE/api/*
+const AI_CLASSROOM_BASE = (
+  process.env.AI_CLASSROOM_BASE || "http://localhost:8000"
+).replace(/\/$/, "");
+const AI_PROXY_PREFIX = "/ai-api";
 const ROOT = __dirname;
 // Next.js 静态导出产物（Hero 落地页及其资源），作为静态托管的第二根目录
 const OUT_DIR = path.join(ROOT, "out");
@@ -29,7 +41,7 @@ const STORAGE_DIR = path.resolve(
 );
 const STORE_FILE = path.join(DATA_DIR, "store.json");
 const API_PREFIX = "/api/v1";
-const MAX_BODY_BYTES = 64 * 1024;
+const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const encryptionKey = crypto
   .createHash("sha256")
   .update(process.env.DATA_ENCRYPTION_KEY || "development-only-key-change-me")
@@ -73,6 +85,7 @@ class JsonStore {
       mistakes: [],
       diagnostics: [],
       notes: [],
+      workflowTasks: [],
     };
     this.writeQueue = Promise.resolve();
   }
@@ -274,7 +287,11 @@ async function body(req) {
   for await (const chunk of req) {
     size += chunk.length;
     if (size > MAX_BODY_BYTES)
-      throw new ApiError(413, "PAYLOAD_TOO_LARGE", "请求体不能超过 64KB");
+      throw new ApiError(
+        413,
+        "PAYLOAD_TOO_LARGE",
+        `请求体不能超过 ${Math.round(MAX_BODY_BYTES / 1024 / 1024)}MB`,
+      );
     chunks.push(chunk);
   }
   if (!chunks.length) return {};
@@ -1940,8 +1957,15 @@ async function chatSolveLLM(query, history) {
       return { role, content };
     })
     .filter((h) => h.content);
+  // RAG 检索注入：命中知识库片段时，追加为模型作答依据；未命中则跳过原流程
+  const kbContext = await retrieveKnowledge(query, 3);
+  const sysFinal = kbContext
+    ? system +
+      "\n\n以下是题库/讲义中与本问题最相关的「参考知识片段」，请优先依据它们作答（若片段与题目冲突以题目为准）：\n" +
+      kbContext
+    : system;
   const messages = [
-    { role: "system", content: system },
+    { role: "system", content: sysFinal },
     ...safeHistory,
     { role: "user", content: query },
   ];
@@ -2628,6 +2652,52 @@ async function buildPptxViaPython(slides, query, style, taskId, cachedImages) {
   const buf = await fs.readFile(outPath);
   await fs.rm(taskDir, { recursive: true, force: true }).catch(() => {});
   return buf;
+}
+
+/**
+ * 代理转发到 Django 后端(ai_classroom, 端口 8000)。
+ * 前端页面请求 /ai-api/* → 后端 /api/*。
+ */
+async function proxyAiClassroom(req, res, url, id) {
+  if (req.method !== "GET" && req.method !== "POST")
+    throw new ApiError(405, "METHOD_NOT_ALLOWED", "代理仅支持 GET 和 POST");
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY_BYTES)
+      throw new ApiError(
+        413,
+        "PAYLOAD_TOO_LARGE",
+        `请求体不能超过 ${Math.round(MAX_BODY_BYTES / 1024 / 1024)}MB`,
+      );
+    chunks.push(chunk);
+  }
+  const targetPath =
+    "/api" + url.pathname.slice(AI_PROXY_PREFIX.length) + url.search;
+  const target = AI_CLASSROOM_BASE + targetPath;
+  const headers = { "content-type": "application/json" };
+  if (req.headers["x-api-key"]) headers["x-api-key"] = req.headers["x-api-key"];
+  let upstream;
+  try {
+    upstream = await fetch(target, {
+      method: req.method,
+      headers,
+      body: chunks.length ? Buffer.concat(chunks) : undefined,
+    });
+  } catch (e) {
+    throw new ApiError(
+      502,
+      "AI_BACKEND_UNREACHABLE",
+      `无法连接 Django 后端(${AI_CLASSROOM_BASE}): ${e.message}`,
+    );
+  }
+  const raw = Buffer.from(await upstream.arrayBuffer());
+  res.writeHead(upstream.status, {
+    "content-type": upstream.headers.get("content-type") || "application/json",
+    "content-length": raw.length,
+  });
+  res.end(raw);
 }
 
 async function api(req, res, url, id) {
@@ -3855,6 +3925,219 @@ async function api(req, res, url, id) {
     const tree = parseTreeJson(content);
     return send(res, 200, tree, id);
   }
+  // ── RAG 知识库: 列表 / 导入 / 删除 / 问答 ──
+  if (route === "/knowledge" && req.method === "GET") {
+    return send(
+      res,
+      200,
+      {
+        data: {
+          documents: RAG_INDEX.data.documents.map((d) => ({
+            id: d.id,
+            title: d.title,
+            category: d.category || "",
+            sourceType: d.sourceType || "",
+            sourceLoc: d.sourceLoc || "",
+            chunkCount: d.chunkCount,
+            charCount: d.charCount,
+            createdAt: d.createdAt,
+          })),
+          chunkCount: RAG_INDEX.data.chunks.length,
+          embedding: process.env.QWEN_API_KEY
+            ? "dashscope-text-embedding"
+            : "local-fallback",
+        },
+        requestId: id,
+      },
+      id,
+    );
+  }
+  if (route === "/knowledge/ingest" && req.method === "POST") {
+    const input = await body(req);
+    const title = cleanText(String(input.title ?? ""), "title");
+    const text = String(input.text ?? "");
+    if (!text.trim()) throw new ApiError(422, "INVALID_INPUT", "文档内容为空");
+    const category = String(input.category ?? "").trim().slice(0, 32);
+    const sourceType = String(input.sourceType ?? "").trim().slice(0, 32);
+    const sourceLoc = String(input.sourceLoc ?? "").trim().slice(0, 64);
+    const doc = await rag.ingest(RAG_INDEX, title, text, { category, sourceType, sourceLoc });
+    return send(res, 201, { data: doc, requestId: id }, id);
+  }
+  if (route === "/knowledge/delete" && req.method === "POST") {
+    const input = await body(req);
+    const docId = String(input.id ?? "");
+    const removed = await rag.removeDoc(RAG_INDEX, docId);
+    if (!removed) throw new ApiError(404, "NOT_FOUND", "文档不存在");
+    return send(res, 200, { data: { removed: true }, requestId: id }, id);
+  }
+  if (route.startsWith("/knowledge/doc/") && req.method === "GET") {
+    const docId = decodeURIComponent(route.slice("/knowledge/doc/".length));
+    const doc = RAG_INDEX.data.documents.find((d) => d.id === docId);
+    if (!doc) throw new ApiError(404, "NOT_FOUND", "文档不存在");
+    const chunks = RAG_INDEX.data.chunks
+      .filter((c) => c.docId === docId)
+      .sort((a, b) => a.index - b.index)
+      .map((c) => c.text);
+    return send(
+      res,
+      200,
+      {
+        data: {
+          id: doc.id,
+          title: doc.title,
+          category: doc.category || "",
+          sourceType: doc.sourceType || "",
+          sourceLoc: doc.sourceLoc || "",
+          charCount: doc.charCount,
+          createdAt: doc.createdAt,
+          chunkCount: chunks.length,
+          text: chunks.join("\n\n"),
+        },
+        requestId: id,
+      },
+      id,
+    );
+  }
+  if (route === "/knowledge/ask" && req.method === "POST") {
+    const input = await body(req);
+    const query = cleanText(String(input.query ?? ""), "query");
+    if (!query) throw new ApiError(400, "INVALID_INPUT", "请提供问题");
+    if (RAG_INDEX.data.chunks.length === 0)
+      throw new ApiError(422, "EMPTY_KB", "知识库为空，请先导入文档");
+    const topK = Math.min(Math.max(Number(input.topK) || 4, 1), 8);
+    const history = Array.isArray(input.history) ? input.history : [];
+    const hits = await rag.retrieveAsync(RAG_INDEX, query, topK);
+    const sources = hits.map((h, i) => ({
+      rank: i + 1,
+      docTitle: h.chunk.docTitle,
+      category: h.chunk.category || "",
+      sourceType: h.chunk.sourceType || "",
+      sourceLoc: h.chunk.sourceLoc || "",
+      score: +h.score.toFixed(4),
+      text: h.chunk.text.slice(0, 260),
+    }));
+    const context = hits
+      .map(
+        (h, i) =>
+          `[片段${i + 1}] (来源: ${h.chunk.docTitle} · ${h.chunk.sourceType || "未标注"}${h.chunk.sourceLoc ? " · " + h.chunk.sourceLoc : ""})\n${h.chunk.text}`,
+      )
+      .join("\n\n");
+    let answer;
+    try {
+      answer = await ragAskLLM(context, query, history);
+    } catch (err) {
+      if (!process.env.QWEN_API_KEY) {
+        // 未配置 Key 时无在线作答, 返回本地检索结果与说明
+        answer =
+          "> 当前未配置 QWEN_API_KEY，已切换到本地检索模式（仅返回知识片段，不做大模型生成）。\n\n" +
+          sources.map((s) => `**${s.docTitle}**（相关度 ${s.score}·${s.sourceType || "未标注"}${s.sourceLoc ? "·" + s.sourceLoc : ""}）\n${s.text}`).join("\n\n");
+      } else {
+        log("rag.ask.llm_error", { query, message: err.message });
+        answer =
+          "> 检索已命中知识片段，但大模型生成失败，以下为命中的参考片段：\n\n" +
+          sources.map((s) => `**${s.docTitle}**（相关度 ${s.score}·${s.sourceType || "未标注"}${s.sourceLoc ? "·" + s.sourceLoc : ""}）\n${s.text}`).join("\n\n");
+      }
+    }
+    return send(res, 200, { data: { answer, sources }, requestId: id }, id);
+  }
+
+  // ── 智能工作流编排 ──
+  // 模板列表(含 DAG 定义, 前端画布直接渲染)
+  if (route === "/workflows" && req.method === "GET") {
+    return send(res, 200, { data: { templates: WORKFLOW_TEMPLATES }, requestId: id }, id);
+  }
+
+  // 启动工作流: template=内置模板 或 def=自定义 DAG(JSON 模式)
+  if (route === "/workflow/run" && req.method === "POST") {
+    const input = await body(req);
+    let def;
+    let templateId = "";
+    let name = "自定义工作流";
+    if (input.def && typeof input.def === "object") {
+      def = input.def;
+      try {
+        validateWorkflowDef(def);
+      } catch (err) {
+        throw new ApiError(422, "INVALID_DEF", `工作流定义非法: ${err.message}`);
+      }
+      name = String(input.name || name).slice(0, 64);
+    } else {
+      const tpl = WORKFLOW_TEMPLATES.find((t) => t.id === String(input.template || ""));
+      if (!tpl) throw new ApiError(404, "NOT_FOUND", "工作流模板不存在");
+      def = tpl.def;
+      templateId = tpl.id;
+      name = tpl.name;
+    }
+    const raw = input.input && typeof input.input === "object" ? input.input : {};
+    const runInput = {
+      query: cleanText(String(raw.query ?? ""), "query"),
+      persona:
+        typeof raw.persona === "string" && raw.persona.trim()
+          ? cleanText(raw.persona, "persona").slice(0, 500)
+          : "",
+      style: typeof raw.style === "string" ? raw.style.trim().slice(0, 32) : "",
+    };
+    if (!runInput.query) throw new ApiError(422, "INVALID_INPUT", "请提供教学主题(query)");
+    const taskId = requestId();
+    const snapshot = {
+      id: taskId,
+      templateId,
+      name,
+      status: "running",
+      input: runInput,
+      def,
+      nodes: {},
+      resultUrl: null,
+      stats: null,
+      durationMs: null,
+      createdAt: now(),
+      updatedAt: now(),
+    };
+    WORKFLOW_TASKS.set(taskId, snapshot);
+    await store.add("workflowTasks", { ...snapshotForStore(snapshot), id: taskId, name, templateId, input: runInput, def, createdAt: now() });
+    // 异步执行, 事件回写快照(轮询可见节点级状态)
+    setImmediate(async () => {
+      try {
+        await WORKFLOW_ENGINE.run(def, runInput, { onEvent: workflowEventSink(taskId) });
+      } catch (e) {
+        const snap = WORKFLOW_TASKS.get(taskId);
+        if (snap) {
+          snap.status = "error";
+          snap.error = e.message;
+          store.update("workflowTasks", taskId, snapshotForStore(snap)).catch(() => {});
+        }
+        log("workflow.failed", { taskId, message: e.message });
+      }
+    });
+    log("workflow.started", { taskId, templateId: templateId || "custom", query: runInput.query });
+    return send(res, 202, { data: { taskId, name } }, id);
+  }
+
+  // 工作流任务状态(内存优先; 未命中再查库, 服务重启后仍可看历史)
+  if (route === "/workflow/tasks" && req.method === "GET") {
+    const taskId = (url.searchParams.get("id") || "").trim().slice(0, 64);
+    if (taskId) {
+      const snap = WORKFLOW_TASKS.get(taskId);
+      if (snap) return send(res, 200, { data: snap, requestId: id }, id);
+      const rec = store.find("workflowTasks", taskId);
+      if (rec) return send(res, 200, { data: rec, requestId: id }, id);
+      throw new ApiError(404, "NOT_FOUND", "工作流任务不存在");
+    }
+    const recent = [...store.data.workflowTasks]
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+      .slice(0, 20)
+      .map((t) => ({
+        id: t.id,
+        name: t.name,
+        status: t.status,
+        query: t.input && t.input.query,
+        stats: t.stats,
+        durationMs: t.durationMs,
+        createdAt: t.createdAt,
+      }));
+    return send(res, 200, { data: { tasks: recent }, requestId: id }, id);
+  }
+
   throw new ApiError(404, "NOT_FOUND", "接口不存在");
 }
 async function staticFile(req, res, url, id) {
@@ -3968,7 +4251,9 @@ const server = http.createServer(async (req, res) => {
       return res.end();
     }
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-    if (url.pathname.startsWith(API_PREFIX)) await api(req, res, url, id);
+    if (url.pathname.startsWith(AI_PROXY_PREFIX))
+      await proxyAiClassroom(req, res, url, id);
+    else if (url.pathname.startsWith(API_PREFIX)) await api(req, res, url, id);
     else if (req.method === "GET") await staticFile(req, res, url, id);
     else
       throw new ApiError(
@@ -3984,6 +4269,7 @@ const server = http.createServer(async (req, res) => {
     });
   } catch (error) {
     stats.errors += !error.status ? 1 : 0;
+    if (!error.status) console.error(JSON.stringify({ time: now(), event: "unhandled", message: error.message, stack: error.stack }));
     send(res, error.status || 500, errorPayload(error, id), id);
     log("request.error", {
       id,
@@ -3996,6 +4282,7 @@ const server = http.createServer(async (req, res) => {
 if (require.main === module)
   store
     .init()
+    .then(() => initRag())
     .then(() =>
       server.listen(PORT, () =>
         log("server.started", { port: PORT, url: `http://localhost:${PORT}` }),
@@ -4005,6 +4292,307 @@ if (require.main === module)
       console.error(error);
       process.exit(1);
     });
+// ── 内置种子知识库(首次启动无任何文档时自动导入, 便于开箱演示) ──
+const RAG_SEED_DOCS = [
+  {
+    title: "Python 列表与切片的常见误区",
+    category: "Python 基础",
+    sourceType: "教材讲义",
+    sourceLoc: "《Python 编程：从入门到实践》第 3 章",
+    text: [
+      "切片 Python list 的误区: 1. list[a:b] 是左闭右开, 不包含下标 b, 新手常以为包含 b。2. 负数下标从末尾数起, list[-1] 是最后一个元素。3. 切片返回的是新列表, 不是视图, 对结果排序不会影响原列表。",
+      "往列表追加 vs 拼接: append 原地修改并返回 None, + 生成新列表, 若把 append 的返回值当列表用会得到 None。extend 接受可迭代对象并逐个追加。",
+      "遍历时删除元素是常见陷阱: 用 for x in lst: lst.remove(x) 会跳过元素, 因为删除改变了索引。推荐用列表推导式或构造新列表, 如 [x for x in lst if x % 2 == 0]。",
+    ].join("\n"),
+  },
+  {
+    title: "二叉树遍历与递归深度",
+    category: "数据结构",
+    sourceType: "教材讲义",
+    sourceLoc: "《算法导论》第 10 章·二叉树",
+    text: [
+      "二叉树三种深度优先遍历: 前序(根-左-右), 中序(左-根-右), 后序(左-右-根)。递归实现只需调整访问节点的时机即可互相转换。",
+      "递归的出口与栈深度: 每次递归调用都会占用调用栈; 对极度不平衡的树(如退化成链表), 递归深度可等于节点数, 易导致栈溢出; 可用显式栈实现非递归遍历规避。",
+      "求高度(深度): max(左子树高度, 右子树高度) + 1; 空节点高度为 0。判断是否平衡只需比较左右子树高度差不超过 1, 并递归检查每棵子树。",
+    ].join("\n"),
+  },
+  {
+    title: "大模型幻觉与检索增强(RAG)入门",
+    category: "大模型应用",
+    sourceType: "学术论文",
+    sourceLoc: "Lewis et al. 2020, arXiv:2005.11401",
+    text: [
+      "大模型幻觉指模型生成看似合理但事实错误或凭空捏造的内容, 根源在于仅根据训练时学到的统计规律作答, 无法保证实时与领域准确性。",
+      "检索增强生成(RAG): 先对用户提问做向量化, 从知识库中检索最相关的文档片段, 再把片段作为上下文拼接进提示词, 让模型基于证据作答, 从而显著降低幻觉。",
+      "实现 RAG 的三要素: 文档切片, 向量化(Embedding), 相似度检索。切片避免整篇文档超出上下文; Embedding 把文本映射为向量; 检索按余弦相似度取 Top-K 片段。",
+    ].join("\n"),
+  },
+];
+
+async function initRag() {
+  await RAG_INDEX.init();
+  if (RAG_INDEX.data.documents.length === 0) {
+    for (const doc of RAG_SEED_DOCS) {
+      await rag.ingest(RAG_INDEX, doc.title, doc.text, doc);
+      log("rag.seed_imported", { title: doc.title, category: doc.category, source: doc.sourceType });
+    }
+  }
+  log("rag.ready", {
+    documents: RAG_INDEX.data.documents.length,
+    chunks: RAG_INDEX.data.chunks.length,
+    embedding: process.env.QWEN_API_KEY ? "dashscope-text-embedding" : "local-fallback",
+  });
+}
+
+// RAG 检索注入：命中知识库片段时返回拼接好的引用上下文(含来源)；否则返回 null
+async function retrieveKnowledge(query, topK = 3) {
+  try {
+    if (RAG_INDEX.data.chunks.length === 0) return null;
+    const hits = await rag.retrieveAsync(RAG_INDEX, query, topK);
+    const relevant = hits.filter((h) => h.score > 0.001);
+    if (!relevant.length) return null;
+    return relevant
+      .map(
+        (h, i) =>
+          `[片段${i + 1}] (来源: ${h.chunk.docTitle} · ${h.chunk.sourceType || "未标注"}${h.chunk.sourceLoc ? " · " + h.chunk.sourceLoc : ""})\n${h.chunk.text}`,
+      )
+      .join("\n\n");
+  } catch (e) {
+    log("rag.inject_error", { query, message: e.message });
+    return null; // 检索失败不影响正常生成
+  }
+}
+
+// ══════════════ 智能工作流编排(DAG 引擎) ══════════════
+// 流程以 JSON 数据描述(节点+条件边), 引擎按依赖就绪度并发调度;
+// 执行器包装既有业务函数(generateScript/createSlideTTS/retrieveKnowledge…), 零重复实现。
+const { WorkflowEngine, validateDef: validateWorkflowDef } = require("./workflow");
+const WORKFLOW_ENGINE = new WorkflowEngine();
+const WORKFLOW_TASKS = new Map(); // taskId → 运行快照(内存优先, 终态同步落库)
+
+// 执行器: 知识库检索(RAG)
+WORKFLOW_ENGINE.register("rag_search", async (node, ctx) => {
+  const topK = Math.min(Math.max(Number(node.params && node.params.topK) || 3, 1), 8);
+  const context = await retrieveKnowledge(ctx.input.query, topK);
+  return {
+    summary: context ? "命中知识片段, 已注入讲稿生成" : "未命中, 空手生成",
+    output: { context: context || "" },
+  };
+});
+
+// 执行器: 生成讲稿幻灯片(复用 generateScript; 支持拼接上游 RAG 上下文)
+WORKFLOW_ENGINE.register("llm_script", async (node, ctx) => {
+  const ragFrom = node.params && node.params.ragFrom;
+  const ragOut = ragFrom ? ctx.getOutput(ragFrom) : null;
+  const ragCtx = ragOut && typeof ragOut.context === "string" ? ragOut.context : "";
+  let persona = String(ctx.input.persona || "");
+  if (ragCtx)
+    persona = (persona ? persona + "\n\n" : "") + "教学参考知识片段(优先依据其事实讲解):\n" + ragCtx;
+  const result = await generateScript(ctx.input.query, persona, ctx.input.style || "");
+  return {
+    summary: `${result.slides.length} 页幻灯片 · ${result.fullText.length} 字讲稿`,
+    output: { slides: result.slides, fullText: result.fullText },
+  };
+});
+
+// 执行器: 逐页语音合成(复用 createSlideTTS)
+WORKFLOW_ENGINE.register("slide_tts", async (node, ctx) => {
+  const slidesFrom = node.params && node.params.slidesFrom;
+  const src = (slidesFrom ? ctx.getOutput(slidesFrom) : null) || {};
+  const slides = src.slides || [];
+  if (!slides.length) throw Object.assign(new Error("上游未产出幻灯片"), { status: 422 });
+  const slideAudio = await createSlideTTS(slides);
+  const voiced = slideAudio.filter((a) => a && a.url).length;
+  return { summary: `${voiced}/${slides.length} 页完成配音`, output: { slideAudio } };
+});
+
+// 执行器: 发布课件任务(与 /video/generate 产物同构, watch.html 可直接播放)
+WORKFLOW_ENGINE.register("publish_video", async (node, ctx) => {
+  const p = node.params || {};
+  const src = (p.from ? ctx.getOutput(p.from) : null) || {};
+  const ttsOut = (p.ttsFrom ? ctx.getOutput(p.ttsFrom) : null) || {};
+  const slides = src.slides || [];
+  const slideAudio = ttsOut.slideAudio || [];
+  const taskId = requestId();
+  await store.add("videoTasks", {
+    id: taskId,
+    query: ctx.input.query,
+    style: ctx.input.style || "",
+    slides,
+    slideAudio,
+    audioUrl: null,
+    images: {},
+    fullText: src.fullText || "",
+    status: "slides_ready",
+    progress: 100,
+    pagesTotal: slides.length,
+    pagesDone: slideAudio.filter((a) => a && a.url).length,
+    source: "workflow",
+    createdAt: now(),
+    updatedAt: now(),
+  });
+  return {
+    summary: `课件任务 ${taskId} 已发布`,
+    output: { taskId, url: `/watch.html?task_id=${taskId}&q=${encodeURIComponent(ctx.input.query)}` },
+  };
+});
+
+// 执行器: 失败降级分支(占位通知, 便于演示条件边)
+WORKFLOW_ENGINE.register("error_notice", async (node) => ({
+  summary: (node.params && node.params.message) || "已进入降级分支",
+  output: { degraded: true },
+}));
+
+// 内置工作流模板: 课件视频生成(检索→讲稿→配音→发布, 含失败降级条件边)
+const WORKFLOW_TEMPLATES = [
+  {
+    id: "course-video",
+    name: "AI 课件视频生成",
+    description: "知识库检索(RAG) → 生成讲稿幻灯片 → 逐页语音合成 → 发布课件",
+    icon: "🎬",
+    fields: [
+      { key: "query", label: "教学主题", placeholder: "如: 二叉树的遍历", required: true },
+      { key: "persona", label: "个性化人设", placeholder: "学生昵称/年级/目标(可选)" },
+      { key: "style", label: "视觉风格", placeholder: "如: 简约蓝(可选)" },
+    ],
+    def: {
+      nodes: [
+        { id: "rag_search", type: "rag_search", name: "知识库检索" },
+        {
+          id: "script",
+          type: "llm_script",
+          name: "生成讲稿幻灯片",
+          params: { ragFrom: "rag_search", retry: 1 },
+        },
+        { id: "tts", type: "slide_tts", name: "逐页语音合成", params: { slidesFrom: "script" } },
+        {
+          id: "publish",
+          type: "publish_video",
+          name: "发布课件任务",
+          params: { from: "script", ttsFrom: "tts" },
+        },
+        { id: "fallback", type: "error_notice", name: "失败降级", params: { message: "生成失败, 已记录错误日志" } },
+      ],
+      edges: [
+        { from: "rag_search", to: "script", when: "always" },
+        { from: "script", to: "tts", when: "success" },
+        { from: "tts", to: "publish", when: "success" },
+        { from: "script", to: "fallback", when: "error" },
+        { from: "tts", to: "fallback", when: "error" },
+      ],
+    },
+  },
+];
+
+// 事件回写: 更新内存快照, 终态节点同步持久化(轮询接口读内存, 重启后可读库)
+function workflowEventSink(taskId) {
+  return (e) => {
+    const snap = WORKFLOW_TASKS.get(taskId);
+    if (!snap) return;
+    if (e.nodeId) {
+      const prev = snap.nodes[e.nodeId] || {};
+      snap.nodes[e.nodeId] = { ...prev, name: e.name || prev.name, state: prevState(e), durationMs: e.durationMs ?? prev.durationMs, summary: e.summary ?? prev.summary, error: e.error ?? prev.error, output: e.output ?? prev.output };
+      if (e.type === "node_done" && e.output && e.output.url) snap.resultUrl = e.output.url;
+    }
+    if (e.type === "workflow_done") {
+      snap.status = e.status;
+      snap.stats = e.stats;
+      snap.durationMs = e.durationMs;
+      WORKFLOW_TASKS.set(taskId, snap);
+      store.update("workflowTasks", taskId, snapshotForStore(snap)).catch(() => {});
+      log("workflow.done", { taskId, status: e.status, stats: e.stats });
+      return;
+    }
+    WORKFLOW_TASKS.set(taskId, snap);
+    store.update("workflowTasks", taskId, snapshotForStore(snap)).catch(() => {});
+  };
+}
+
+function prevState(e) {
+  return {
+    node_start: "running",
+    node_done: "success",
+    node_error: "error",
+    node_skipped: "skipped",
+    node_retry: "running",
+  }[e.type] || "pending";
+}
+
+// 落库裁剪: 保留状态/摘要, 去掉大体量输出(slides 全文不入 workflowTasks, 产物已存 videoTasks)
+function snapshotForStore(snap) {
+  const nodes = {};
+  for (const [nid, n] of Object.entries(snap.nodes)) {
+    const output =
+      n.output && typeof n.output === "object" && Array.isArray(n.output.slides)
+        ? { slidesCount: n.output.slides.length }
+        : n.output;
+    nodes[nid] = { ...n, output };
+  }
+  return { status: snap.status, stats: snap.stats, durationMs: snap.durationMs, resultUrl: snap.resultUrl, nodes, updatedAt: now() };
+}
+
+// 非流式调用 Qwen 生成「基于检索上下文的回答」(零依赖, DashScope 兼容端点)
+async function ragAskLLM(context, query, history = []) {
+  const apiKey = process.env.QWEN_API_KEY;
+  const model = process.env.QWEN_CHAT_MODEL || "qwen-max";
+  const system =
+    "你是「栈知映」助教的学科知识问答助手。请严格基于给定的「参考知识片段」作答, 用中文、结构清晰;\n" +
+    "1. 尽量引用参考片段中的事实, 不要脱离片段臆造;\n" +
+    "2. 若片段不足以回答, 明确说明「知识库中没有相关内容」, 再给出通用性建议;\n" +
+    "3. 用 Markdown: 公式用 $$/$ , 代码块标注语言, 适度使用列表与表格;\n" +
+    "4. 多轮对话时, 追问只针对最新问题深入, 不要重复已讲内容;\n" +
+    "5. 结尾不要添加「以上内容仅供参考」之外的多余免责声明。";
+  const safeHistory = (Array.isArray(history) ? history : [])
+    .slice(-6)
+    .map((h) => ({
+      role: String(h.role) === "assistant" ? "assistant" : "user",
+      content: String(h.content ?? "").slice(0, 2000),
+    }))
+    .filter((h) => h.content);
+  const user =
+    "参考知识片段:\n\"\"\"\n" + context + "\n\"\"\"\n\n用户提问:\n" + query;
+  const messages = [
+    { role: "system", content: system },
+    ...safeHistory,
+    { role: "user", content: user },
+  ];
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120000);
+  try {
+    const res = await fetch(
+      "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: 2048,
+          temperature: 0.3,
+          stream: false,
+        }),
+        signal: controller.signal,
+      },
+    );
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new ApiError(502, "PROVIDER_ERROR", `Qwen ${res.status}: ${txt.slice(0, 300)}`);
+    }
+    const data = await res.json();
+    const content =
+      data?.choices?.[0]?.message?.content ||
+      (() => {
+        throw new Error("Qwen 未返回内容");
+      })();
+    return content;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 module.exports = {
   server,
   store,

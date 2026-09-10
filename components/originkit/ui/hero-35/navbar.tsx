@@ -11,7 +11,6 @@ function asset(file: string) {
 
 const NAV_LINKS = [
   { label: "职业加点图", href: "/skill/index.html" },
-  { label: "学习论坛", href: "/forum/index.html" },
   { label: "技能树", href: "/skilltree-app/skilltree.html" },
   { label: "错题本", href: "/mistake.html" },
 ] as const;
