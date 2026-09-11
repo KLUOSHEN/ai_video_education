@@ -6,6 +6,11 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 
+# ── 运行日志与语言缓存 ──
+*.log
+**/__pycache__/
+*.py[cod]
+
 # ── 敏感文件（不提交） ──
 .env
 data/store.json
@@ -15,6 +20,9 @@ data/_test3-index.json
 storage/audio/*
 storage/video/*
 storage/poster/*
+storage/imgcache/*
+storage/pptx/*
+storage/pptx-build/*
 **/desktop.ini
 
 # ── 外部下载的参考项目（独立 git 仓库，不入库） ──

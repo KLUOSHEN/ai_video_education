@@ -42,6 +42,55 @@ const STORAGE_DIR = path.resolve(
 const STORE_FILE = path.join(DATA_DIR, "store.json");
 const API_PREFIX = "/api/v1";
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = boundedInteger(process.env.RATE_LIMIT_MAX, 60, 1, 10_000);
+const TRUST_PROXY = /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || "");
+// 根目录同时包含服务端源码与浏览器页面，因此静态托管必须显式列出公开内容。
+// 新增页面或浏览器脚本时同步更新此白名单，避免 .env、数据库和源码被下载。
+const PUBLIC_ROOT_FILES = new Set([
+  "index.html",
+  "index.txt",
+  "404.html",
+  "_not-found.html",
+  "_not-found.txt",
+  "ai-test.html",
+  "generate.html",
+  "knowledge.html",
+  "landing.html",
+  "mistake.html",
+  "search.html",
+  "skilltree.html",
+  "watch.html",
+  "courseware-engine.js",
+  "lieflat-charts.js",
+  "lucide-unify.js",
+  "mdrender.js",
+  "scene-templates.js",
+  "skilltree-data.js",
+  "vortex.js",
+]);
+const PUBLIC_ROOT_DIRECTORIES = new Set([
+  "_next",
+  "_not-found",
+  "originkit",
+]);
+const PUBLIC_NESTED_FILES = new Set([
+  "skill/index.html",
+  "skilltree-app/generate.html",
+  "skilltree-app/lucide-unify.js",
+  "skilltree-app/skilltree-data.js",
+  "skilltree-app/skilltree.html",
+  "shu/icon.svg",
+  "shu/index.html",
+  "shu/lucide-unify.js",
+  "shu/manifest.json",
+  "shu/skilltree-data.js",
+  "shu/sw.js",
+  "shu/专升本高数技能树.html",
+  "mouse-controlled-gecko/fostindex.html",
+  "mouse-controlled-gecko/kjs.mp4",
+  "mouse-controlled-gecko/newkj.mp4",
+]);
 const encryptionKey = crypto
   .createHash("sha256")
   .update(process.env.DATA_ENCRYPTION_KEY || "development-only-key-change-me")
@@ -53,6 +102,13 @@ const stats = {
   errors: 0,
   generated: 0,
 };
+
+function boundedInteger(value, fallback, min, max) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= min && parsed <= max
+    ? parsed
+    : fallback;
+}
 
 function loadEnv(file) {
   if (!fssync.existsSync(file)) return;
@@ -302,21 +358,26 @@ async function body(req) {
   }
 }
 function getClientIp(req) {
-  return (
-    req.headers["x-forwarded-for"] ||
-    req.socket.remoteAddress ||
-    "unknown"
-  )
+  const forwarded = TRUST_PROXY ? req.headers["x-forwarded-for"] : null;
+  return (forwarded || req.socket.remoteAddress || "unknown")
     .toString()
     .split(",")[0]
     .trim();
 }
+let lastRateLimitSweep = 0;
 function allowRequest(req) {
   const ip = getClientIp(req);
   const stamp = Date.now();
   const bucket = rateBuckets.get(ip) || [];
-  const recent = bucket.filter((time) => time > stamp - 60_000);
-  if (recent.length >= 60) return false;
+  const recent = bucket.filter((time) => time > stamp - RATE_LIMIT_WINDOW_MS);
+  if (stamp - lastRateLimitSweep > RATE_LIMIT_WINDOW_MS) {
+    for (const [key, timestamps] of rateBuckets) {
+      if (!timestamps.some((time) => time > stamp - RATE_LIMIT_WINDOW_MS))
+        rateBuckets.delete(key);
+    }
+    lastRateLimitSweep = stamp;
+  }
+  if (recent.length >= RATE_LIMIT_MAX) return false;
   recent.push(stamp);
   rateBuckets.set(ip, recent);
   return true;
@@ -366,6 +427,14 @@ function mime(file) {
       ".zip": "application/zip",
     }[path.extname(file).toLowerCase()] || "application/octet-stream"
   );
+}
+
+function isPublicStaticPath(requestPath) {
+  const parts = requestPath.split("/").filter(Boolean);
+  if (parts.length === 1) {
+    return PUBLIC_ROOT_FILES.has(parts[0]) || /^__next\.[\w.-]+\.txt$/.test(parts[0]);
+  }
+  return PUBLIC_NESTED_FILES.has(parts.join("/")) || PUBLIC_ROOT_DIRECTORIES.has(parts[0]);
 }
 
 function getTopic(text) {
@@ -2704,7 +2773,6 @@ async function api(req, res, url, id) {
   const route = url.pathname.slice(API_PREFIX.length);
   if (!allowRequest(req))
     throw new ApiError(429, "RATE_LIMITED", "请求过于频繁，请稍后再试");
-  auth(req);
   if (route === "/health" && req.method === "GET")
     return send(
       res,
@@ -2712,6 +2780,7 @@ async function api(req, res, url, id) {
       { status: "ok", service: "ai-learning-studio", time: now() },
       id,
     );
+  auth(req);
   if (route === "/metrics" && req.method === "GET")
     return send(
       res,
@@ -4151,6 +4220,8 @@ async function staticFile(req, res, url, id) {
   if (requestPath.includes(".."))
     throw new ApiError(403, "FORBIDDEN", "禁止访问该资源");
   const isStorage = requestPath.startsWith("/storage/");
+  if (!isStorage && !isPublicStaticPath(requestPath))
+    throw new ApiError(404, "NOT_FOUND", "文件不存在");
   const relative = isStorage
     ? requestPath.slice("/storage/".length)
     : requestPath.slice(1);
@@ -4183,7 +4254,9 @@ async function staticFile(req, res, url, id) {
   };
   // 开发期：HTML/JS/CSS/JSON 走 no-cache，浏览器每次回源，避免编辑页面后还在用旧版本；
   // 媒体文件用时间戳+UUID 命名（URL 不可变），保持默认启发式缓存以利 seek 复用。
-  if (/text\/|application\/javascript|application\/json/.test(contentType))
+  if (requestPath.startsWith("/_next/static/"))
+    headers["cache-control"] = "public, max-age=31536000, immutable";
+  else if (/text\/|application\/javascript|application\/json/.test(contentType))
     headers["cache-control"] = "no-cache";
   const rangeHeader = req.headers.range;
   // 支持 Range 请求（媒体 seek 必需），返回 206 Partial Content
@@ -4245,6 +4318,7 @@ const server = http.createServer(async (req, res) => {
   res.setHeader("x-content-type-options", "nosniff");
   res.setHeader("x-frame-options", "SAMEORIGIN");
   res.setHeader("referrer-policy", "strict-origin-when-cross-origin");
+  res.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
   try {
     if (req.method === "OPTIONS") {
       res.writeHead(204);
@@ -4279,7 +4353,28 @@ const server = http.createServer(async (req, res) => {
     });
   }
 });
-if (require.main === module)
+server.requestTimeout = boundedInteger(process.env.REQUEST_TIMEOUT_MS, 120_000, 10_000, 900_000);
+server.headersTimeout = boundedInteger(process.env.HEADERS_TIMEOUT_MS, 30_000, 5_000, 120_000);
+server.keepAliveTimeout = boundedInteger(process.env.KEEP_ALIVE_TIMEOUT_MS, 5_000, 1_000, 60_000);
+
+function gracefulShutdown(signal) {
+  log("server.stopping", { signal });
+  if (!server.listening) return process.exit(0);
+  const forceTimer = setTimeout(() => {
+    server.closeAllConnections?.();
+    process.exit(1);
+  }, 10_000);
+  forceTimer.unref();
+  server.close((error) => {
+    clearTimeout(forceTimer);
+    if (error) console.error(error);
+    process.exit(error ? 1 : 0);
+  });
+}
+
+if (require.main === module) {
+  process.once("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.once("SIGINT", () => gracefulShutdown("SIGINT"));
   store
     .init()
     .then(() => initRag())
@@ -4292,6 +4387,7 @@ if (require.main === module)
       console.error(error);
       process.exit(1);
     });
+}
 // ── 内置种子知识库(首次启动无任何文档时自动导入, 便于开箱演示) ──
 const RAG_SEED_DOCS = [
   {

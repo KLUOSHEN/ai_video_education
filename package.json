@@ -7,6 +7,13 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test tests/*.test.js",
+    "build": "next build",
+    "check:deploy": "node scripts/check-deploy.mjs",
+    "smoke": "node scripts/smoke-test.mjs",
+    "diagnose:skilltree": "node scripts/diagnostics/check-skilltree-depth.js",
+    "diagnose:tasks": "node scripts/diagnostics/inspect-tasks.js",
+    "diagnose:slides": "node scripts/diagnostics/inspect-slides.js",
+    "web:inline": "node scripts/diagnostics/inline-next-export.mjs",
     "web:dev": "next dev -p 3001",
     "web:build": "next build"
   },

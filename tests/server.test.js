@@ -26,6 +26,34 @@ test.after(async () => {
   fs.rmSync(testRuntime, { recursive: true, force: true });
 });
 
+test('静态托管仅暴露公开页面和资源', async () => {
+  const origin = new URL(baseUrl).origin;
+  const page = await fetch(`${origin}/search.html`);
+  assert.equal(page.status, 200);
+  assert.match(await page.text(), /<!DOCTYPE html>/i);
+
+  const skillPage = await fetch(`${origin}/skill/index.html`);
+  assert.equal(skillPage.status, 200);
+
+  for (const pathname of ['/server.js', '/.env.example', '/data/rag-index.json', '/backend/ai_classroom/db.sqlite3', '/skilltree-app/server.js', '/shu/package.json']) {
+    const response = await fetch(`${origin}${pathname}`);
+    assert.equal(response.status, 404, `${pathname} 不应被公开访问`);
+  }
+});
+
+test('健康探针在启用 API_KEY 后仍可公开访问', async () => {
+  const previousKey = process.env.API_KEY;
+  process.env.API_KEY = 'production-test-key';
+  try {
+    const response = await fetch(`${new URL(baseUrl).origin}/api/v1/health`);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).status, 'ok');
+  } finally {
+    if (previousKey === undefined) delete process.env.API_KEY;
+    else process.env.API_KEY = previousKey;
+  }
+});
+
 test('规范化文本并拒绝危险内容', () => {
   assert.equal(cleanText('  TCP\r\n  三次\t握手  '), 'TCP\n 三次 握手');
   assert.throws(() => cleanText('<script>alert(1)</script>'), { code: 'UNSAFE_CONTENT' });
