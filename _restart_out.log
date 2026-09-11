@@ -1,3 +1,0 @@
-{"time":"2026-09-05T14:18:04.074Z","event":"server.started","port":3002,"url":"http://localhost:3002"}
-{"time":"2026-09-05T14:18:07.794Z","event":"request","id":"0cb8d5cc-5bf5-42bd-a9b2-7b69acb70593","method":"GET","path":"/","ms":3}
-{"time":"2026-09-05T14:18:51.032Z","event":"request","id":"fe019138-11d3-4da6-a38b-6ecb428970be","method":"POST","path":"/api/v1/skill/explain","ms":9567}

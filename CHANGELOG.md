@@ -2,6 +2,29 @@
 
 「栈知映」(StackKnow) 的所有值得注意的变更都会记录在此文件中。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## 2026-09-10
+
+### 新增
+
+- **知识库智能问答（RAG）**：新增 `knowledge.html` 页面，左侧为知识库管理（文档上传入库、标题/分类/来源类型/出处录入、文档与知识片段统计、按分类筛选），右侧为基于检索增强生成的问答——回答附命中来源（可展开原文）并支持连续追问与示例问题。
+- **全新 RAG 引擎** **`rag.js`**（零第三方依赖）：文档切片 → 文本向量化 → 余弦相似度 Top-K 检索 → 依据证据作答。向量化优先调用阿里云百炼 DashScope `text-embedding`，未配置 Key 时自动降级为本地字符二元组哈希向量，保证离线可跑通；索引以 `rag-index.json + rag-index.vectors.bin` 双文件持久化，兼容旧稀疏向量迁移。
+- **知识库后端接口**（`server.js`，位于 `/api/v1/knowledge/*`）：`GET /knowledge`（列表与统计）、`POST /knowledge/ingest`（入库）、`POST /knowledge/delete`（删除）、`GET /knowledge/doc/<id>`（文档详情）、`POST /knowledge/ask`（带历史上下文的 RAG 问答）。
+- **DAG 工作流引擎** **`workflow.js`**（零依赖）：将 `server.js` 中硬编码的多步异步流水线改造为数据驱动的工作流——JSON 描述节点与条件边，按依赖就绪度并发调度，节点状态机含 `pending/running/success/error/skipped`，边条件支持 `success/error/always`，并对定义做结构/引用/无环校验。
+- **RAG 注入生成流程**：幻灯片生成接入工作流新节点 `rag_search`（知识库检索），检索到的教学参考片段自动注入提示词作为优先依据，生成内容更贴合自有讲义/教材。
+- **AI 白板小课堂·后端接口测试台** **`ai-test.html`**：可视化配置并调用各后端接口（经 `/ai-api/* → Django :8000/api/*` 代理），含后端健康状态徽标与请求/响应面板。
+- **首页与导航文案更新**：`landing.html` 及 `components/originkit/ui/hero-35/` 模块描述统一为「搜索 · 生成 · 测评 · 技能树」，突出产品成长路径定位。
+- **AI 生成过程可视化**：`search.html` 生成遮罩改为嵌入 workflow 同款 DAG 节点连线动画，节点随流程推进呈现运行/完成/出错状态，过程更直观。
+
+### 移除
+
+- **删除论坛示例**：移除 `forum/`（`forum/index.html`、`forum.css`、`forum.js`）及参考项目 `Design Learning Forum Layout/`。
+
+## 2026-09-05
+
+### 安全
+
+- **移除硬编码密钥**：删除 `server.js` 与 `skilltree-app/server.js` 中硬编码的 DeepSeek API Key，统一迁移至 `.env`（`DEEPSEEK_API_KEY`），避免密钥随代码泄露。
+
 ## 2026-09-04
 
 ### 新增
