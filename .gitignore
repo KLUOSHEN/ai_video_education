@@ -19,7 +19,6 @@ data/store.json
 data/_test3-index.json
 
 # ── 运行日志与临时产物（不提交） ──
-*.log
 _frontend-slides-tmp/
 .pptx-build-*/
 _checkdepth.js

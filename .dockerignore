@@ -18,7 +18,6 @@ tests
 storage
 data/store.json
 *.docx
-kj.mp4
 .figma
 .trae
 .vscode
