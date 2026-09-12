@@ -218,11 +218,37 @@ test('GET /video/tasks 按 query 返回该知识点最近生成的视频任务',
   const secondTask = (await second.json()).data.task_id;
   assert.notEqual(firstTask, secondTask);
 
+  // 当前播放页使用的是真课件 coursewareTasks；查找接口必须同时覆盖新版任务表。
+  const coursewareTask = 'courseware-ready-kmp-test';
+  await store.add('coursewareTasks', {
+    id: coursewareTask,
+    query,
+    pages: [{ title: 'KMP 概述', narration: [] }],
+    status: 'slides_ready',
+    progress: 100,
+    createdAt: '2099-01-01T00:00:00.000Z',
+    updatedAt: '2099-01-01T00:00:00.000Z',
+  });
+
   const lookup = await fetch(`${baseUrl}/video/tasks?query=${encodeURIComponent(query)}`);
   assert.equal(lookup.status, 200);
   const found = (await lookup.json()).data;
   assert.equal(found.query, query);
-  assert.ok([firstTask, secondTask].includes(found.task_id), '应返回该知识点的某个已生成任务');
+  assert.equal(found.task_id, coursewareTask, '应优先返回已就绪的真课件任务');
+  assert.equal(found.format, 2);
+
+  // watch-page 再次打开同一知识点时复用该任务，不创建重复课件。
+  const beforeCount = store.data.coursewareTasks.length;
+  const reuse = await fetch(`${baseUrl}/courseware/generate`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ query, source: 'watch-page', style: '电子演播室' }),
+  });
+  assert.equal(reuse.status, 200);
+  const reused = (await reuse.json()).data;
+  assert.equal(reused.task_id, coursewareTask);
+  assert.equal(reused.reused, true);
+  assert.equal(store.data.coursewareTasks.length, beforeCount);
 
   // 未知知识点 → 404
   const missing = await fetch(`${baseUrl}/video/tasks?query=${encodeURIComponent('不存在的知识点zzz')}`);

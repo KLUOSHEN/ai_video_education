@@ -2429,9 +2429,13 @@
                 const payload = await response.json();
                 if (!response.ok) throw new Error(payload.error?.message || '搜索请求失败');
                 const normalized = payload.data.query;
-                saveHistory(normalized);
-                status.textContent = '已接收，正在进入课程生成页…';
-                location.href = 'watch.html?q=' + encodeURIComponent(normalized);
+                status.textContent = '正在查找已生成的课程…';
+                const taskId = await resolveVideoTask(normalized);
+                saveHistory(normalized, taskId ? { taskId } : undefined);
+                status.textContent = taskId ? '已找到上次课程，正在继续学习…' : '已接收，正在进入课程生成页…';
+                location.href = taskId
+                    ? 'watch.html?task_id=' + encodeURIComponent(taskId) + '&q=' + encodeURIComponent(normalized)
+                    : 'watch.html?q=' + encodeURIComponent(normalized);
             } catch (error) {
                 status.textContent = '提交失败：' + error.message + '。请确认后端服务已启动。';
             }
@@ -2809,7 +2813,8 @@
                 const res = await fetch('/api/v1/video/tasks?query=' + encodeURIComponent(query));
                 if (!res.ok) return null;
                 const payload = await res.json();
-                return payload.data && payload.data.task_id ? payload.data.task_id : null;
+                const data = payload.data;
+                return data && data.task_id && data.status !== 'failed' ? data.task_id : null;
             } catch (e) {
                 return null;
             }

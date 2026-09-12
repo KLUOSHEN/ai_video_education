@@ -1690,9 +1690,16 @@
         function loadLessonQuiz(query, taskId) {
             videoQuery = String(query || '').trim();
             window._currentTaskId = taskId || window._currentTaskId || null;
-            currentQuiz = generateQuiz(videoQuery);
             const key = quizKey();
-            quizState[key] = { answered: new Set(), score: 0, selections: {}, correctness: {}, pending: new Set() };
+            const saved = readLessonProgress(window._currentTaskId);
+            const savedQuiz = Array.isArray(saved?.quiz)
+                ? saved.quiz.filter(item => item && typeof item.q === 'string' && Array.isArray(item.opts)).slice(0, 10)
+                : [];
+            currentQuiz = savedQuiz.length ? savedQuiz : generateQuiz(videoQuery);
+            if (saved?.quizAi) currentQuiz._ai = true;
+            quizState[key] = restoreQuizState(saved?.quizState, currentQuiz.length);
+            // 即使尚未作答也固定本次题目顺序，返回课程时不会重新随机一套题。
+            saveLessonQuizProgress();
             renderQuiz();
         }
 
@@ -1710,6 +1717,87 @@
         let videoQuery = ''; // 生成视频时在 search 页输入的原始知识点文字
         let generatedAudio = null;
         let generatedAudioUrl = null;
+        const LESSON_PROGRESS_PREFIX = 'zx_lesson_progress_v1:';
+
+        function lessonProgressKey(taskId) {
+            return taskId ? LESSON_PROGRESS_PREFIX + String(taskId) : null;
+        }
+
+        function readLessonProgress(taskId) {
+            const key = lessonProgressKey(taskId);
+            if (!key) return null;
+            try {
+                const value = JSON.parse(localStorage.getItem(key) || 'null');
+                return value && typeof value === 'object' ? value : null;
+            } catch (e) { return null; }
+        }
+
+        function updateLessonProgress(taskId, patch) {
+            const key = lessonProgressKey(taskId);
+            if (!key) return;
+            try {
+                const previous = readLessonProgress(taskId) || {};
+                localStorage.setItem(key, JSON.stringify({
+                    ...previous,
+                    ...patch,
+                    taskId: String(taskId),
+                    query: videoQuery || previous.query || '',
+                    updatedAt: Date.now(),
+                }));
+            } catch (e) { /* 浏览器禁用本地存储时不影响课程播放 */ }
+        }
+
+        function restoreQuizState(saved, total) {
+            const raw = saved && typeof saved === 'object' ? saved : {};
+            const answered = new Set((Array.isArray(raw.answered) ? raw.answered : [])
+                .map(Number).filter(index => Number.isInteger(index) && index >= 0 && index < total));
+            const selections = raw.selections && typeof raw.selections === 'object' ? raw.selections : {};
+            const correctness = raw.correctness && typeof raw.correctness === 'object' ? raw.correctness : {};
+            let score = 0;
+            answered.forEach(index => { if (correctness[index]) score++; });
+            return { answered, score, selections, correctness, pending: new Set() };
+        }
+
+        function saveLessonQuizProgress() {
+            const taskId = window._currentTaskId;
+            const key = quizKey();
+            const state = quizState[key];
+            if (!taskId || !currentQuiz || !state) return;
+            updateLessonProgress(taskId, {
+                quiz: Array.from(currentQuiz).map(item => ({ ...item })),
+                quizAi: Boolean(currentQuiz._ai),
+                quizState: {
+                    answered: Array.from(state.answered || []),
+                    score: Number(state.score || 0),
+                    selections: state.selections || {},
+                    correctness: state.correctness || {},
+                },
+            });
+        }
+
+        function rememberCourseTask(query, taskId) {
+            if (!query || !taskId) return;
+            try {
+                const storageKey = 'search_history_v2';
+                let list = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                if (!Array.isArray(list)) list = [];
+                list = list.filter(item => item && item.query !== query);
+                list.unshift({ query, task_id: String(taskId), time: Date.now() });
+                localStorage.setItem(storageKey, JSON.stringify(list.slice(0, 20)));
+            } catch (e) { /* 不影响课程 */ }
+            const nextUrl = 'watch.html?task_id=' + encodeURIComponent(taskId) + '&q=' + encodeURIComponent(query);
+            try { history.replaceState(null, '', nextUrl); } catch (e) {}
+        }
+
+        async function resolveCourseTask(query) {
+            try {
+                const response = await fetch('/api/v1/video/tasks?query=' + encodeURIComponent(query));
+                if (!response.ok) return null;
+                const payload = await response.json();
+                const data = payload.data;
+                return data && data.task_id && data.status !== 'failed' ? data.task_id : null;
+            } catch (e) { return null; }
+        }
 
         const colorMap = { '算法': 'var(--primary)', '计算机网络': '#4caf50', '操作系统': '#ff9800', '数据结构': '#9c27b0', '数据库': '#e91e63' };
 
@@ -1732,7 +1820,19 @@
             videoQuery = query;
             if (location.protocol === 'file:') return loadLocalVideo(query);
             try {
-                showGenerationState(query, 'AI 正在生成音频、课程视频和测评题…');
+                showGenerationState(query, '正在查找上次生成的课程…');
+                let taskId = await resolveCourseTask(query);
+                if (taskId) {
+                    window._currentTaskId = taskId;
+                    window._isCourseware = false;
+                    if (window._cwPlayer?.destroy) window._cwPlayer.destroy();
+                    window._cwPlayer = null;
+                    const loaded = await loadSlideshow(taskId, query);
+                    if (!loaded) throw new Error('已保存的课程无法读取');
+                    rememberCourseTask(query, taskId);
+                    return;
+                }
+                showGenerationState(query, '没有找到已生成课程，AI 正在生成音频、课程视频和测评题…');
                 const response = await fetch('/api/v1/courseware/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1745,14 +1845,15 @@
                 });
                 const payload = await response.json();
                 if (!response.ok) throw new Error(payload.error?.message || '创建生成任务失败');
-                const taskId = payload.data?.task_id;
+                taskId = payload.data?.task_id;
                 if (!taskId) throw new Error('生成接口未返回 task_id');
                 window._currentTaskId = taskId;
                 window._isCourseware = false;
                 if (window._cwPlayer?.destroy) window._cwPlayer.destroy();
                 window._cwPlayer = null;
-                await loadSlideshow(taskId, query);
-                if (!window._deck) throw new Error('课程内容未生成，请稍后重试');
+                const loaded = await loadSlideshow(taskId, query);
+                if (!loaded) throw new Error('课程内容未生成，请稍后重试');
+                rememberCourseTask(query, taskId);
             } catch (error) {
                 console.warn('后端生成不可用，已切换为本地演示：', error);
                 loadLocalVideo(query);
@@ -1997,6 +2098,7 @@
             state.correctness[qIdx] = isCorrect;
             state.answered.add(qIdx);
             if (isCorrect) state.score++;
+            saveLessonQuizProgress();
             setQuizStatus(syncError ? '本次答案已显示，但暂时未同步到错题本，请检查网络后重新作答。' : '', Boolean(syncError));
 
             renderQuiz();
@@ -2017,6 +2119,7 @@
             quizState[videoKey].correctness[qIdx] = isCorrect;
             quizState[videoKey].answered.add(qIdx);
             if (isCorrect) quizState[videoKey].score++;
+            saveLessonQuizProgress();
             setQuizStatus(syncError ? '本次答案已显示，但暂时未同步到错题本，请检查网络后重新作答。' : '', Boolean(syncError));
             renderQuiz();
         }
@@ -2066,6 +2169,7 @@
             quizState[key] = { answered: new Set(), score: 0, selections: {}, correctness: {}, pending: new Set() };
             // AI 生成的题目保留原题；本地演示题才重新随机生成。
             if (!currentQuiz?._ai && !currentQuiz?.some(item => item.id)) currentQuiz = generateQuiz(videoQuery || document.getElementById('topSearch')?.value || key);
+            saveLessonQuizProgress();
             renderQuiz();
         }
 
@@ -2083,7 +2187,7 @@
             return { title: text.slice(0, 60), subject: '综合学习' };
         }
         // 测验状态统一键：本地演示模式用 currentVideoKey，幻灯片模式用 task_id
-        function quizKey() { return currentVideoKey || window._currentTaskId || 'local'; }
+        function quizKey() { return window._currentTaskId || currentVideoKey || 'local'; }
 
         // ===== 错题本 =====
         let mistakeFilter = 'false';
@@ -2356,6 +2460,7 @@
                 currentQuiz = questions;
                 currentQuiz._ai = true;
                 quizState[quizKey()] = { answered: new Set(), score: 0, selections: {}, correctness: {} };
+                saveLessonQuizProgress();
                 renderQuiz();
             } catch (error) {
                 console.warn('AI 生成题目失败：', error);
@@ -2688,6 +2793,7 @@
             const deck = window._deck;
             // 手动翻页（键盘/滚轮/触屏，reason=user）时若正在播放则同步切换语音
             deck.onChange = function (e) {
+                updateLessonProgress(taskId, { slideIndex: e.index });
                 // 真课件模式：讲解推进由 CoursewarePlayer 接管，此处仅同步侧栏高亮
                 if (window._cwPlayer) {
                     currentSlideIdx = e.index;
@@ -2753,6 +2859,7 @@
                         if (pi) pi.style.display = playing ? 'none' : 'flex';
                     },
                     onSentenceChange: function (pi, sj) {
+                        updateLessonProgress(taskId, { slideIndex: pi, sentenceIndex: sj });
                         try { cwNotesSetActive(pi, sj); } catch (e) {}
                     },
                 });
@@ -3106,9 +3213,25 @@
                 }
             };
 
+            // 返回同一课程时恢复到上次的页/讲解句；测评答案由 loadLessonQuiz 同步恢复。
+            const savedProgress = readLessonProgress(taskId);
+            if (savedProgress) {
+                const savedSlide = Math.max(0, Math.min(slides.length - 1, Number(savedProgress.slideIndex) || 0));
+                const savedSentence = Math.max(0, Number(savedProgress.sentenceIndex) || 0);
+                currentSlideIdx = savedSlide;
+                window._currentSlideIdx = savedSlide;
+                if (window._cwPlayer) window._cwPlayer.jumpToSentence(savedSlide, savedSentence);
+                else {
+                    renderSlideCard(poster, slides[savedSlide], savedSlide);
+                    highlightScene(savedSlide);
+                }
+            }
+
             // 自动开始播放
             startPlayback();
             descEl.textContent = query || '幻灯片教学';
+            if (query) rememberCourseTask(query, taskId);
+            return true;
         }
 
         // 公式渲染：优先用 KaTeX 输出真正的数学样式，缺失时降级为转义文本

@@ -3000,6 +3000,30 @@ async function api(req, res, url, id) {
         : "";
     const VOICES = ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-CN-YunjianNeural", "zh-CN-XiaoyiNeural"];
     const voice = VOICES.includes(input.voice) ? input.voice : (process.env.EDGE_TTS_VOICE || "zh-CN-XiaoxiaoNeural");
+    // watch.html 的推荐词/普通搜索属于“打开课程”动作。同一知识点已有可用或正在
+    // 生成的真课件时直接复用，避免用户返回后再次进入就重复消耗模型与 TTS。
+    // 搜索页显式点击“重新生成”不会传 watch-page，因此仍可按用户意图创建新版本。
+    if (input.source === "watch-page" && input.force !== true) {
+      const reusable = store.data.coursewareTasks
+        .filter((task) => task.query === text && task.status !== "failed")
+        .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+      const existing = reusable.find((task) => task.status === "slides_ready") || reusable[0];
+      if (existing) {
+        return send(
+          res,
+          200,
+          {
+            data: {
+              task_id: existing.id,
+              status: existing.status,
+              reused: true,
+            },
+            requestId: id,
+          },
+          id,
+        );
+      }
+    }
     const taskId = requestId();
     await store.add("coursewareTasks", {
       id: taskId,
@@ -3098,14 +3122,17 @@ async function api(req, res, url, id) {
     });
     return send(res, 202, { data: { task_id: taskId, status: "generating_tts" }, requestId: id }, id);
   }
-  // 按知识点查最近一次生成的视频任务（供搜索历史点击时定位已生成视频，latest wins）
+  // 按知识点查最近一次生成的课程任务（兼容旧 videoTasks 与真课件 coursewareTasks）。
   const videoTasksMatch = route.match(/^\/video\/tasks$/);
   if (videoTasksMatch && req.method === "GET") {
     const query = url.searchParams.get("query");
     if (!query || !query.trim())
       throw new ApiError(400, "MISSING_PARAM", "缺少 query 参数");
     const normalized = cleanText(String(query).slice(0, 4000), "query");
-    const matches = store.data.videoTasks
+    const matches = [
+      ...store.data.videoTasks.map((task) => ({ ...task, format: 1 })),
+      ...store.data.coursewareTasks.map((task) => ({ ...task, format: 2 })),
+    ]
       .filter((t) => t.query === normalized)
       .sort((a, b) =>
         String(b.createdAt || "").localeCompare(String(a.createdAt || "")),
@@ -3119,9 +3146,11 @@ async function api(req, res, url, id) {
       {
         data: {
           task_id: task.id,
+          format: task.format,
           status: task.status,
           audio_url: task.audioUrl,
           slides: task.slides,
+          pages: task.pages,
           query: task.query,
           progress: task.progress || 0,
           ...(task.error ? { error: task.error } : {}),
