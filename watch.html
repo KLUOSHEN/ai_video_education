@@ -204,7 +204,37 @@
         }
         .deck-fullscreen-btn:hover { background: rgba(79,107,240,.85); transform: scale(1.05); }
 
-        /* 播放器底部进度条/控制条（.player-overlay 等）已删除，相关 CSS 一并移除 */
+        /* 播放控制只保留播放、声音和字幕按钮；不提供可拖动时间轴。 */
+        .player-controls {
+            position: absolute;
+            left: 16px;
+            right: 72px;
+            bottom: 16px;
+            z-index: 901;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .player-controls button {
+            pointer-events: auto;
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 10px;
+            padding: 9px 12px;
+            color: #fff;
+            background: rgba(15,23,42,.68);
+            backdrop-filter: blur(4px);
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .player-controls button:hover { background: rgba(79,107,240,.88); }
+        .player-controls .player-hint {
+            color: rgba(255,255,255,.86);
+            font-size: 12px;
+            margin-left: 4px;
+            text-shadow: 0 1px 2px rgba(0,0,0,.5);
+        }
+        .player-controls button:disabled { opacity: .55; cursor: default; }
 
         /* ── 视频信息 ── */
         .video-info-section {
@@ -1390,8 +1420,14 @@
                 <div class="player-container" id="playerContainer">
                     <div class="player-poster" id="playerPoster">
                     </div>
-                    <button class="deck-fullscreen-btn" onclick="toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
+                    <div class="player-controls" aria-label="播放控制">
+                        <button id="playPauseBtn" type="button" onclick="togglePlay()" aria-label="播放"><i id="playIcon" class="fas fa-play"></i> 播放</button>
+                        <button id="muteBtn" type="button" onclick="toggleMute()" aria-label="静音"><i class="fas fa-volume-high"></i> 声音</button>
+                        <button id="subtitleBtn" type="button" onclick="toggleSubtitle()" aria-label="字幕"><i class="fas fa-closed-captioning"></i> 字幕</button>
+                        <span class="player-hint" id="playbackHint">课程加载后将自动播放</span>
                     </div>
+                    <button class="deck-fullscreen-btn" onclick="toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
+                </div>
 
                 <!-- 字幕 -->
                 <div class="subtitle-bar" id="subtitleBar" style="display:none;">
@@ -1411,6 +1447,22 @@
                         本视频详细讲解了一元二次方程求根公式（判别式法）的完整推导过程，从配方法入手，逐步展开，适合初中数学学习者。
                     </div>
                 </div>
+
+                <section class="quiz-section" id="quizSection" aria-labelledby="quizHeading">
+                    <div class="quiz-header-row">
+                        <div>
+                            <h2 id="quizHeading" style="font-size:18px;margin-bottom:4px;">知识测评</h2>
+                            <div id="quizSummary" style="font-size:13px;color:var(--text-muted);">加载题目中…</div>
+                        </div>
+                        <div class="quiz-score">得分 <span class="quiz-score-val" id="quizScore">—</span></div>
+                    </div>
+                    <div id="quizStatus" style="display:none;margin:0 0 12px;padding:10px 14px;border-radius:10px;font-size:13px;"></div>
+                    <div id="quizContainer"></div>
+                    <div class="quiz-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+                        <button class="quiz-reset" id="resetQuizBtn" type="button" onclick="resetQuiz()">重新作答</button>
+                        <button class="quiz-reset" id="aiQuizBtn" type="button" onclick="generateAIQuiz()">AI 生成测评</button>
+                    </div>
+                </section>
 
             </div>
         </div>
@@ -1633,6 +1685,17 @@
             });
         }
 
+        // 课程页始终有一组可立即作答的题目；后端生成的课件没有题目字段时，
+        // 使用同一套按关键词匹配的题库，答题仍通过 /attempts 记录到错题本。
+        function loadLessonQuiz(query, taskId) {
+            videoQuery = String(query || '').trim();
+            window._currentTaskId = taskId || window._currentTaskId || null;
+            currentQuiz = generateQuiz(videoQuery);
+            const key = quizKey();
+            quizState[key] = { answered: new Set(), score: 0, selections: {}, correctness: {}, pending: new Set() };
+            renderQuiz();
+        }
+
         // ===== 播放器状态 =====
         let isPlaying = false;
         let currentTime = 0;
@@ -1661,25 +1724,35 @@
             if (q) loadVideo(q);
         }
 
-        // 有后端时创建异步课程生成任务；直接打开 HTML 文件时保留本地演示数据。
+        // 搜索页和播放页统一走真课件流水线，避免旧的 /generations 接口只返回一张封面。
+        // 播放页不显示可拖动时间轴，课程按页面/语音自动播放。
         async function loadVideo(query) {
+            query = String(query || '').trim();
+            if (!query) return;
+            videoQuery = query;
             if (location.protocol === 'file:') return loadLocalVideo(query);
             try {
                 showGenerationState(query, 'AI 正在生成音频、课程视频和测评题…');
-                const response = await fetch('/api/v1/generations', {
+                const response = await fetch('/api/v1/courseware/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        text: query,
+                        query,
                         source: 'watch-page',
-                        voice: { type: 'neutral', speed: 1 },
-                        quiz: { types: ['choice', 'true_false', 'fill_blank'], difficulty: 'medium', count: 3 }
+                        style: '电子演播室',
+                        mode: 'staged'
                     })
                 });
                 const payload = await response.json();
                 if (!response.ok) throw new Error(payload.error?.message || '创建生成任务失败');
-                const result = await pollGeneration(payload.data);
-                applyGeneratedLesson(query, payload.data.id, result);
+                const taskId = payload.data?.task_id;
+                if (!taskId) throw new Error('生成接口未返回 task_id');
+                window._currentTaskId = taskId;
+                window._isCourseware = false;
+                if (window._cwPlayer?.destroy) window._cwPlayer.destroy();
+                window._cwPlayer = null;
+                await loadSlideshow(taskId, query);
+                if (!window._deck) throw new Error('课程内容未生成，请稍后重试');
             } catch (error) {
                 console.warn('后端生成不可用，已切换为本地演示：', error);
                 loadLocalVideo(query);
@@ -1693,6 +1766,8 @@
             document.getElementById('videoTitle').textContent = query;
             document.getElementById('videoDesc').textContent = message;
             document.getElementById('playerPoster').style.backgroundImage = 'linear-gradient(135deg, #152a52, var(--primary))';
+            const hint = document.getElementById('playbackHint');
+            if (hint) hint.textContent = '生成完成后自动播放';
             const quizContainerEl = document.getElementById('quizContainer');
             if (quizContainerEl) quizContainerEl.innerHTML = '<div style="padding:18px;color:var(--text-muted)">正在生成教学测评，请稍候…</div>';
         }
@@ -1729,6 +1804,8 @@
                 scenesList: scenes.map(scene => ({ name: `${scene.index}. ${scene.name}`, dur: formatGeneratedDuration(scene.durationSeconds || 12), visual: scene.visual })),
                 subtitles: scenes.map(scene => scene.narration || scene.name)
             };
+            videoQuery = query;
+            window._currentTaskId = taskId;
             loadLocalVideo(taskId);
             currentQuiz = (result.questions || []).map(question => ({
                 id: question.id,
@@ -1738,12 +1815,15 @@
                 exp: question.explanation,
                 type: question.type
             }));
-            quizState[taskId] = { answered: new Set(), score: 0, selections: {}, correctness: {} };
+            quizState[taskId] = { answered: new Set(), score: 0, selections: {}, correctness: {}, pending: new Set() };
             renderQuiz();
             const poster = result.poster?.url || (result.video?.mimeType === 'image/svg+xml' ? result.video.url : null);
             if (poster) document.getElementById('playerPoster').style.backgroundImage = `linear-gradient(rgba(10,25,55,.15), rgba(10,25,55,.15)), url("${poster}")`;
             generatedAudioUrl = result.audio?.url || null;
             if (generatedAudioUrl) generatedAudio = new Audio(generatedAudioUrl);
+            const hint = document.getElementById('playbackHint');
+            if (hint) hint.textContent = generatedAudio ? '正在自动播放讲解' : '课程已就绪，点击播放';
+            if (generatedAudio) playVideo();
         }
 
         function formatGeneratedDuration(seconds) {
@@ -1786,6 +1866,7 @@
             document.getElementById('videoViews').textContent = v.views + ' 次观看';
             document.getElementById('videoDesc').textContent = v.desc;
             _elOr('totalTime').textContent = v.duration;
+            setQuizStatus('', false);
 
             // 更新顶栏搜索
             document.getElementById('topSearch').value = v.title;
@@ -1804,9 +1885,11 @@
             // 停止之前的播放
             stopPlayback();
             _elOr('playIcon').className = 'fas fa-play-circle';
-            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i> 播放';
             document.getElementById('subtitleBar').style.display = 'none';
             subtitleVisible = false;
+            const hint = document.getElementById('playbackHint');
+            if (hint) hint.textContent = '课程已就绪，点击播放';
         }
 
         function renderScenes(v) {
@@ -1827,7 +1910,9 @@
             const container = document.getElementById('quizContainer');
             if (!container) return;
             const key = quizKey();
-            const state = quizState[key] || { answered: new Set(), score: 0, selections: {}, correctness: {} };
+            const state = quizState[key] || { answered: new Set(), score: 0, selections: {}, correctness: {}, pending: new Set() };
+            state.pending = state.pending || new Set();
+            quizState[key] = state;
             const answered = state.answered;
             const total = currentQuiz.length;
             const score = state.score;
@@ -1843,7 +1928,7 @@
                 <div class="quiz-card${answered.has(i) ? ' answered' : ''}">
                     <div class="quiz-card-header">
                         <div class="quiz-num">${i + 1}</div>
-                        <div class="quiz-question">${item.q}</div>
+                    <div class="quiz-question">${escapeHtml(item.q)}</div>
                     </div>
                     <div class="quiz-options">
                         ${item.type === 'fill_blank' ? `
@@ -1859,7 +1944,7 @@
                             return `<div class="quiz-option${cls ? ' ' + cls : ''}"
                                 onclick="selectOption('${key}', ${i}, ${j})">
                                 <span class="quiz-option-label">${labels[j]}</span>
-                                <span class="quiz-option-text">${opt}</span>
+                                <span class="quiz-option-text">${escapeHtml(opt)}</span>
                             </div>`;
                         }).join('')}
                     </div>
@@ -1892,38 +1977,27 @@
         async function selectOption(videoKey, qIdx, optIdx) {
             if (!currentQuiz) return;
             if (quizState[videoKey]?.answered?.has(qIdx)) return;
+            const state = quizState[videoKey] || (quizState[videoKey] = { answered: new Set(), score: 0, selections: {}, correctness: {}, pending: new Set() });
+            state.pending = state.pending || new Set();
+            if (state.pending.has(qIdx)) return;
+            state.pending.add(qIdx);
 
             const item = currentQuiz[qIdx];
             const correct = item.ans;
             let isCorrect = optIdx === correct;
+            let syncError = null;
             try {
-                const response = await fetch('/api/v1/attempts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-client-id': getClientId() },
-                    body: JSON.stringify({
-                        questionId: item.id || null,
-                        taskId: window._currentTaskId || null,
-                        topic: currentTopic(),
-                        type: item.type || 'choice',
-                        answer: item.type === 'choice' ? ['A', 'B', 'C', 'D'][optIdx] : item.opts[optIdx],
-                        correct: isCorrect,
-                        question: item.q,
-                        correctAnswer: typeof correct === 'number' ? item.opts[correct] : String(correct),
-                        options: item.opts || item.options || [],
-                    })
-                });
-                const payload = await response.json();
-                if (!response.ok) throw new Error(payload.error?.message || '记录失败');
-                isCorrect = payload.data.correct;
-            } catch (error) { console.warn('答题记录失败，已使用本地结果：', error); }
+                isCorrect = await recordQuizAttempt(item, item.type === 'choice' ? ['A', 'B', 'C', 'D'][optIdx] : item.opts[optIdx], isCorrect);
+            } catch (error) { syncError = error; console.warn('答题记录失败，已使用本地结果：', error); }
 
-            if (!quizState[videoKey]) quizState[videoKey] = { answered: new Set(), score: 0, selections: {}, correctness: {} };
-            if (!quizState[videoKey].selections) quizState[videoKey].selections = {};
-            if (!quizState[videoKey].correctness) quizState[videoKey].correctness = {};
-            quizState[videoKey].selections[qIdx] = optIdx;
-            quizState[videoKey].correctness[qIdx] = isCorrect;
-            quizState[videoKey].answered.add(qIdx);
-            if (isCorrect) quizState[videoKey].score++;
+            state.pending.delete(qIdx);
+            if (!state.selections) state.selections = {};
+            if (!state.correctness) state.correctness = {};
+            state.selections[qIdx] = optIdx;
+            state.correctness[qIdx] = isCorrect;
+            state.answered.add(qIdx);
+            if (isCorrect) state.score++;
+            setQuizStatus(syncError ? '本次答案已显示，但暂时未同步到错题本，请检查网络后重新作答。' : '', Boolean(syncError));
 
             renderQuiz();
         }
@@ -1934,39 +2008,64 @@
             if (!answer) return;
             const item = currentQuiz[qIdx];
             let isCorrect = answer.toLowerCase() === String(item.ans).toLowerCase();
+            let syncError = null;
             try {
-                const response = await fetch('/api/v1/attempts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-client-id': getClientId() },
-                    body: JSON.stringify({
-                        questionId: item.id || null,
-                        taskId: window._currentTaskId || null,
-                        topic: currentTopic(),
-                        type: item.type || 'fill_blank',
-                        answer,
-                        correct: isCorrect,
-                        question: item.q,
-                        correctAnswer: String(item.ans),
-                        options: item.opts || item.options || [],
-                    })
-                });
-                const payload = await response.json();
-                if (!response.ok) throw new Error(payload.error?.message || '记录失败');
-                isCorrect = payload.data.correct;
-            } catch (error) { console.warn('答题记录失败，已使用本地结果：', error); }
-            if (!quizState[videoKey]) quizState[videoKey] = { answered: new Set(), score: 0, selections: {}, correctness: {} };
+                isCorrect = await recordQuizAttempt(item, answer, isCorrect);
+            } catch (error) { syncError = error; console.warn('答题记录失败，已使用本地结果：', error); }
+            if (!quizState[videoKey]) quizState[videoKey] = { answered: new Set(), score: 0, selections: {}, correctness: {}, pending: new Set() };
             quizState[videoKey].selections[qIdx] = answer;
             quizState[videoKey].correctness[qIdx] = isCorrect;
             quizState[videoKey].answered.add(qIdx);
             if (isCorrect) quizState[videoKey].score++;
+            setQuizStatus(syncError ? '本次答案已显示，但暂时未同步到错题本，请检查网络后重新作答。' : '', Boolean(syncError));
             renderQuiz();
+        }
+
+        async function recordQuizAttempt(item, answer, localCorrect) {
+            const request = {
+                questionId: item.id || null,
+                taskId: window._currentTaskId || null,
+                topic: currentTopic(),
+                type: item.type || 'choice',
+                answer,
+                correct: localCorrect,
+                question: item.q,
+                correctAnswer: typeof item.ans === 'number' ? item.opts[item.ans] : String(item.ans ?? ''),
+                options: item.opts || item.options || [],
+            };
+            let lastError;
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const response = await fetch('/api/v1/attempts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-client-id': getClientId() },
+                        body: JSON.stringify(request),
+                    });
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(payload.error?.message || '记录失败');
+                    return Boolean(payload.data?.correct);
+                } catch (error) {
+                    lastError = error;
+                    if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 250));
+                }
+            }
+            throw lastError || new Error('记录失败');
+        }
+
+        function setQuizStatus(message, isError) {
+            const el = document.getElementById('quizStatus');
+            if (!el) return;
+            el.textContent = message || '';
+            el.style.display = message ? 'block' : 'none';
+            el.style.background = isError ? '#fff7ed' : '#f0fdf4';
+            el.style.color = isError ? '#9a3412' : '#166534';
         }
 
         function resetQuiz() {
             const key = quizKey();
-            quizState[key] = { answered: new Set(), score: 0, selections: {}, correctness: {} };
+            quizState[key] = { answered: new Set(), score: 0, selections: {}, correctness: {}, pending: new Set() };
             // AI 生成的题目保留原题；本地演示题才重新随机生成。
-            if (!currentQuiz?._ai && !currentQuiz?.some(item => item.id)) currentQuiz = generateQuiz(key);
+            if (!currentQuiz?._ai && !currentQuiz?.some(item => item.id)) currentQuiz = generateQuiz(videoQuery || document.getElementById('topSearch')?.value || key);
             renderQuiz();
         }
 
@@ -2326,12 +2425,17 @@
         function playVideo() {
             if (!currentVideoKey) return;
             isPlaying = true;
+            const hint = document.getElementById('playbackHint');
+            if (hint) hint.textContent = generatedAudio ? '正在播放讲解' : '正在播放课程';
             if (generatedAudio) {
                 generatedAudio.muted = isMuted;
-                generatedAudio.play().catch(error => console.warn('音频播放失败：', error));
+                generatedAudio.play().catch(error => {
+                    console.warn('音频播放失败：', error);
+                    if (hint) hint.textContent = '浏览器阻止了自动播放，请点击“播放”';
+                });
             }
             _elOr('playIcon').className = 'fas fa-pause-circle';
-            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
+            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i> 暂停';
             if (subtitleVisible) {
                 document.getElementById('subtitleBar').style.display = 'flex';
                 updateSubtitle();
@@ -2351,7 +2455,9 @@
             isPlaying = false;
             if (generatedAudio) generatedAudio.pause();
             _elOr('playIcon').className = 'fas fa-play-circle';
-            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i> 播放';
+            const hint = document.getElementById('playbackHint');
+            if (hint) hint.textContent = '已暂停，点击播放继续';
             clearInterval(playInterval);
         }
 
@@ -2365,9 +2471,11 @@
             currentTime = 0;
             updateProgress();
             _elOr('playIcon').className = 'fas fa-play-circle';
-            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+            _elOr('playPauseBtn').innerHTML = '<i class="fas fa-play"></i> 播放';
             document.querySelectorAll('.scene-item').forEach(el => el.classList.remove('active'));
             document.getElementById('subtitleBar').style.display = 'none';
+            const hint = document.getElementById('playbackHint');
+            if (hint) hint.textContent = '课程已就绪，点击播放';
         }
 
         function skipTime(sec) {
@@ -2575,6 +2683,7 @@
             }
 
             // 构建 frontend-slides 固定 16:9 演示舞台（一次性渲染全部胶片）
+            loadLessonQuiz(query, taskId);
             buildDeck(poster, slides);
             const deck = window._deck;
             // 手动翻页（键盘/滚轮/触屏，reason=user）时若正在播放则同步切换语音
@@ -2637,7 +2746,9 @@
                     els: { progressFill, currentTime: currentTimeEl, totalTime: totalTimeEl, subtitleText: document.getElementById('subtitleText') },
                     onStateChanged: function (playing) {
                         isSlidePlaying = playing;
-                        playPauseBtn.innerHTML = playing ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+                        playPauseBtn.innerHTML = playing ? '<i class="fas fa-pause"></i> 暂停' : '<i class="fas fa-play"></i> 播放';
+                        const hint = document.getElementById('playbackHint');
+                        if (hint) hint.textContent = playing ? '正在自动播放讲解' : '已暂停，点击播放继续';
                         const pi = poster.querySelector('.player-poster-inner');
                         if (pi) pi.style.display = playing ? 'none' : 'flex';
                     },
@@ -2741,7 +2852,9 @@
                 const pi = poster.querySelector('.player-poster-inner');
                 if (pi) pi.style.display = 'none';
                 isSlidePlaying = true;
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i> 暂停';
+                const hint = document.getElementById('playbackHint');
+                if (hint) hint.textContent = '正在自动播放讲解';
                 if (slideAudios.length) {
                     // 逐页音频模式
                     playPage(currentSlideIdx);
@@ -2786,7 +2899,9 @@
 
             function pausePlayback() {
                 isSlidePlaying = false;
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i> 播放';
+                const hint = document.getElementById('playbackHint');
+                if (hint) hint.textContent = '已暂停，点击播放继续';
                 if (window._cwPlayer) { window._cwPlayer.pause(); return; }
                 if (animFrameId) cancelAnimationFrame(animFrameId);
                 if (noAudioTimer) { clearTimeout(noAudioTimer); noAudioTimer = null; }
