@@ -204,7 +204,37 @@
         }
         .deck-fullscreen-btn:hover { background: rgba(79,107,240,.85); transform: scale(1.05); }
 
-        /* 播放器不显示底部控制按钮，也不提供可拖动时间轴；课程按页面和语音自动播放。 */
+        /* 播放控制只保留播放、声音和字幕按钮；不提供可拖动时间轴。 */
+        .player-controls {
+            position: absolute;
+            left: 16px;
+            right: 72px;
+            bottom: 16px;
+            z-index: 901;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .player-controls button {
+            pointer-events: auto;
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 10px;
+            padding: 9px 12px;
+            color: #fff;
+            background: rgba(15,23,42,.68);
+            backdrop-filter: blur(4px);
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .player-controls button:hover { background: rgba(79,107,240,.88); }
+        .player-controls .player-hint {
+            color: rgba(255,255,255,.86);
+            font-size: 12px;
+            margin-left: 4px;
+            text-shadow: 0 1px 2px rgba(0,0,0,.5);
+        }
+        .player-controls button:disabled { opacity: .55; cursor: default; }
 
         /* ── 视频信息 ── */
         .video-info-section {
@@ -1389,6 +1419,12 @@
                 <!-- 视频播放器 -->
                 <div class="player-container" id="playerContainer">
                     <div class="player-poster" id="playerPoster">
+                    </div>
+                    <div class="player-controls" aria-label="播放控制">
+                        <button id="playPauseBtn" type="button" onclick="togglePlay()" aria-label="播放"><i id="playIcon" class="fas fa-play"></i> 播放</button>
+                        <button id="muteBtn" type="button" onclick="toggleMute()" aria-label="静音"><i class="fas fa-volume-high"></i> 声音</button>
+                        <button id="subtitleBtn" type="button" onclick="toggleSubtitle()" aria-label="字幕"><i class="fas fa-closed-captioning"></i> 字幕</button>
+                        <span class="player-hint" id="playbackHint">课程加载后将自动播放</span>
                     </div>
                     <button class="deck-fullscreen-btn" onclick="toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
                 </div>
