@@ -17,6 +17,15 @@ data/store.json
 
 # ── 大文件 / 测试索引（超出 GitHub 100MB 限制，不提交） ──
 data/_test3-index.json
+
+# ── 运行日志与临时产物（不提交） ──
+*.log
+_frontend-slides-tmp/
+.pptx-build-*/
+_checkdepth.js
+_inline.mjs
+_inspect_slides.js
+_inspect_tasks.js
 storage/audio/*
 storage/video/*
 storage/poster/*
