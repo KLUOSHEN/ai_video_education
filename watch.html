@@ -889,7 +889,10 @@
         /* ── 响应式 ── */
         @media (max-width: 900px) {
             .main-layout { flex-direction: column; padding: 12px 16px; }
-            .sidebar-col { width: 100%; padding-left: 0; padding-top: 24px; }
+            body { overflow-y: auto; }
+            #mainLayout { height: auto; min-height: calc(100vh - 64px); overflow: visible; }
+            .player-col { height: auto; overflow: visible; }
+            .sidebar-col { order: 0; width: 100%; height: auto !important; max-height: 360px; padding-left: 0; padding-top: 24px; }
             .topbar-search { max-width: 300px; }
             .topbar-logo span { display: none; }
         }
@@ -1190,6 +1193,7 @@
         /* ── 布局体系(完整引擎,来自 bold-template-pack) ── */
         #playerPoster .dk-area{ flex:1; min-height:0; align-content:start; margin-top:26px; }
         #playerPoster .dk-panel{ padding:16px 18px; min-height:0; box-sizing:border-box; }
+        #playerPoster .dk-stack{display:flex;flex-direction:column;gap:14px;min-height:0;}
         #playerPoster .dk-pan-txt{ font-size:28px; line-height:1.45; }
         #playerPoster .dk-pan-label{ font-weight:600; margin-bottom:12px; font-size:26px; letter-spacing:.04em; }
         /* Blue Professional：奶油底 + 电蓝描边圆角卡片(consulting) */
@@ -1221,7 +1225,7 @@
         .dk-kicker { font-size: 20px; letter-spacing: .2em; text-transform: uppercase; color: var(--dk-accent); font-weight: 700; }
         .dk-title { font-family: var(--dk-font-display); font-size: var(--dk-title-size); font-weight: 800; line-height: 1.04; color: var(--dk-text); margin: 10px 0 6px; }
         .dk-subtitle { font-size: 30px; color: var(--dk-subtitle); font-family: var(--dk-font-body); line-height: 1.5; }
-        .dk-pageno { position: absolute; right: 52px; bottom: -40px; font-family: var(--dk-font-display); font-size: 300px; font-weight: 800; line-height: 1; color: var(--dk-accent); opacity: .09; pointer-events: none; }
+        .dk-pageno { position: absolute; right: 52px; bottom: 18px; font-family: var(--dk-font-display); font-size: 220px; font-weight: 800; line-height: .9; color: var(--dk-accent); opacity: .07; pointer-events: none; }
         .dk-region { margin-top: 18px; font-size: 17px; color: var(--dk-accent); font-weight: 700; border-left: 4px solid var(--dk-accent); padding-left: 14px; }
         .dk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; margin-top: 26px; flex: 1; min-height: 0; }
         .dk-col { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: visible; }
@@ -1249,11 +1253,20 @@
         #playerPoster .dk-col table td { font-size: 26px !important; padding: 6px 10px; }
         #playerPoster .dk-col .chart-box { padding: 12px; }
         #playerPoster .dk-card { min-height: 0; }
-        /* 核心要点区使用紧凑字号，避免多行内容把底部面板推出舞台。 */
-        #playerPoster .dk-col .dk-card ul { font-size: 18px !important; line-height: 1.45; padding-left: 22px; }
-        #playerPoster .dk-col .dk-card ul li { font-size: 18px !important; line-height: 1.45; }
-        #playerPoster .dk-col .dk-card > div { font-size: 20px !important; line-height: 1.45; }
-        #playerPoster .dk-col .dk-card pre { font-size: 16px !important; line-height: 1.5; }
+        /* 可视化和要点都维持可读下限，避免局部内容被压成“缩略图字号”。 */
+        #playerPoster .dk-col .dk-card ul { font-size: 22px !important; line-height: 1.45; padding-left: 26px; }
+        #playerPoster .dk-col .dk-card ul li { font-size: 22px !important; line-height: 1.45; }
+        #playerPoster .dk-col .dk-card > div { font-size: 22px !important; line-height: 1.45; }
+        #playerPoster .dk-col .dk-card pre { font-size: 19px !important; line-height: 1.5; }
+        #playerPoster .dk-pan-vis .visual-card { min-width:0; font-size:20px; line-height:1.45; }
+        #playerPoster .dk-pan-vis .visual-card table th,
+        #playerPoster .dk-pan-vis .visual-card table td { font-size:18px !important; line-height:1.35; }
+        #playerPoster .dk-pan-vis .visual-card ul,
+        #playerPoster .dk-pan-vis .visual-card li { font-size:20px !important; line-height:1.45; }
+        #playerPoster .dk-pan-vis .visual-card svg text { font-size:14px; }
+        #playerPoster .dk-pan-chart > div { margin-top:8px !important; }
+        #playerPoster .slide[data-layout="chart_top"] .dk-pan-chart svg { height:360px !important; width:100%; aspect-ratio:auto !important; }
+        #playerPoster .slide[data-layout="chart_top"] .dk-pan-vis { overflow:hidden; }
         #playerPoster .dk-area { overflow: visible; }
         /* 极端长内容自动进入紧凑档，避免生成结果超出 16:9 舞台底边。 */
         #playerPoster .slide.dk-fit-compact { --dk-title-size: 80px; --dk-body-size: 24px; }
@@ -1269,6 +1282,16 @@
         #playerPoster .slide.dk-fit-tight .dk-pan-txt,
         #playerPoster .slide.dk-fit-tight .dk-pan-txt p { font-size: 21px !important; line-height: 1.32; }
         #playerPoster .slide.dk-fit-tight .dk-col .vcard li { font-size: 22px !important; line-height: 1.32; }
+        #playerPoster .slide.dk-fit-tight .dk-area,
+        #playerPoster .slide.dk-fit-tight .dk-stack { gap:8px !important; }
+        #playerPoster .slide.dk-fit-tight .dk-panel { padding:10px 12px; }
+        #playerPoster .slide.dk-fit-emergency { --dk-title-size: 60px; --dk-body-size: 19px; }
+        #playerPoster .slide.dk-fit-emergency .dk-pad-area { top:24px; bottom:18px; }
+        #playerPoster .slide.dk-fit-emergency .dk-area { margin-top:8px; gap:6px !important; }
+        #playerPoster .slide.dk-fit-emergency .dk-panel { padding:8px 10px; }
+        #playerPoster .slide.dk-fit-emergency .dk-pan-label { font-size:20px; margin-bottom:6px; }
+        #playerPoster .slide.dk-fit-emergency .dk-pan-txt,
+        #playerPoster .slide.dk-fit-emergency .dk-pan-txt p { font-size:19px !important; line-height:1.28; }
         /* ── 随堂测验（演示舞台最后一页） ── */
         #playerPoster .quiz-slide{position:relative;width:1920px;height:1080px;overflow:hidden;display:flex;flex-direction:column;background:#fff;font-family:'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
         /* ── 讲义笔记抽屉（参考 OpenMAIC lecture-notes） ── */
@@ -1338,17 +1361,18 @@
         .cw-fx-zoom{transform:scale(1.04);filter:brightness(1.12);transition:transform .5s cubic-bezier(.34,1.56,.64,1), filter .5s;transform-origin:center}
         .dk-pan-scene{display:flex;flex-direction:column}
         .cw-scene-host{position:relative;flex:1;min-height:420px;border-radius:10px;overflow:hidden;background:#0b1222;color:#e2e8f0}
-        .cw-scene-host canvas{display:block}
+        .cw-scene-host canvas{display:block;position:absolute;inset:0;width:100%!important;height:100%!important}
         .cw-scene-error{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;color:#fecaca;background:linear-gradient(135deg,rgba(127,29,29,.34),rgba(15,23,42,.92));font-size:18px;line-height:1.6}
-        .cw-scene-ctl{display:flex;flex-wrap:wrap;gap:10px 18px;padding:8px 10px;background:rgba(15,23,42,.9);border-radius:8px;margin-top:8px}
+        .cw-scene-ctl{display:flex;flex-wrap:wrap;gap:10px 18px;padding:8px 10px;background:rgba(15,23,42,.9);border-radius:8px;position:absolute;z-index:2;left:8px;right:8px;top:8px}
         .cw-ctl-row{display:flex;align-items:center;gap:6px;font-size:13px;color:#cbd5e1}
         .cw-ctl-row select{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:2px 6px;font-size:13px}
         .cw-ctl-row input[type=range]{width:90px;accent-color:#6366f1}
         .cw-ctl-val{min-width:22px;text-align:right;color:#a5b4fc;font-weight:600}
-        .cw-scene-transport{display:flex;gap:8px;margin-top:8px}
+        .cw-scene-transport{display:flex;gap:8px;position:absolute;z-index:2;left:8px;bottom:8px}
         .cw-scene-transport button{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:4px 12px;font-size:13px;cursor:pointer}
         .cw-scene-transport button:hover{background:#334155}
         .cw-scene-transport select{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:3px 6px;font-size:13px}
+        .cw-scene-cap{position:absolute;z-index:2;left:50%;bottom:12px;transform:translateX(-50%);max-width:78%;padding:6px 12px;border-radius:16px;background:rgba(15,23,42,.82);color:#dbeafe;font-size:13px;line-height:1.4;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .cw-voice-box{display:flex;align-items:center;gap:6px;margin-right:10px}
         .cw-voice-box select{background:rgba(30,41,59,.9);color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer}
         .cw-voice-tip{font-size:12px;color:#a5b4fc;white-space:nowrap}
@@ -2693,6 +2717,92 @@
             const descEl = document.getElementById('videoDesc');
             const maxAttempts = 300; // 300 × 2s = 最多等待 10 分钟（逐页语音合成较慢）
             let audioRepairAttempted = false;
+            let runtimeAudioRepairPromise = null;
+            let runtimeAudioRepairCount = 0;
+            let autoplayUnlockArmed = false;
+
+            function disarmAutoplayUnlock() {
+                if (!autoplayUnlockArmed) return;
+                autoplayUnlockArmed = false;
+                document.removeEventListener('pointerdown', resumeAfterFirstGesture, true);
+                document.removeEventListener('keydown', resumeAfterFirstGesture, true);
+            }
+            function resumeAfterFirstGesture() {
+                disarmAutoplayUnlock();
+                if (window._cwPlayer && !window._cwPlayer.playing) window._cwPlayer.play();
+                else if (!window._cwPlayer && typeof startPlayback === 'function') startPlayback();
+            }
+            function armAutoplayUnlock() {
+                if (autoplayUnlockArmed) return;
+                autoplayUnlockArmed = true;
+                document.addEventListener('pointerdown', resumeAfterFirstGesture, true);
+                document.addEventListener('keydown', resumeAfterFirstGesture, true);
+            }
+
+            // 播放期间某个媒体请求失败时，自动重跑整批 TTS，并把新的一组唯一 URL
+            // 原位写回播放器。整个过程停在当前句，修复成功后自动继续，不静默翻页。
+            function repairRuntimeAudio(context) {
+                if (runtimeAudioRepairPromise) return runtimeAudioRepairPromise;
+                if (runtimeAudioRepairCount >= 2) {
+                    descEl.textContent = '配音连续两次自动修复失败，播放已停在当前页。请检查服务器 TTS 配置后重试。';
+                    return Promise.resolve(false);
+                }
+                runtimeAudioRepairCount++;
+                const pageNo = context && Number.isFinite(context.pageIndex) ? context.pageIndex + 1 : 1;
+                descEl.textContent = '第 ' + pageNo + ' 页配音请求异常，正在自动修复（第 ' + runtimeAudioRepairCount + '/2 次）…';
+                runtimeAudioRepairPromise = (async function () {
+                    try {
+                        const repair = await fetch('/api/v1/courseware/resynth', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ task_id: taskId, voice: window._cwVoice || 'zh-CN-XiaoxiaoNeural' })
+                        });
+                        if (!repair.ok && repair.status !== 409) {
+                            const payload = await repair.json().catch(() => ({}));
+                            throw new Error((payload.error && payload.error.message) || ('HTTP ' + repair.status));
+                        }
+                        for (let attempt = 0; attempt < 200; attempt++) {
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+                            const statusResponse = await fetch('/api/v1/video/status?task_id=' + encodeURIComponent(taskId), { cache: 'no-store' });
+                            if (!statusResponse.ok) throw new Error('查询修复进度失败：HTTP ' + statusResponse.status);
+                            const statusPayload = await statusResponse.json();
+                            const repaired = statusPayload.data;
+                            if (repaired && repaired.error && repaired.error.code === 'RESYNTH_FAILED') {
+                                throw new Error(repaired.error.message || '重新合成失败');
+                            }
+                            if (repaired && repaired.status === 'slides_ready') {
+                                const narration = (repaired.pages || []).flatMap(page => Array.isArray(page.narration) ? page.narration : []);
+                                if (!narration.length || narration.some(sentence => !sentence || !sentence.audio)) {
+                                    throw new Error('重新合成完成，但仍有音频缺失');
+                                }
+                                (repaired.pages || []).forEach((newPage, pageIndex) => {
+                                    const oldPage = slides[pageIndex];
+                                    if (!oldPage) return;
+                                    (newPage.narration || []).forEach((newSentence, sentenceIndex) => {
+                                        const oldSentence = oldPage.narration && oldPage.narration[sentenceIndex];
+                                        if (!oldSentence) return;
+                                        oldSentence.audio = newSentence.audio;
+                                        delete oldSentence._dur;
+                                    });
+                                });
+                                descEl.textContent = (query || '课件') + ' · 配音已自动修复，继续播放';
+                                return true;
+                            }
+                            if (repaired && repaired.status === 'failed') {
+                                throw new Error((repaired.error && repaired.error.message) || '重新合成失败');
+                            }
+                        }
+                        throw new Error('重新合成超时');
+                    } catch (repairError) {
+                        console.error('[courseware.audio] runtime repair failed', repairError);
+                        descEl.textContent = '第 ' + pageNo + ' 页配音自动修复失败：' + repairError.message + '。播放已停在当前页，请稍后重试。';
+                        return false;
+                    } finally {
+                        runtimeAudioRepairPromise = null;
+                    }
+                })();
+                return runtimeAudioRepairPromise;
+            }
 
             for (let i = 0; i < maxAttempts; i++) {
                 try {
@@ -2864,6 +2974,10 @@
                     els: { progressFill, currentTime: currentTimeEl, totalTime: totalTimeEl, subtitleText: document.getElementById('subtitleText') },
                     onStateChanged: function (playing) {
                         isSlidePlaying = playing;
+                        if (playing) {
+                            disarmAutoplayUnlock();
+                            descEl.textContent = (query || '课件') + ' · 正在讲解第 ' + ((window._cwPlayer && window._cwPlayer.pageIdx || 0) + 1) + '/' + slides.length + ' 页';
+                        }
                         playPauseBtn.innerHTML = playing ? '<i class="fas fa-pause"></i> 暂停' : '<i class="fas fa-play"></i> 播放';
                         const hint = document.getElementById('playbackHint');
                         if (hint) hint.textContent = playing ? '正在自动播放讲解' : '已暂停，点击播放继续';
@@ -2872,12 +2986,17 @@
                         const blocked = error && error.name === 'NotAllowedError';
                         const pageNo = context && Number.isFinite(context.pageIndex) ? context.pageIndex + 1 : currentSlideIdx + 1;
                         console.warn('[courseware.audio] playback stopped', { error, context });
-                        descEl.textContent = blocked
-                            ? '浏览器阻止了自动有声播放。请在课件空白处单击一次；播放会从当前页继续。'
-                            : '第 ' + pageNo + ' 页讲解音频加载失败，已暂停且不会自动翻页。请刷新页面或重新生成课件。';
+                        if (blocked) {
+                            descEl.textContent = '浏览器暂未授予首次有声播放权限；你的下一次任意操作会自动继续当前页。';
+                            armAutoplayUnlock();
+                            return false;
+                        }
+                        descEl.textContent = '第 ' + pageNo + ' 页讲解音频加载失败，正在自动重试并修复…';
+                        return repairRuntimeAudio(context);
                     },
                     onSentenceChange: function (pi, sj) {
                         updateLessonProgress(taskId, { slideIndex: pi, sentenceIndex: sj });
+                        if (isSlidePlaying) descEl.textContent = (query || '课件') + ' · 正在讲解第 ' + (pi + 1) + '/' + slides.length + ' 页';
                         try { cwNotesSetActive(pi, sj); } catch (e) {}
                     },
                 });
@@ -2898,9 +3017,16 @@
                 const a = new Audio(it.url);
                 a.preload = 'metadata';
                 it.audio = a;
+                let metaSettled = false;
+                const finishMeta = function () {
+                    if (metaSettled) return false;
+                    metaSettled = true;
+                    metaLoaded++;
+                    return true;
+                };
                 a.addEventListener('loadedmetadata', () => {
                     it.duration = a.duration || 0;
-                    metaLoaded++;
+                    if (!finishMeta()) return;
                     if (totalMeta > 0 && metaLoaded >= totalMeta) {
                         totalDuration = slideAudios.reduce((s, x) => s + (x.duration || 0), 0) || 60;
                         totalTimeEl.textContent = formatTime(totalDuration);
@@ -2908,12 +3034,20 @@
                         document.getElementById('videoDuration').textContent = slides.length + ' 页 · ' + formatTime(totalDuration);
                     }
                 });
+                a.addEventListener('error', () => {
+                    if (!finishMeta()) return;
+                    if (totalMeta > 0 && metaLoaded >= totalMeta) {
+                        totalDuration = slideAudios.reduce((s, x) => s + (x.duration || Math.max(6, String((slides[x.index] || {}).text || '').length * .22)), 0) || 60;
+                        totalTimeEl.textContent = formatTime(totalDuration);
+                    }
+                }, { once: true });
                 a.load();
             });
 
             // 播放第 index 页语音（独立音频函数，供 playPage 与手动翻页共用）
             let playingAudio = null;   // 当前正在播放的音频，翻页时先停旧音，避免多个声音叠加
-            function playPageAudio(index) {
+            function playPageAudio(index, retryAttempt) {
+                retryAttempt = retryAttempt || 0;
                 if (noAudioTimer) { clearTimeout(noAudioTimer); noAudioTimer = null; }
                 // 先停下正在播放的音频，防止连续翻页导致多音叠加
                 if (playingAudio && playingAudio !== (slideAudios[index] ? slideAudios[index].audio : null)) {
@@ -2927,15 +3061,23 @@
                     a.muted = slideMuted;
                     a.currentTime = 0;
                     a.onended = null;
+                    a.onerror = null;
                     a.onended = () => {
                         if (currentSlideIdx === index && isSlidePlaying) {
                             if (index < slides.length - 1) playPage(index + 1);
                             else stopPlayback();
                         }
                     };
-                    a.play().catch((error) => onPageNoSound(error));
+                    let failureHandled = false;
+                    const handleFailure = (error) => {
+                        if (failureHandled) return;
+                        failureHandled = true;
+                        onPageNoSound(error, index, retryAttempt);
+                    };
+                    a.onerror = () => handleFailure(new Error('当前页音频媒体加载失败'));
+                    a.play().catch(handleFailure);
                 } else {
-                    onPageNoSound(new Error('当前页没有生成音频文件'));
+                    onPageNoSound(new Error('当前页没有生成音频文件'), index, retryAttempt);
                 }
             }
             // 播放指定页：加载该页音频，播完自动切下一页（演示舞台由 renderSlideCard→deck 导航）
@@ -2947,8 +3089,23 @@
             }
 
             // 音频不可用时原地暂停，避免静默计时造成课件快速自动翻页。
-            function onPageNoSound(error) {
+            function onPageNoSound(error, index, retryAttempt) {
                 if (!isSlidePlaying) return;
+                const blocked = error && error.name === 'NotAllowedError';
+                const item = slideAudios[index];
+                if (!blocked && item && item.url && retryAttempt < 2) {
+                    const retryUrl = new URL(item.url, location.href);
+                    retryUrl.searchParams.set('slide_retry', retryAttempt + 1 + '-' + Date.now());
+                    const replacement = new Audio(retryUrl.href);
+                    replacement.preload = 'auto';
+                    item.audio = replacement;
+                    playingAudio = replacement;
+                    descEl.textContent = '当前页音频请求异常，正在自动重试（' + (retryAttempt + 1) + '/2）…';
+                    setTimeout(() => {
+                        if (isSlidePlaying && currentSlideIdx === index) playPageAudio(index, retryAttempt + 1);
+                    }, retryAttempt === 0 ? 450 : 1200);
+                    return;
+                }
                 isSlidePlaying = false;
                 if (animFrameId) cancelAnimationFrame(animFrameId);
                 if (noAudioTimer) { clearTimeout(noAudioTimer); noAudioTimer = null; }
@@ -2956,11 +3113,13 @@
                 if (a) { try { a.pause(); } catch (e) {} }
                 if (audio) { try { audio.pause(); } catch (e) {} }
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i> 播放';
-                const blocked = error && error.name === 'NotAllowedError';
                 console.warn('[slides.audio] playback stopped', error);
-                descEl.textContent = blocked
-                    ? '浏览器阻止了自动有声播放。请在课件空白处单击一次；播放会从当前页继续。'
-                    : '当前页讲解音频不可用，已暂停且不会自动翻页。请刷新页面或重新生成课件。';
+                if (blocked) {
+                    descEl.textContent = '浏览器暂未授予首次有声播放权限；你的下一次任意操作会自动继续当前页。';
+                    armAutoplayUnlock();
+                } else {
+                    descEl.textContent = '当前页讲解音频连续重试两次仍不可用，已暂停且不会自动翻页。请稍后重试。';
+                }
             }
 
             function updateUI() {
@@ -3330,29 +3489,33 @@
             }
             if (!tree) return '';
 
-            // ── 2. 布局：叶子按序占满横向、父节点居中于其子树 ──
-            let leafCount = 0, maxDepth = 0;
+            // ── 2. 先测量节点，再布局。坐标必须把圆半径算进去，否则首尾节点会被 SVG 裁切。 ──
+            const textW = (s) => { let w = 0; const t = String(s || ''); for (let i = 0; i < t.length; i++) w += t.charCodeAt(i) > 255 ? 1 : 0.55; return w; };
+            const nodeR = (label) => Math.max(baseR, Math.round(textW(label) * fontSize * 0.5 + 12));
+            let leafCount = 0, maxDepth = 0, maxNodeR = baseR;
             (function walk(n, d) {
                 maxDepth = Math.max(maxDepth, d);
+                maxNodeR = Math.max(maxNodeR, nodeR(n.label));
                 if (!n.children.length) leafCount++;
                 n.children.forEach(c => walk(c, d + 1));
             })(tree, 0);
-            const leafSpacing = (W - padL - padR) / Math.max(leafCount - 1, 1);
-            const levelGap = (H - padT - padB) / Math.max(maxDepth, 1);
+            const safePadL = Math.max(padL, maxNodeR + 8);
+            const safePadR = Math.max(padR, maxNodeR + 8);
+            const safePadT = Math.max(padT, maxNodeR + 8);
+            const safePadB = Math.max(padB, maxNodeR + 8);
+            const leafSpacing = (W - safePadL - safePadR) / Math.max(leafCount - 1, 1);
+            const levelGap = (H - safePadT - safePadB) / Math.max(maxDepth, 1);
             let leafIdx = 0;
             (function assign(n, d) {
-                n.y = padT + d * levelGap;
-                if (!n.children.length) { n.x = padL + leafIdx * leafSpacing; leafIdx++; }
+                n.y = safePadT + d * levelGap;
+                if (!n.children.length) { n.x = safePadL + leafIdx * leafSpacing; leafIdx++; }
                 else {
                     n.children.forEach(c => assign(c, d + 1));
                     const xs = n.children.map(c => c.x);
                     n.x = (Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2;
                 }
             })(tree, 0);
-
             // ── 3. 节点半径按标签自适应，完整展示内容不截断 ──
-            const textW = (s) => { let w = 0; const t = String(s || ''); for (let i = 0; i < t.length; i++) w += t.charCodeAt(i) > 255 ? 1 : 0.55; return w; };
-            const nodeR = (label) => Math.max(baseR, Math.round(textW(label) * fontSize * 0.5 + 12));
             const edges = [], nodes = [];
             (function draw(n) {
                 const r = nodeR(n.label);
@@ -3437,8 +3600,9 @@
             } else if (dia.type === 'array') {
                 const [vals, highlight] = dia.data.includes('|') ? dia.data.split('|') : [dia.data, ''];
                 const items = vals.split(',').map(s => s.trim()).filter(Boolean);
-                const cellW = Math.min(84, (W - 60) / Math.max(items.length, 1));
-                const gap = 8, totalW = items.length*cellW + (items.length-1)*gap;
+                const gap = items.length > 8 ? 5 : 8;
+                const cellW = Math.max(34, Math.min(84, (W - 40 - Math.max(0, items.length - 1) * gap) / Math.max(items.length, 1)));
+                const totalW = items.length*cellW + (items.length-1)*gap;
                 const startX = (W - totalW) / 2;
                 const y = H/2 - 40;
                 const hl = new Set(highlight.split(',').map(s => s.trim()).filter(Boolean).map(Number));
@@ -3447,7 +3611,14 @@
                     const x = startX + i*(cellW+gap);
                     const fill = hl.has(i) ? accent : '#fff';
                     const color = hl.has(i) ? '#fff' : textMain;
-                    rects += `<rect x="${x}" y="${y}" width="${cellW}" height="72" rx="8" fill="${fill}" stroke="${accent}" stroke-width="2.5"/><text x="${x + cellW/2}" y="${y + 44}" text-anchor="middle" fill="${color}" font-size="19" font-weight="700">${escape(v)}</text>`;
+                    // 长整数分成两行并按单行最大宽度缩放，禁止文字越过相邻单元格。
+                    const chunks = v.length > 6 ? [v.slice(0, Math.ceil(v.length / 2)), v.slice(Math.ceil(v.length / 2))] : [v];
+                    const maxUnits = Math.max.apply(null, chunks.map(function(part){ return Array.from(part).reduce(function(sum,ch){ return sum + (ch.charCodeAt(0) > 255 ? 1 : .58); }, 0); }));
+                    const valueSize = Math.max(11, Math.min(19, Math.floor((cellW - 10) / Math.max(maxUnits, 1))));
+                    const valueText = chunks.length === 1
+                        ? `<text x="${x + cellW/2}" y="${y + 44}" text-anchor="middle" fill="${color}" font-size="${valueSize}" font-weight="700">${escape(chunks[0])}</text>`
+                        : `<text x="${x + cellW/2}" y="${y + 31}" text-anchor="middle" fill="${color}" font-size="${valueSize}" font-weight="700"><tspan x="${x + cellW/2}" dy="0">${escape(chunks[0])}</tspan><tspan x="${x + cellW/2}" dy="${valueSize + 3}">${escape(chunks[1])}</tspan></text>`;
+                    rects += `<rect x="${x}" y="${y}" width="${cellW}" height="72" rx="8" fill="${fill}" stroke="${accent}" stroke-width="2.5"/>${valueText}`;
                     idxs += `<text x="${x + cellW/2}" y="${y + 92}" text-anchor="middle" fill="${textMain}" font-size="14">${i}</text>`;
                 });
                 svg = `${rects}${idxs}`;
@@ -3722,7 +3893,7 @@
             }
 
             if (!svg) return '';
-            const caption = dia.caption ? `<div style="text-align:center;font-size:13px;color:${textMain};margin-top:8px;">${escape(dia.caption)}</div>` : '';
+            const caption = dia.caption ? `<div style="text-align:center;font-size:16px;color:${textMain};margin-top:8px;line-height:1.4;">${escape(dia.caption)}</div>` : '';
             return `<div style="margin-top:14px;background:#f8fafc;border-radius:12px;padding:16px;border:1px solid #e2e8f0;"><svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;height:auto;aspect-ratio:${W}/${H};"><g>${svg}</g></svg>${caption}</div>`;
         }
 
@@ -3731,24 +3902,24 @@
             if (!v || !v.type) return '';
             const esc = (s) => String(s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             const d = String(v.data || '');
-            const caption = v.caption ? `<div style="font-size:10px;color:${textSub};text-align:center;margin-top:6px;">${esc(v.caption)}</div>` : '';
+            const caption = v.caption ? `<div style="font-size:16px;color:${textSub};text-align:center;margin-top:8px;line-height:1.4;">${esc(v.caption)}</div>` : '';
 
             // 紧凑表格
             if (v.type === 'table' && d.includes('|')) {
                 const rows = d.split('\n').filter(l => l.trim());
-                const ths = rows[0].split('|').map(c => `<th style="padding:6px 8px;background:${accent};color:#fff;font-weight:600;font-size:10px;text-align:left;">${c.trim()}</th>`).join('');
-                const tds = rows.slice(1).map(row => row.split('|').map((c,ci) => `<td style="padding:5px 8px;font-size:10px;background:${ci===0?accentLight:'#fff'};color:${ci===0?accent:textMain};font-weight:${ci===0?'700':'400'};">${c.trim()}</td>`).join('')).map(r => `<tr>${r}</tr>`).join('');
+                const ths = rows[0].split('|').map(c => `<th style="padding:8px 10px;background:${accent};color:#fff;font-weight:600;font-size:18px;text-align:left;">${c.trim()}</th>`).join('');
+                const tds = rows.slice(1).map(row => row.split('|').map((c,ci) => `<td style="padding:7px 10px;font-size:18px;background:${ci===0?accentLight:'#fff'};color:${ci===0?accent:textMain};font-weight:${ci===0?'700':'400'};">${c.trim()}</td>`).join('')).map(r => `<tr>${r}</tr>`).join('');
                 return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;">${ths?`<thead><tr>${ths}</tr></thead>`:''}<tbody>${tds}</tbody></table>${caption}</div>`;
             }
             // 要点列表
             if (v.type === 'list') {
                 const items = d.split('\n').filter(l => l.trim()).map(l => l.replace(/^[-••]\s*/, ''));
-                return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;"><ul style="margin:0;padding-left:16px;font-size:11px;color:${textMain};line-height:1.7;">${items.map(it => `<li style="margin-bottom:2px;">${esc(it)}</li>`).join('')}</ul>${caption}</div>`;
+                return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;"><ul style="margin:0;padding-left:22px;font-size:20px;color:${textMain};line-height:1.5;">${items.map(it => `<li style="margin-bottom:4px;">${esc(it)}</li>`).join('')}</ul>${caption}</div>`;
             }
             // 代码块（深色代码卡片，可带语言标注）
             if (v.type === 'code') {
                 const langLabel = v.lang || 'code';
-                return `<div class="visual-card" style="background:#0f172a;border-radius:8px;overflow:hidden;"><div style="padding:4px 12px;font-size:9px;letter-spacing:1px;color:#8fa3c0;background:#1e293b;text-transform:uppercase;font-family:Consolas,Menlo,monospace;">${esc(langLabel)}</div><pre style="margin:0;padding:10px 12px;overflow-x:auto;font-size:11px;line-height:1.6;color:#e2e8f0;font-family:Consolas,Menlo,monospace;white-space:pre;">${esc(d)}</pre>${caption}</div>`;
+                return `<div class="visual-card" style="background:#0f172a;border-radius:8px;overflow:hidden;"><div style="padding:5px 12px;font-size:14px;letter-spacing:1px;color:#8fa3c0;background:#1e293b;text-transform:uppercase;font-family:Consolas,Menlo,monospace;">${esc(langLabel)}</div><pre style="margin:0;padding:10px 12px;overflow-x:auto;font-size:17px;line-height:1.5;color:#e2e8f0;font-family:Consolas,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere;">${esc(d)}</pre>${caption}</div>`;
             }
             // 公式（KaTeX 渲染）
             if (v.type === 'formula') {
@@ -3756,15 +3927,15 @@
             }
             // 强调框
             if (v.type === 'highlight') {
-                return `<div class="visual-card" style="background:${accent};color:#fff;border-radius:8px;padding:12px 14px;font-size:12px;font-weight:600;text-align:center;line-height:1.6;">${esc(d)}${caption ? `<div style="font-size:10px;opacity:.8;margin-top:4px;">${esc(v.caption)}</div>` : ''}</div>`;
+                return `<div class="visual-card" style="background:${accent};color:#fff;border-radius:8px;padding:14px 16px;font-size:19px;font-weight:600;text-align:center;line-height:1.45;overflow-wrap:anywhere;">${esc(d)}${caption ? `<div style="font-size:15px;opacity:.86;margin-top:6px;">${esc(v.caption)}</div>` : ''}</div>`;
             }
             // 标签云
             if (v.type === 'badge') {
-                return `<div class="visual-card" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;padding:10px;">${d.split(',').map(w => `<span style="display:inline-block;background:${accentLight};color:${accent};padding:4px 10px;border-radius:14px;font-size:10px;font-weight:600;border:1px solid ${accent};opacity:.7;">${esc(w.trim())}</span>`).join('')}${caption}</div>`;
+                return `<div class="visual-card" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:12px;">${d.split(',').map(w => `<span style="display:inline-block;background:${accentLight};color:${accent};padding:5px 11px;border-radius:16px;font-size:16px;font-weight:600;border:1px solid ${accent};">${esc(w.trim())}</span>`).join('')}${caption}</div>`;
             }
             // 引用框
             if (v.type === 'quote') {
-                return `<div class="visual-card" style="background:#f8fafc;border-left:4px solid ${accent};border-radius:4px;padding:12px 14px;font-size:11px;color:${textMain};font-style:italic;line-height:1.6;">"${esc(d)}"${caption}</div>`;
+                return `<div class="visual-card" style="background:#f8fafc;border-left:4px solid ${accent};border-radius:4px;padding:14px 16px;font-size:18px;color:${textMain};font-style:italic;line-height:1.5;">"${esc(d)}"${caption}</div>`;
             }
             // 流程图
             if (v.type === 'flow') {
@@ -3773,7 +3944,7 @@
                 const totalW = w.reduce((a, b) => a + b + 30, 0);
                 const nodes = steps.map((s,i) => {
                     const left = w.slice(0,i).reduce((a,b)=>a+b+30,0);
-                    return `<rect x="${left}" y="10" width="${w[i]}" height="32" rx="6" fill="${accentLight}" stroke="${accent}" stroke-width="1.5"/><text x="${left+w[i]/2}" y="31" text-anchor="middle" fill="${accent}" font-size="10" font-weight="600">${esc(s.length>6?s.slice(0,5)+'…':s)}</text>${i<steps.length-1?`<line x1="${left+w[i]}" y1="26" x2="${left+w[i]+14}" y2="26" stroke="${accent}" stroke-width="1.5" marker-end="url(#va)"/>`:''}`;
+                    return `<rect x="${left}" y="8" width="${w[i]}" height="38" rx="7" fill="${accentLight}" stroke="${accent}" stroke-width="1.5"/><text x="${left+w[i]/2}" y="33" text-anchor="middle" fill="${accent}" font-size="14" font-weight="600">${esc(s.length>6?s.slice(0,5)+'…':s)}</text>${i<steps.length-1?`<line x1="${left+w[i]}" y1="27" x2="${left+w[i]+14}" y2="27" stroke="${accent}" stroke-width="1.5" marker-end="url(#va)"/>`:''}`;
                 }).join('');
                 return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px;overflow:hidden;"><svg viewBox="0 0 ${totalW+20} 52" width="100%" height="52"><defs><marker id="va" markerWidth="8" markerHeight="8" refX="7" refY="2" orient="auto"><path d="M0,0 L0,4 L7,2 z" fill="${accent}"/></marker></defs>${nodes}</svg>${caption}</div>`;
             }
@@ -3782,20 +3953,23 @@
                 const [vals, hl] = d.includes('|') ? d.split('|') : [d, ''];
                 const items = vals.split(',').map(s => s.trim()).filter(Boolean);
                 const hlSet = new Set(hl.split(',').map(s=>s.trim()).filter(Boolean).map(Number));
-                const cells = items.map((val, i) => `<div style="flex:1;min-width:30px;max-width:56px;padding:8px 4px;text-align:center;font-weight:700;font-size:13px;background:${hlSet.has(i)?accent:'#fff'};color:${hlSet.has(i)?'#fff':accent};border:2px solid ${accent};border-radius:4px;">${esc(val)}</div>`).join('');
+                const cells = items.map((val, i) => {
+                    const cellFont = Math.max(12, Math.min(18, Math.floor(88 / Math.max(String(val).length, 1))));
+                    return `<div style="flex:1;min-width:52px;max-width:92px;padding:10px 6px;text-align:center;font-weight:700;font-size:${cellFont}px;line-height:1.25;overflow-wrap:anywhere;word-break:break-all;background:${hlSet.has(i)?accent:'#fff'};color:${hlSet.has(i)?'#fff':accent};border:2px solid ${accent};border-radius:6px;">${esc(val)}</div>`;
+                }).join('');
                 return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px;"><div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">${cells}</div>${caption}</div>`;
             }
             // 树形图
             if (v.type === 'tree') {
-                const H = 110, W = 300;
-                return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:4px;overflow:hidden;"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${renderTreeSvg(d, accent, accentLight, textMain, W, H, { nodeSize: 14, fontSize: 9, padL: 18, padR: 18, padT: 14, padB: 12 })}</svg>${caption}</div>`;
+                const H = 180, W = 400;
+                return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:6px;overflow:hidden;"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${renderTreeSvg(d, accent, accentLight, textMain, W, H, { nodeSize: 18, fontSize: 12, padL: 28, padR: 28, padT: 24, padB: 24 })}</svg>${caption}</div>`;
             }
             // 对比图
             if (v.type === 'compare') {
                 const rows = d.split('\n').filter(l => l.trim()).map(l => l.split('|').map(s => s.trim()));
                 const cols = Math.max(...rows.map(r => r.length), 1);
                 const colW = Math.floor(100 / cols);
-                return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;padding:4px;"><table style="width:100%;border-collapse:collapse;font-size:10px;">${rows.map((row,r) => `<tr>${row.map((c,ci) => `<td style="width:${colW}%;padding:6px 8px;text-align:center;background:${r===0?accent:ci===0?accentLight:'#fff'};color:${r===0?'#fff':ci===0?accent:textMain};font-weight:${r===0||ci===0?'700':'400'};">${esc(c)}</td>`).join('')}</tr>`).join('')}</table>${caption}</div>`;
+                return `<div class="visual-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;padding:6px;"><table style="width:100%;border-collapse:collapse;font-size:18px;">${rows.map((row,r) => `<tr>${row.map((c,ci) => `<td style="width:${colW}%;padding:8px 10px;text-align:center;background:${r===0?accent:ci===0?accentLight:'#fff'};color:${r===0?'#fff':ci===0?accent:textMain};font-weight:${r===0||ci===0?'700':'400'};">${esc(c)}</td>`).join('')}</tr>`).join('')}</table>${caption}</div>`;
             }
             // 图表类（折线/柱状/复杂度曲线）复用大图渲染器
             if (v.type === 'line_chart' || v.type === 'bar_chart' || v.type === 'complexity_curve') {
@@ -3809,23 +3983,23 @@
             const c = String(content).trim();
             if (c.includes('|')) {
                 const rows = c.split('\n').filter(l => l.trim());
-                const ths = rows[0].split('|').map(cell => `<th style="padding:${isRight?'10px 12px':'8px 10px'};background:${accent};color:#fff;font-weight:600;font-size:${isRight?'12px':'11px'};text-align:left;border:1px solid ${accent};">${cell.trim()}</th>`).join('');
+                const ths = rows[0].split('|').map(cell => `<th style="padding:9px 11px;background:${accent};color:#fff;font-weight:600;font-size:20px;text-align:left;border:1px solid ${accent};">${cell.trim()}</th>`).join('');
                 const tds = rows.slice(1).map(row => {
                     const cells = row.split('|').map((cell, ci) => {
                         const bg = ci === 0 ? accentLight : '#fff';
                         const color = ci === 0 ? accent : textMain;
-                        return `<td style="padding:${isRight?'10px 12px':'8px 10px'};background:${bg};color:${color};font-weight:${ci===0?700:400};font-size:${isRight?'12px':'11px'};border:1px solid #e2e8f0;">${cell.trim()}</td>`;
+                        return `<td style="padding:8px 11px;background:${bg};color:${color};font-weight:${ci===0?700:400};font-size:20px;line-height:1.35;border:1px solid #e2e8f0;overflow-wrap:anywhere;">${cell.trim()}</td>`;
                     }).join('');
                     return `<tr>${cells}</tr>`;
                 }).join('');
                 return `<table style="width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);"><thead><tr>${ths}</tr></thead><tbody>${tds}</tbody></table>`;
             } else if (/^[-•]\s+/m.test(c)) {
                 const items = c.split('\n').filter(l => l.trim()).map(l => l.replace(/^[-•]\s+/, ''));
-                return `<ul style="padding-left:18px;color:${textMain};font-size:16px;line-height:1.8;margin:0;">${items.map(item => `<li style="margin-bottom:8px;">${item}</li>`).join('')}</ul>`;
+                return `<ul style="padding-left:24px;color:${textMain};font-size:22px;line-height:1.5;margin:0;">${items.map(item => `<li style="margin-bottom:7px;">${item}</li>`).join('')}</ul>`;
             } else if (c.includes('\n')) {
-                return `<div style="color:${textMain};font-size:14px;line-height:1.8;white-space:pre-wrap;">${c.replace(/</g,'&lt;')}</div>`;
+                return `<div style="color:${textMain};font-size:20px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;">${c.replace(/</g,'&lt;')}</div>`;
             } else {
-                return `<pre style="background:#f1f5f9;color:${textMain};padding:14px 18px;border-radius:8px;font-size:16px;line-height:1.6;overflow:auto;text-align:left;font-family:'Consolas','Courier New',monospace;border-left:4px solid ${accent};box-shadow:0 1px 4px rgba(0,0,0,.05);margin:0;">${c.replace(/</g,'&lt;')}</pre>`;
+                return `<pre style="background:#f1f5f9;color:${textMain};padding:14px 18px;border-radius:8px;font-size:19px;line-height:1.5;overflow:auto;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;font-family:'Consolas','Courier New',monospace;border-left:4px solid ${accent};box-shadow:0 1px 4px rgba(0,0,0,.05);margin:0;">${c.replace(/</g,'&lt;')}</pre>`;
             }
         }
 
@@ -3867,9 +4041,12 @@
             const rightBlock = renderContentBlock(slide.right || slide.code, accent, accentLight, textMain, true);
             const n = String(idx + 1).padStart(2, '0');
             const layout = String(slide.layout || 'default').trim();
+            sec.dataset.layout = layout;
             // 真课件 v2：spotlight 锚点（data-el 与 courseware-schema deriveElements 的 id 一一对应）
             const isCw = !!window._isCourseware;
-            const sceneHTML = (isCw && slide.scene && slide.scene.template)
+            const sceneTemplate = isCw && slide.scene && slide.scene.template ? String(slide.scene.template) : '';
+            const hasUsableScene = !!(sceneTemplate && window.SCENE_TEMPLATES && window.SCENE_TEMPLATES[sceneTemplate]);
+            const sceneHTML = hasUsableScene
                 ? '<div class="dk-panel dk-pan-scene" data-el="scene"><div class="dk-pan-label">交互场景 · ' + dkEsc(slide.scene.caption || slide.scene.template) + '</div><div class="cw-scene-host"></div></div>'
                 : '';
             const diagramChunk = diagramHTML ? '<div class="dk-chart">' + diagramHTML + '</div>' : '';
@@ -3883,6 +4060,7 @@
             const panLabel = function(t){ return '<div class="dk-pan-label">' + t + '</div>'; };
             const pPts = leftBlock ? '<div class="dk-panel dk-pan-pts" data-edit="points"' + (isCw ? ' data-el="pts"' : '') + '>' + panLabel('核心要点') + leftBlock + '</div>' : '';
             const pTxt = bodyText ? '<div class="dk-panel dk-pan-txt" data-edit="body"' + (isCw ? ' data-el="txt"' : '') + '>' + panLabel('讲解正文') + bodyText + '</div>' : '';
+            const pTxtDistinct = String(slide.left || '').trim() ? pTxt : '';
             const dgAttr = isCw ? ' data-el="diagram"' : '';
             const visInner = (diagramHTML ? '<div class="dk-pan-chart"' + dgAttr + '>' + diagramHTML + '</div>' : '')
                 + (visualCards.length ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:10px;">' + visualCards.map(function(vc, vi){ return isCw ? vc.replace('<div class="visual-card"', '<div data-el="vis-' + vi + '" class="visual-card"') : vc; }).join('') + '</div>' : '')
@@ -3893,7 +4071,7 @@
             if (sceneHTML) {
                 // 真课件场景页：左要点/正文 + 右大尺寸交互场景（优先级最高）
                 bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:0.8fr 1.2fr;gap:22px 28px;align-items:stretch;">'
-                    + '<div style="grid-column:1;">' + pPts + pTxt + '</div>'
+                    + '<div class="dk-stack" style="grid-column:1;">' + pPts + pTxtDistinct + '</div>'
                     + '<div style="grid-column:2;">' + sceneHTML + '</div>'
                     + '</div>';
             } else if (layout === 'chart_top') {
@@ -3901,11 +4079,11 @@
             } else if (layout === 'chart_left') {
                 bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1fr 1fr;gap:22px 28px;align-items:stretch;">'
                     + '<div style="grid-column:1;">' + pVis + '</div>'
-                    + '<div style="grid-column:2;">' + pPts + pTxt + '</div>'
+                    + '<div class="dk-stack" style="grid-column:2;">' + pPts + pTxtDistinct + '</div>'
                     + '</div>';
             } else if (layout === 'split') {
                 bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1fr 1fr;gap:22px 28px;align-items:stretch;">'
-                    + '<div style="grid-column:1;">' + pPts + '</div>'
+                    + '<div class="dk-stack" style="grid-column:1;">' + pPts + pTxtDistinct + '</div>'
                     + '<div style="grid-column:2;">' + pVis + '</div>'
                     + '</div>';
             } else if (layout === 'left_text') {
@@ -3958,7 +4136,7 @@
             } else {
                 // two_col 及未知布局：左要点/正文 + 右可视化
                 bodyHTML = '<div class="dk-area" style="display:grid;grid-template-columns:1.05fr 1fr;gap:22px 28px;align-items:stretch;">'
-                    + '<div style="grid-column:1;">' + pPts + pTxt + '</div>'
+                    + '<div class="dk-stack" style="grid-column:1;">' + pPts + pTxtDistinct + '</div>'
                     + '<div style="grid-column:2;">' + pVis + '</div>'
                     + '</div>';
             }
@@ -3975,13 +4153,19 @@
         function fitDeckSlideContent(sec) {
             const pad = sec && sec.querySelector('.dk-pad-area');
             if (!pad) return;
-            sec.classList.remove('dk-fit-compact', 'dk-fit-tight');
+            sec.classList.remove('dk-fit-compact', 'dk-fit-tight', 'dk-fit-emergency');
             const overflows = function () {
-                return pad.scrollHeight > pad.clientHeight + 2 || pad.scrollWidth > pad.clientWidth + 2;
+                if (pad.scrollHeight > pad.clientHeight + 2 || pad.scrollWidth > pad.clientWidth + 2) return true;
+                const bounds = pad.getBoundingClientRect();
+                return Array.from(pad.querySelectorAll('.dk-panel,.dk-card,.visual-card,svg,canvas,table,pre')).some(function(el){
+                    const r = el.getBoundingClientRect();
+                    return r.bottom > bounds.bottom + 2 || r.right > bounds.right + 2 || r.left < bounds.left - 2;
+                });
             };
             if (!overflows()) return;
             sec.classList.add('dk-fit-compact');
             if (overflows()) sec.classList.add('dk-fit-tight');
+            if (overflows()) sec.classList.add('dk-fit-emergency');
         }
         function fitDeckSlides(stage) {
             if (!stage) return;

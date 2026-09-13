@@ -1611,7 +1611,16 @@ async function createCoursewareTTS(taskId, pages, voice, onProgress) {
     (p.narration || []).forEach((s, j) => jobs.push({ i, j, text: s.text }));
   });
   let results = {}; // "i-j" → url|null
+  const batchId = Date.now().toString(36);
   const MAX_CONCURRENCY = 1; // edge-tts 并发子进程易触发限流，串行最稳
+  const isUsableAudio = (buf) => {
+    if (!buf || buf.length < 512) return false;
+    const head = buf.subarray(0, 12);
+    return head.subarray(0, 3).toString("ascii") === "ID3" ||
+      (head[0] === 0xff && (head[1] & 0xe0) === 0xe0) ||
+      head.subarray(0, 4).toString("ascii") === "RIFF" ||
+      head.subarray(0, 4).toString("ascii") === "OggS";
+  };
   const synthesizeAll = async (provider) => {
     let cursor = 0;
     let done = 0;
@@ -1625,8 +1634,9 @@ async function createCoursewareTTS(taskId, pages, voice, onProgress) {
           const buf = provider === "qwen"
             ? await qwenTtsBuffer(job.text)
             : await edgeTtsBuffer(job.text, { voice });
-          if (!buf || !buf.length) throw new Error(provider + " TTS 输出为空");
-          const file = path.join("audio", `cw-${String(taskId).slice(0, 8)}-p${job.i}-s${job.j}.mp3`);
+          if (!isUsableAudio(buf)) throw new Error(provider + " TTS 输出不是有效音频或文件不完整");
+          // 每一轮合成都使用新 URL，避免浏览器/CDN 继续复用曾经的 404 或损坏缓存。
+          const file = path.join("audio", `cw-${String(taskId).slice(0, 8)}-${batchId}-p${job.i}-s${job.j}.mp3`);
           await fs.writeFile(path.join(STORAGE_DIR, file), buf);
           results[`${job.i}-${job.j}`] = publicAsset(file);
         } catch (e) {
@@ -1657,13 +1667,13 @@ async function createCoursewareTTS(taskId, pages, voice, onProgress) {
   if (failed > 0) {
     throw new ApiError(502, "TTS_FAILED", `${provider} 配音失败 ${failed}/${jobs.length} 句，请检查服务器网络与 TTS 配置`);
   }
-  // 回填 + 按页写回
+  // 全批成功后一次性回填，任何一句失败都不会把半成品 URL 暴露给播放器。
   for (let i = 0; i < pages.length; i++) {
     (pages[i].narration || []).forEach((s, j) => {
       s.audio = results[`${i}-${j}`] || null;
     });
-    await store.update("coursewareTasks", taskId, { pages });
   }
+  await store.update("coursewareTasks", taskId, { pages, error: null });
   log("courseware.tts.complete", { taskId, provider, total: jobs.length });
   return { provider, total: jobs.length };
 }
@@ -3121,6 +3131,7 @@ async function api(req, res, url, id) {
       status: "generating_tts",
       progress: 62,
       ttsDone: 0,
+      error: null,
     });
     setImmediate(async () => {
       try {
@@ -3133,7 +3144,7 @@ async function api(req, res, url, id) {
             })
             .catch(() => {});
         });
-        await store.update("coursewareTasks", taskId, { status: "slides_ready", progress: 100 });
+        await store.update("coursewareTasks", taskId, { status: "slides_ready", progress: 100, error: null });
       } catch (e) {
         log("courseware.resynth.failed", { taskId, message: e.message });
         await store.update("coursewareTasks", taskId, {

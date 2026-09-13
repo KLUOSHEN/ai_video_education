@@ -77,7 +77,14 @@
       this.sentIdx = 0;
       this.current = null;        // 正在播放的 Audio
       this.silentTimer = null;    // 无音频句的展示计时器
+      this._audioRetryTimer = null;
+      this._prefetchAudio = null;
+      this._playToken = 0;
+      this._audioRevision = 0;
       this.scenes = {};           // pageIdx → {inst, el}
+      this._sceneMountToken = 0;
+      this._sceneMountRaf = null;
+      this._sceneMountTimer = null;
       this._durations = null;     // [ [sec,...], ... ] 每页每句
       this._total = 0;
       this._raf = null;
@@ -94,26 +101,11 @@
       requestAnimationFrame(() => this._mountScene(this.pageIdx));
     }
 
-    // 预加载全部句音频 metadata：算总时长、句间无缝
+    // 不再一次性请求整份课件的几十段音频。总时长先按文本估算，
+    // 当前句实际加载后再校准；相邻句只保留一个轻量 metadata 预取。
     _preloadAll() {
-      let pending = 0, total = 0;
-      this._durations = this.pages.map((p) => {
-        return (p.narration || []).map((s) => {
-          if (!s.audio) return 0;
-          pending++;
-          const a = new Audio();
-          a.preload = "metadata";
-          a.src = s.audio;
-          a.addEventListener("loadedmetadata", () => {
-            s._dur = a.duration || 0;
-            pending--;
-            if (pending === 0) this._recomputeTotal();
-          });
-          a.addEventListener("error", () => { pending--; if (pending === 0) this._recomputeTotal(); });
-          return 0;
-        });
-      });
-      if (pending === 0) this._recomputeTotal();
+      this._durations = this.pages.map((p) => (p.narration || []).map((s) => s._dur || 0));
+      this._recomputeTotal();
     }
     _recomputeTotal() {
       this._total = 0;
@@ -161,6 +153,8 @@
       this.playing = false;
       if (this._raf) cancelAnimationFrame(this._raf);
       if (this.silentTimer) { clearTimeout(this.silentTimer); this.silentTimer = null; }
+      if (this._audioRetryTimer) { clearTimeout(this._audioRetryTimer); this._audioRetryTimer = null; }
+      this._playToken++;
       if (this.current) { try { this.current.pause(); } catch (e) {} }
       clearSpotlight();
       if (this.opts.onStateChanged) this.opts.onStateChanged(false);
@@ -174,12 +168,23 @@
       this.current = null;
       clearSpotlight();
       if (this.opts.onStateChanged) this.opts.onStateChanged(false);
+      const normalizedError = error instanceof Error ? error : new Error(String(error || "音频播放失败"));
+      const failedAt = { pageIndex: this.pageIdx, sentenceIndex: this.sentIdx };
       if (typeof this.opts.onAudioError === "function") {
-        this.opts.onAudioError(error instanceof Error ? error : new Error(String(error || "音频播放失败")), {
+        let recovery = null;
+        try { recovery = this.opts.onAudioError(normalizedError, {
           pageIndex: this.pageIdx,
           sentenceIndex: this.sentIdx,
           sentence: sentence || null,
-        });
+        }); } catch (callbackError) { console.error("[courseware.audio] recovery callback failed", callbackError); }
+        if (recovery && typeof recovery.then === "function" && normalizedError.name !== "NotAllowedError") {
+          recovery.then((recovered) => {
+            if (!recovered || this.playing || this.pageIdx !== failedAt.pageIndex || this.sentIdx !== failedAt.sentenceIndex) return;
+            this._audioRevision++;
+            this._preloadAll();
+            this.play();
+          }).catch((recoveryError) => console.error("[courseware.audio] automatic recovery failed", recoveryError));
+        }
       }
     }
     stop() {
@@ -194,19 +199,23 @@
       this.stop();
       window.removeEventListener("resize", this._onResize);
       this.deck.onChange = this._prevOnChange;
+      if (this._prefetchAudio) { try { this._prefetchAudio.pause(); this._prefetchAudio.removeAttribute("src"); } catch (e) {} this._prefetchAudio = null; }
       const v = document.getElementById("cwVoiceBox");
       if (v) v.remove();
     }
 
     // 从指定页/句开始（内部链式推进）
-    _playSentence(pi, sj) {
+    _playSentence(pi, sj, retryAttempt) {
       if (!this.playing) return;
+      retryAttempt = retryAttempt || 0;
       if (pi >= this.pages.length) { this.stop(); if (this.opts.onFinished) this.opts.onFinished(); return; }
       const narr = this.pages[pi].narration || [];
       if (sj >= narr.length) { this._nextPage(); return; }
       // 关键：先停掉上一句残留音频/静默计时，防止手动翻页或跳进度时两句语音重叠
       if (this.silentTimer) { clearTimeout(this.silentTimer); this.silentTimer = null; }
+      if (this._audioRetryTimer) { clearTimeout(this._audioRetryTimer); this._audioRetryTimer = null; }
       if (this.current) { try { this.current.pause(); } catch (e) {} this.current = null; }
+      const playToken = ++this._playToken;
       this.pageIdx = pi;
       this.sentIdx = sj;
       const s = narr[sj];
@@ -219,25 +228,59 @@
         this._failAudio(new Error("当前讲解句没有生成音频文件"), s);
         return;
       }
-      const a = new Audio(s.audio);
+      const sourceUrl = this._versionedAudioUrl(s.audio, retryAttempt);
+      const a = new Audio(sourceUrl);
       a.preload = "auto";
       this.current = a;
-      a.addEventListener("ended", () => { if (this.current === a && this.playing) this._playSentence(pi, sj + 1); });
-      a.addEventListener("error", () => {
-        if (this.current === a && this.playing) this._failAudio(new Error("讲解音频加载失败：" + s.audio), s);
+      let settled = false;
+      const fail = (error) => {
+        if (settled || this.current !== a || !this.playing || this._playToken !== playToken) return;
+        settled = true;
+        const normalized = error instanceof Error ? error : new Error("讲解音频加载失败：" + s.audio);
+        if (normalized.name === "NotAllowedError" || retryAttempt >= 2) {
+          this._failAudio(normalized, s);
+          return;
+        }
+        try { a.pause(); } catch (e) {}
+        this.current = null;
+        const delay = retryAttempt === 0 ? 450 : 1200;
+        this._audioRetryTimer = setTimeout(() => {
+          this._audioRetryTimer = null;
+          if (this.playing && this.pageIdx === pi && this.sentIdx === sj) this._playSentence(pi, sj, retryAttempt + 1);
+        }, delay);
+      };
+      a.addEventListener("loadedmetadata", () => {
+        if (isFinite(a.duration) && a.duration > 0) { s._dur = a.duration; this._recomputeTotal(); }
       });
+      a.addEventListener("ended", () => {
+        if (this.current === a && this.playing && this._playToken === playToken) {
+          settled = true;
+          this._playSentence(pi, sj + 1);
+        }
+      });
+      a.addEventListener("error", () => fail(new Error("讲解音频加载失败：" + s.audio)));
       const attempt = a.play();
       if (attempt && typeof attempt.catch === "function") {
-        attempt.catch((error) => {
-          if (this.current === a && this.playing) this._failAudio(error, s);
-        });
+        attempt.catch(fail);
       }
     }
+    _versionedAudioUrl(url, retryAttempt) {
+      if (!url || (!retryAttempt && !this._audioRevision)) return url;
+      try {
+        const u = new URL(url, location.href);
+        u.searchParams.set("cw_retry", this._audioRevision + "-" + retryAttempt + "-" + Date.now());
+        return u.href;
+      } catch (e) { return url; }
+    }
     _prefetchNext(pi, sj) {
+      if (this._prefetchAudio) { try { this._prefetchAudio.pause(); this._prefetchAudio.removeAttribute("src"); } catch (e) {} this._prefetchAudio = null; }
       const narr = this.pages[pi] && this.pages[pi].narration;
-      if (narr && narr[sj + 1] && narr[sj + 1].audio) { const p = new Audio(); p.preload = "auto"; p.src = narr[sj + 1].audio; }
-      const nn = this.pages[pi + 1] && this.pages[pi + 1].narration;
-      if (nn && nn[0] && nn[0].audio) { const p = new Audio(); p.preload = "auto"; p.src = nn[0].audio; }
+      const next = narr && narr[sj + 1] ? narr[sj + 1] : ((this.pages[pi + 1] && this.pages[pi + 1].narration) || [])[0];
+      if (!next || !next.audio) return;
+      const p = new Audio();
+      p.preload = "metadata";
+      p.src = next.audio;
+      this._prefetchAudio = p;
     }
     _nextPage() {
       const nextIdx = this.pageIdx + 1;
@@ -318,7 +361,27 @@
     }
 
     // ── 场景挂载/销毁 ──
-    _mountScene(pi) {
+    _mountScene(pi, attempt) {
+      attempt = attempt || 0;
+      if (this.scenes[pi]) return;
+      const token = ++this._sceneMountToken;
+      if (this._sceneMountRaf) cancelAnimationFrame(this._sceneMountRaf);
+      if (this._sceneMountTimer) { clearTimeout(this._sceneMountTimer); this._sceneMountTimer = null; }
+      this._sceneMountRaf = requestAnimationFrame(() => {
+        this._sceneMountRaf = requestAnimationFrame(() => {
+          this._sceneMountRaf = null;
+          if (token !== this._sceneMountToken || this.deck.index !== pi || this.scenes[pi]) return;
+          const panel = this.deck.slides[pi] && this.deck.slides[pi].querySelector('[data-el="scene"]');
+          const host = (panel && (panel.querySelector('.cw-scene-host') || panel)) || null;
+          if (host && (host.clientWidth < 200 || host.clientHeight < 180) && attempt < 5) {
+            this._sceneMountTimer = setTimeout(() => this._mountScene(pi, attempt + 1), 80);
+            return;
+          }
+          this._mountSceneNow(pi);
+        });
+      });
+    }
+    _mountSceneNow(pi) {
       if (this.scenes[pi]) return;
       const page = this.pages[pi];
       if (!page || !page.scene) return;
@@ -343,7 +406,12 @@
       const sc = this.scenes[pi];
       if (sc) { try { sc.inst.dispose(); } catch (e) {} delete this.scenes[pi]; }
     }
-    _disposeAllScenes() { Object.keys(this.scenes).forEach((k) => this._disposeScene(Number(k))); }
+    _disposeAllScenes() {
+      this._sceneMountToken++;
+      if (this._sceneMountRaf) { cancelAnimationFrame(this._sceneMountRaf); this._sceneMountRaf = null; }
+      if (this._sceneMountTimer) { clearTimeout(this._sceneMountTimer); this._sceneMountTimer = null; }
+      Object.keys(this.scenes).forEach((k) => this._disposeScene(Number(k)));
+    }
 
     // ── 音色切换 UI ──
     _injectVoiceUI() {
@@ -387,6 +455,7 @@
           const sr = await fetch("/api/v1/video/status?task_id=" + encodeURIComponent(this.taskId));
           const sj = await sr.json();
           const d = sj.data;
+          if (d && d.error && d.error.code === "RESYNTH_FAILED") throw new Error(d.error.message || "合成失败");
           if (d && d.format === 2 && d.status === "slides_ready") {
             (d.pages || []).forEach((np, i2) => {
               const pg = this.pages[i2];

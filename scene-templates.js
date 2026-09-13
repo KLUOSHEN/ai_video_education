@@ -301,6 +301,59 @@
     "cos(x)*sin(y)*exp(-0.1*(x*x+y*y))": { label: "cos(x)·sin(y)·e^(−0.1r²)（衰减波）", fn: (x, y) => Math.cos(x) * Math.sin(y) * Math.exp(-0.1 * (x * x + y * y)) },
   };
 
+  // Three.js CDN 或 WebGL 在部署环境不可用时，使用本地 Canvas 绘制同一函数曲面。
+  // 这样交互区不会再只剩一块深色空白，函数选择控件也仍然有效。
+  function mountSurfaceFallback(el, initialFnKey) {
+    const fitted = fitCanvas(el);
+    const cv = fitted.cv, ctx = fitted.ctx, w = fitted.w, h = fitted.h;
+    let fnKey = initialFnKey;
+
+    function draw() {
+      const spec = SURFACE_FNS[fnKey] || SURFACE_FNS["sin(x)*cos(y)"];
+      const fn = spec.fn;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#0b1222";
+      ctx.fillRect(0, 0, w, h);
+      const count = 24;
+      const range = 5.8;
+      const sx = Math.min(w / 25, 34);
+      const sy = Math.min(h / 34, 16);
+      const sz = Math.min(h / 7.5, 54);
+      const project = (x, y, z) => ({
+        x: w / 2 + (x - y) * sx,
+        y: h * 0.54 + (x + y) * sy - z * sz,
+      });
+      ctx.lineWidth = 1.25;
+      for (let axis = 0; axis < 2; axis++) {
+        for (let i = 0; i <= count; i++) {
+          const fixed = -range + (i / count) * range * 2;
+          ctx.beginPath();
+          for (let j = 0; j <= count; j++) {
+            const moving = -range + (j / count) * range * 2;
+            const x = axis === 0 ? fixed : moving;
+            const y = axis === 0 ? moving : fixed;
+            const z = fn(x, y);
+            const p = project(x, y, z);
+            if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+          }
+          const hue = axis === 0 ? 198 + i * 1.7 : 244 - i * 1.2;
+          ctx.strokeStyle = "hsla(" + hue + ",88%,66%,.72)";
+          ctx.stroke();
+        }
+      }
+      ctx.fillStyle = "rgba(226,232,240,.82)";
+      ctx.font = "600 13px system-ui";
+      ctx.textAlign = "right";
+      ctx.fillText("Canvas 兼容渲染", w - 14, h - 16);
+    }
+
+    draw();
+    return {
+      dispose() { cv.remove(); },
+      setFn(next) { if (SURFACE_FNS[next]) { fnKey = next; draw(); } },
+    };
+  }
+
   const surface3d = {
     id: "surface-3d",
     label: "3D 函数曲面",
@@ -308,7 +361,7 @@
     mount(el, params) {
       el.classList.add("cw-scene-surface");
       let disposed = false;
-      let renderer, scene, camera, mesh, raf = null;
+      let renderer, scene, camera, mesh, raf = null, fallback = null;
       let fnKey = SURFACE_FNS[params.fnExpr] ? params.fnExpr : "sin(x)*cos(y)";
       let gridN = Math.min(80, Math.max(20, params.gridN || 48));
       let rotY = 0.6, rotX = 0.5, zoom = 1, dragging = false, lx = 0, ly = 0;
@@ -385,9 +438,11 @@
         el.appendChild(cap);
       }).catch((err) => {
         if (disposed) return;
+        fallback = mountSurfaceFallback(el, fnKey);
         const msg = document.createElement("div");
         msg.className = "cw-scene-cap";
-        msg.textContent = err.message + "（离线时可改用其他页）";
+        msg.textContent = "已启用兼容渲染 · " + SURFACE_FNS[fnKey].label;
+        msg.title = err.message;
         el.appendChild(msg);
       });
 
@@ -396,9 +451,16 @@
           disposed = true;
           if (raf) cancelAnimationFrame(raf);
           if (renderer) { renderer.dispose(); renderer.domElement.remove(); renderer = null; }
+          if (fallback) { fallback.dispose(); fallback = null; }
           el.innerHTML = "";
         },
         setParams(p) {
+          if (p.fnExpr && SURFACE_FNS[p.fnExpr] && fallback) {
+            fnKey = p.fnExpr;
+            fallback.setFn(fnKey);
+            const cap = el.querySelector(".cw-scene-cap");
+            if (cap) cap.textContent = "已启用兼容渲染 · " + SURFACE_FNS[fnKey].label;
+          }
           if (p.fnExpr && SURFACE_FNS[p.fnExpr] && p.fnExpr !== fnKey && window.THREE && mesh) {
             fnKey = p.fnExpr;
             mesh.geometry.dispose();
