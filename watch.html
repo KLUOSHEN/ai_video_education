@@ -1480,6 +1480,14 @@
         </div>
     </div>
 
+    <!--
+      课件运行时必须先于下面的主逻辑加载。主逻辑会立即请求任务状态；如果状态接口
+      命中缓存并先返回，而这些脚本仍放在文档末尾，v2 课件会随机误入旧播放器，
+      最终报“课件没有可用音频”。同步加载本地依赖可消除这个刷新竞态。
+    -->
+    <script src="lieflat-charts.js?v=20260914-1"></script>
+    <script src="scene-templates.js?v=20260914-1"></script>
+    <script src="courseware-engine.js?v=20260914-1"></script>
     <script>
         // 播放器底部进度条（.player-overlay）已删除，移除元素统一走空值安全助手，避免 DOM 更新报错
         function _noopEl() {
@@ -2967,7 +2975,14 @@
             let noAudioTimer = null;     // 无音频页的展示计时器
 
             // ===== 真课件 v2：逐句讲解 + spotlight + 交互场景播放器 =====
-            if (window._isCourseware && typeof CoursewarePlayer === 'function') {
+            // v2 绝不能静默降级为旧播放器：旧播放器只识别 slide_audio，不识别
+            // pages[].narration，因此会误报“课件没有可用音频”。
+            if (window._isCourseware && typeof window.CoursewarePlayer !== 'function') {
+                console.error('[courseware.runtime] CoursewarePlayer was not loaded before initialization');
+                descEl.textContent = '课件播放器组件加载失败，请刷新页面；若仍失败请检查 courseware-engine.js 是否可访问。';
+                return false;
+            }
+            if (window._isCourseware) {
                 slides.forEach(p => { p._voice = window._cwVoice; });
                 window._cwPlayer = new CoursewarePlayer({
                     deck, pages: slides, taskId,
@@ -5301,8 +5316,5 @@
         </div>
     </div>
 
-    <script src="lieflat-charts.js"></script>
-<script src="scene-templates.js"></script>
-<script src="courseware-engine.js"></script>
 </body>
 </html>
