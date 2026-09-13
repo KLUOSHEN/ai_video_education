@@ -1603,40 +1603,60 @@ async function generateCoursewareStaged(query, persona, style, onProgress) {
   return { pages: final };
 }
 
-// 逐句 edge-tts 合成：按页聚合回填 audio，每页一次 store.update（避免单文件 JSON 写放大）
+// 逐句配音：优先 Edge-TTS；云主机无法访问 Edge 服务时，整批回退到 Qwen CosyVoice。
+// 回退是“整批”而非逐句混用，避免同一课件中出现两种音色。
 async function createCoursewareTTS(taskId, pages, voice, onProgress) {
   const jobs = [];
   pages.forEach((p, i) => {
     (p.narration || []).forEach((s, j) => jobs.push({ i, j, text: s.text }));
   });
-  const results = {}; // "i-j" → url|null
-  let done = 0;
+  let results = {}; // "i-j" → url|null
   const MAX_CONCURRENCY = 1; // edge-tts 并发子进程易触发限流，串行最稳
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < jobs.length) {
-      const k = cursor++;
-      const job = jobs[k];
-      try {
-        const buf = await edgeTtsBuffer(job.text, { voice });
-        if (buf && buf.length) {
+  const synthesizeAll = async (provider) => {
+    let cursor = 0;
+    let done = 0;
+    let failed = 0;
+    results = {};
+    const worker = async () => {
+      while (cursor < jobs.length) {
+        const k = cursor++;
+        const job = jobs[k];
+        try {
+          const buf = provider === "qwen"
+            ? await qwenTtsBuffer(job.text)
+            : await edgeTtsBuffer(job.text, { voice });
+          if (!buf || !buf.length) throw new Error(provider + " TTS 输出为空");
           const file = path.join("audio", `cw-${String(taskId).slice(0, 8)}-p${job.i}-s${job.j}.mp3`);
           await fs.writeFile(path.join(STORAGE_DIR, file), buf);
           results[`${job.i}-${job.j}`] = publicAsset(file);
-        } else {
+        } catch (e) {
+          failed++;
+          log("courseware.tts.sentence_failed", { provider, i: job.i, j: job.j, message: e.message });
           results[`${job.i}-${job.j}`] = null;
         }
-      } catch (e) {
-        log("courseware.tts.sentence_failed", { i: job.i, j: job.j, message: e.message });
-        results[`${job.i}-${job.j}`] = null;
+        done++;
+        try { onProgress && onProgress({ done, total: jobs.length, provider }); } catch (e) {}
+        // Edge 句间限速，Qwen API 也保留短间隔，避免突发限流。
+        await new Promise((r) => setTimeout(r, provider === "edge" ? 300 : 120));
       }
-      done++;
-      try { onProgress && onProgress({ done, total: jobs.length }); } catch (e) {}
-      // 句间间隔：缓解微软限流（连续请求会被强制断开连接）
-      await new Promise((r) => setTimeout(r, 300));
-    }
+    };
+    await Promise.all(Array.from({ length: Math.min(MAX_CONCURRENCY, Math.max(jobs.length, 1)) }, worker));
+    return failed;
   };
-  await Promise.all(Array.from({ length: Math.min(MAX_CONCURRENCY, Math.max(jobs.length, 1)) }, worker));
+
+  if (!jobs.length) throw new ApiError(502, "TTS_FAILED", "课件没有可合成的讲解文本");
+  const edgeAvailable = await probeEdgeTts().catch(() => false);
+  let provider = edgeAvailable ? "edge" : "qwen";
+  log("courseware.tts.provider", { taskId, provider, jobs: jobs.length });
+  let failed = await synthesizeAll(provider);
+  if (failed > 0 && provider === "edge") {
+    log("courseware.tts.batch_fallback", { taskId, from: "edge", to: "qwen", failed, total: jobs.length });
+    provider = "qwen";
+    failed = await synthesizeAll(provider);
+  }
+  if (failed > 0) {
+    throw new ApiError(502, "TTS_FAILED", `${provider} 配音失败 ${failed}/${jobs.length} 句，请检查服务器网络与 TTS 配置`);
+  }
   // 回填 + 按页写回
   for (let i = 0; i < pages.length; i++) {
     (pages[i].narration || []).forEach((s, j) => {
@@ -1644,6 +1664,8 @@ async function createCoursewareTTS(taskId, pages, voice, onProgress) {
     });
     await store.update("coursewareTasks", taskId, { pages });
   }
+  log("courseware.tts.complete", { taskId, provider, total: jobs.length });
+  return { provider, total: jobs.length };
 }
 
 // ── Edit with AI：对单页做增量 JSON Patch（RFC 6902 子集），带 schema 校验与一次重试 ──

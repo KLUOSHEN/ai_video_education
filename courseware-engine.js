@@ -65,7 +65,7 @@
 
   class CoursewarePlayer {
     // opts: { deck, pages, taskId, els:{progressFill,currentTime,totalTime,subtitleText},
-    //         onStateChanged(playing), onFinished(), onSentenceChange(pi,sj) }
+    //         onStateChanged(playing), onAudioError(error, context), onFinished(), onSentenceChange(pi,sj) }
     constructor(opts) {
       this.opts = opts;
       this.deck = opts.deck;
@@ -90,6 +90,8 @@
       };
       this._injectVoiceUI();
       this._preloadAll();
+      // 场景与音频播放解耦：即使浏览器阻止自动播放，当前页的交互场景也必须可见。
+      requestAnimationFrame(() => this._mountScene(this.pageIdx));
     }
 
     // 预加载全部句音频 metadata：算总时长、句间无缝
@@ -163,6 +165,23 @@
       clearSpotlight();
       if (this.opts.onStateChanged) this.opts.onStateChanged(false);
     }
+    _failAudio(error, sentence) {
+      if (!this.playing) return;
+      this.playing = false;
+      if (this._raf) { cancelAnimationFrame(this._raf); this._raf = null; }
+      if (this.silentTimer) { clearTimeout(this.silentTimer); this.silentTimer = null; }
+      if (this.current) { try { this.current.pause(); } catch (e) {} }
+      this.current = null;
+      clearSpotlight();
+      if (this.opts.onStateChanged) this.opts.onStateChanged(false);
+      if (typeof this.opts.onAudioError === "function") {
+        this.opts.onAudioError(error instanceof Error ? error : new Error(String(error || "音频播放失败")), {
+          pageIndex: this.pageIdx,
+          sentenceIndex: this.sentIdx,
+          sentence: sentence || null,
+        });
+      }
+    }
     stop() {
       this.pause();
       this.pageIdx = 0;
@@ -197,14 +216,22 @@
       if (this.els.subtitleText) this.els.subtitleText.textContent = s.text || "";
       this._prefetchNext(pi, sj);
       if (!s.audio) {
-        this.silentTimer = setTimeout(() => { this.silentTimer = null; this._playSentence(pi, sj + 1); }, this._estDur(s.text) * 1000);
+        this._failAudio(new Error("当前讲解句没有生成音频文件"), s);
         return;
       }
       const a = new Audio(s.audio);
+      a.preload = "auto";
       this.current = a;
       a.addEventListener("ended", () => { if (this.current === a && this.playing) this._playSentence(pi, sj + 1); });
-      a.addEventListener("error", () => { if (this.current === a && this.playing) this._playSentence(pi, sj + 1); });
-      a.play().catch(() => { if (this.current === a && this.playing) this.silentTimer = setTimeout(() => { this.silentTimer = null; this._playSentence(pi, sj + 1); }, this._sentDur(s) * 1000); });
+      a.addEventListener("error", () => {
+        if (this.current === a && this.playing) this._failAudio(new Error("讲解音频加载失败：" + s.audio), s);
+      });
+      const attempt = a.play();
+      if (attempt && typeof attempt.catch === "function") {
+        attempt.catch((error) => {
+          if (this.current === a && this.playing) this._failAudio(error, s);
+        });
+      }
     }
     _prefetchNext(pi, sj) {
       const narr = this.pages[pi] && this.pages[pi].narration;
@@ -298,11 +325,18 @@
       const tpl = window.SCENE_TEMPLATES && window.SCENE_TEMPLATES[page.scene.template];
       const panel = this.deck.slides[pi] && this.deck.slides[pi].querySelector('[data-el="scene"]');
       const host = (panel && (panel.querySelector('.cw-scene-host') || panel)) || null;
-      if (!tpl || !host) return;
+      if (!host) return;
+      if (!tpl) {
+        host.innerHTML = '<div class="cw-scene-error">当前交互场景暂不支持：' + String(page.scene.template || "未知模板").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]) + '</div>';
+        this.scenes[pi] = { inst: { dispose() { host.innerHTML = ""; } }, host };
+        return;
+      }
       try {
         this.scenes[pi] = { inst: tpl.mount(host, page.scene.params || {}), host };
       } catch (e) {
-        host.textContent = "场景加载失败：" + e.message;
+        console.error("[courseware.scene] mount failed", { pageIndex: pi, template: page.scene.template, error: e });
+        host.innerHTML = '<div class="cw-scene-error">场景加载失败：' + String(e && e.message || e).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]) + '</div>';
+        this.scenes[pi] = { inst: { dispose() { host.innerHTML = ""; } }, host };
       }
     }
     _disposeScene(pi) {

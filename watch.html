@@ -204,35 +204,6 @@
         }
         .deck-fullscreen-btn:hover { background: rgba(79,107,240,.85); transform: scale(1.05); }
 
-        /* 播放器不显示底部播放、声音、字幕控制，避免遮挡课件底部内容。 */
-        .deck-play-hint {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            z-index: 900;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 18px;
-            border: 1px solid rgba(255,255,255,.24);
-            border-radius: 999px;
-            color: #fff;
-            background: rgba(15,23,42,.78);
-            box-shadow: 0 8px 28px rgba(0,0,0,.28);
-            backdrop-filter: blur(6px);
-            font-size: 14px;
-            font-weight: 700;
-            opacity: 0;
-            pointer-events: none;
-            transform: translate(-50%,-50%) scale(.96);
-            transition: opacity .18s ease, transform .18s ease;
-        }
-        .deck-play-hint.show {
-            opacity: 1;
-            transform: translate(-50%,-50%) scale(1);
-        }
-        .deck-play-hint i { color: #c4b5fd; }
-
         /* ── 视频信息 ── */
         .video-info-section {
             margin-bottom: 24px;
@@ -1366,8 +1337,9 @@
         .cw-fx-underline{box-shadow:inset 0 -6px 0 rgba(245,158,11,.85);border-radius:4px;transition:box-shadow .3s}
         .cw-fx-zoom{transform:scale(1.04);filter:brightness(1.12);transition:transform .5s cubic-bezier(.34,1.56,.64,1), filter .5s;transform-origin:center}
         .dk-pan-scene{display:flex;flex-direction:column}
-        .cw-scene-host{position:relative;flex:1;min-height:420px;border-radius:10px;overflow:hidden;background:#0b1222}
+        .cw-scene-host{position:relative;flex:1;min-height:420px;border-radius:10px;overflow:hidden;background:#0b1222;color:#e2e8f0}
         .cw-scene-host canvas{display:block}
+        .cw-scene-error{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;color:#fecaca;background:linear-gradient(135deg,rgba(127,29,29,.34),rgba(15,23,42,.92));font-size:18px;line-height:1.6}
         .cw-scene-ctl{display:flex;flex-wrap:wrap;gap:10px 18px;padding:8px 10px;background:rgba(15,23,42,.9);border-radius:8px;margin-top:8px}
         .cw-ctl-row{display:flex;align-items:center;gap:6px;font-size:13px;color:#cbd5e1}
         .cw-ctl-row select{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:2px 6px;font-size:13px}
@@ -1436,7 +1408,6 @@
                 <div class="player-container" id="playerContainer">
                     <div class="player-poster" id="playerPoster">
                     </div>
-                    <div class="deck-play-hint" id="deckPlayHint" aria-live="polite"><i class="fas fa-volume-high"></i><span>点击课件播放讲解</span></div>
                     <button class="deck-fullscreen-btn" onclick="toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
                 </div>
 
@@ -1500,17 +1471,10 @@
         }
         function _elOr(id) { var e = document.getElementById(id); return e || _noopEl(); }
         function el_by_sel(sel) { var e = document.querySelector(sel); return e || _noopEl(); }
-        function setDeckPlayHint(visible, text) {
-            const hint = document.getElementById('deckPlayHint');
-            if (!hint) return;
-            const label = hint.querySelector('span');
-            if (label && text) label.textContent = text;
-            hint.classList.toggle('show', !!visible);
-        }
-        // 底部控制条移除后，点击课件空白区域即可播放/暂停；按钮、测验和交互场景不受影响。
+        // 底部控制条移除后，点击课件空白区域即可播放/暂停；交互控件和画布操作不受影响。
         document.getElementById('playerContainer').addEventListener('click', function (event) {
             const target = event.target;
-            if (!target || target.closest('button,a,input,textarea,select,[contenteditable="true"],.quiz-slide,.cw-scene-host')) return;
+            if (!target || target.closest('button,a,input,textarea,select,canvas,[contenteditable="true"],.quiz-slide')) return;
             if (window._deckEditing) return;
             if (typeof window.togglePlay === 'function') window.togglePlay();
         });
@@ -2728,6 +2692,7 @@
             const poster = document.getElementById('playerPoster');
             const descEl = document.getElementById('videoDesc');
             const maxAttempts = 300; // 300 × 2s = 最多等待 10 分钟（逐页语音合成较慢）
+            let audioRepairAttempted = false;
 
             for (let i = 0; i < maxAttempts; i++) {
                 try {
@@ -2750,13 +2715,35 @@
                         else if (data.status === 'generating_outline') descEl.textContent = 'AI 正在规划真课件大纲… (' + (data.progress || 6) + '%)';
                         else if (data.status === 'generating_pages') descEl.textContent = '逐页生成中' + (data.pages_total ? '：第 ' + (data.pages_done || 0) + '/' + data.pages_total + ' 页' : '') + ' (' + (data.progress || 15) + '%)';
                         else if (data.status === 'generating_narration') descEl.textContent = 'AI 正在撰写逐句讲解脚本… (' + (data.progress || 45) + '%)';
-                        else if (data.status === 'generating_tts') descEl.textContent = 'Edge-TTS 正在合成逐句配音' + (data.tts_total ? '：' + (data.tts_done || 0) + '/' + data.tts_total + ' 句' : '') + ' (' + (data.progress || 65) + '%)';
+                        else if (data.status === 'generating_tts') descEl.textContent = '正在合成逐句配音' + (data.tts_total ? '：' + (data.tts_done || 0) + '/' + data.tts_total + ' 句' : '') + ' (' + (data.progress || 65) + '%)';
                         else if (data.status === 'failed') {
                             descEl.textContent = '生成失败：' + (data.error?.message || '请稍后重试') + '。请返回重新生成。';
                             return;
                         }
                         else descEl.textContent = '准备就绪…';
                         if (data.pages?.length && data.status === 'slides_ready') {
+                            const narration = data.pages.flatMap(page => Array.isArray(page.narration) ? page.narration : []);
+                            const hasMissingAudio = narration.length === 0 || narration.some(sentence => !sentence || !sentence.audio);
+                            // 兼容升级前已被错误标记为 ready 的无声任务：只自动修复一次，随后继续轮询新音频。
+                            if (hasMissingAudio && !audioRepairAttempted) {
+                                audioRepairAttempted = true;
+                                descEl.textContent = '检测到课件配音缺失，正在自动修复…';
+                                try {
+                                    const repair = await fetch('/api/v1/courseware/resynth', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ task_id: taskId, voice: data.voice || 'zh-CN-XiaoxiaoNeural' })
+                                    });
+                                    if (repair.ok || repair.status === 409) {
+                                        await new Promise(r => setTimeout(r, 1200));
+                                        continue;
+                                    }
+                                    const repairPayload = await repair.json().catch(() => ({}));
+                                    console.warn('[courseware.audio] automatic repair rejected', repairPayload);
+                                } catch (repairError) {
+                                    console.warn('[courseware.audio] automatic repair failed', repairError);
+                                }
+                            }
                             slides = data.pages;
                             window._slideStyle = data.style || '教学清新';
                             break;
@@ -2819,7 +2806,6 @@
             // 手动翻页（键盘/滚轮/触屏，reason=user）时若正在播放则同步切换语音
             deck.onChange = function (e) {
                 updateLessonProgress(taskId, { slideIndex: e.index });
-                if (e.index >= slides.length) setDeckPlayHint(false);
                 // 真课件模式：讲解推进由 CoursewarePlayer 接管，此处仅同步侧栏高亮
                 if (window._cwPlayer) {
                     currentSlideIdx = e.index;
@@ -2881,7 +2867,14 @@
                         playPauseBtn.innerHTML = playing ? '<i class="fas fa-pause"></i> 暂停' : '<i class="fas fa-play"></i> 播放';
                         const hint = document.getElementById('playbackHint');
                         if (hint) hint.textContent = playing ? '正在自动播放讲解' : '已暂停，点击播放继续';
-                        setDeckPlayHint(!playing, playing ? '' : '已暂停，点击课件继续');
+                    },
+                    onAudioError: function (error, context) {
+                        const blocked = error && error.name === 'NotAllowedError';
+                        const pageNo = context && Number.isFinite(context.pageIndex) ? context.pageIndex + 1 : currentSlideIdx + 1;
+                        console.warn('[courseware.audio] playback stopped', { error, context });
+                        descEl.textContent = blocked
+                            ? '浏览器阻止了自动有声播放。请在课件空白处单击一次；播放会从当前页继续。'
+                            : '第 ' + pageNo + ' 页讲解音频加载失败，已暂停且不会自动翻页。请刷新页面或重新生成课件。';
                     },
                     onSentenceChange: function (pi, sj) {
                         updateLessonProgress(taskId, { slideIndex: pi, sentenceIndex: sj });
@@ -2890,8 +2883,6 @@
                 });
             }
 
-            // 浏览器禁止无手势自动播放带声音媒体，改为明确提示用户点击课件后开始。
-            setDeckPlayHint(true, '点击课件播放讲解');
             poster.style.background = '#000';
 
             function currentAudio() {
@@ -2942,9 +2933,9 @@
                             else stopPlayback();
                         }
                     };
-                    a.play().catch(() => onPageNoSound());
+                    a.play().catch((error) => onPageNoSound(error));
                 } else {
-                    onPageNoSound();
+                    onPageNoSound(new Error('当前页没有生成音频文件'));
                 }
             }
             // 播放指定页：加载该页音频，播完自动切下一页（演示舞台由 renderSlideCard→deck 导航）
@@ -2955,13 +2946,21 @@
                 playPageAudio(index);
             }
 
-            // 无音频页：展示固定时长后自动切页，避免卡住
-            function onPageNoSound() {
+            // 音频不可用时原地暂停，避免静默计时造成课件快速自动翻页。
+            function onPageNoSound(error) {
                 if (!isSlidePlaying) return;
-                noAudioTimer = setTimeout(() => {
-                    if (currentSlideIdx < slides.length - 1) playPage(currentSlideIdx + 1);
-                    else stopPlayback();
-                }, 6000);
+                isSlidePlaying = false;
+                if (animFrameId) cancelAnimationFrame(animFrameId);
+                if (noAudioTimer) { clearTimeout(noAudioTimer); noAudioTimer = null; }
+                const a = currentAudio();
+                if (a) { try { a.pause(); } catch (e) {} }
+                if (audio) { try { audio.pause(); } catch (e) {} }
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i> 播放';
+                const blocked = error && error.name === 'NotAllowedError';
+                console.warn('[slides.audio] playback stopped', error);
+                descEl.textContent = blocked
+                    ? '浏览器阻止了自动有声播放。请在课件空白处单击一次；播放会从当前页继续。'
+                    : '当前页讲解音频不可用，已暂停且不会自动翻页。请刷新页面或重新生成课件。';
             }
 
             function updateUI() {
@@ -2979,7 +2978,6 @@
                 if (window._deckEditing) return;   // 编辑态锁定播放
                 if (isSlidePlaying) return;
                 if (window._cwPlayer) { window._cwPlayer.play(); return; }
-                setDeckPlayHint(false);
                 isSlidePlaying = true;
                 playPauseBtn.innerHTML = '<i class="fas fa-pause"></i> 暂停';
                 const hint = document.getElementById('playbackHint');
@@ -3017,13 +3015,12 @@
                     }
                     audio.muted = slideMuted;
                     audio.currentTime = 0;
-                    audio.play().catch(() => {});
+                    audio.play().catch((error) => onPageNoSound(error));
                     animFrameId = requestAnimationFrame(updateUI);
                     return;
                 }
-                // 无任何音频：虚拟时间轴，逐页展示
-                animFrameId = requestAnimationFrame(updateUI);
-                if (!noAudioTimer) onPageNoSound();
+                // 无任何音频时不启动虚拟时间轴，更不能静默自动翻页。
+                onPageNoSound(new Error('课件没有可用音频'));
             }
 
             function pausePlayback() {
@@ -3031,7 +3028,6 @@
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i> 播放';
                 const hint = document.getElementById('playbackHint');
                 if (hint) hint.textContent = '已暂停，点击播放继续';
-                setDeckPlayHint(true, '已暂停，点击课件继续');
                 if (window._cwPlayer) { window._cwPlayer.pause(); return; }
                 if (animFrameId) cancelAnimationFrame(animFrameId);
                 if (noAudioTimer) { clearTimeout(noAudioTimer); noAudioTimer = null; }
@@ -3041,7 +3037,7 @@
             }
 
             function stopPlayback() {
-                if (window._cwPlayer) { window._cwPlayer.stop(); isSlidePlaying = false; playPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; setDeckPlayHint(true, '点击课件重新播放'); return; }
+                if (window._cwPlayer) { window._cwPlayer.stop(); isSlidePlaying = false; playPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; return; }
                 pausePlayback();
                 const a = currentAudio();
                 if (a) { a.pause(); a.currentTime = 0; a.onended = null; }
@@ -3051,7 +3047,6 @@
                 currentTimeEl.textContent = '0:00';
                 renderSlideCard(poster, slides[0], 0);
                 highlightScene(0);
-                setDeckPlayHint(true, '点击课件重新播放');
             }
 
             // 播放/暂停由播放器容器的统一点击处理器接管。
@@ -3095,10 +3090,10 @@
                                     else stopPlayback();
                                 }
                             };
-                            loc.playingAudio.play().catch(() => {});
+                            loc.playingAudio.play().catch((error) => onPageNoSound(error));
                         }
                     } else if (wasPlaying) {
-                        onPageNoSound();
+                        onPageNoSound(new Error('当前页没有可用音频'));
                     }
                     if (wasPlaying) { animFrameId = requestAnimationFrame(updateUI); }
                     else { updateUI(); }
@@ -3220,7 +3215,6 @@
                     window._currentSlideIdx = idx;
                     if (window._deck) window._deck.goTo(idx, 'user');
                     highlightScene(idx);
-                    setDeckPlayHint(false);
                     return;
                 }
                 // 点击当前页对应的导航项：暂停/继续播放（替代原"点击 PPT 暂停"）
@@ -3246,7 +3240,6 @@
                     renderSlideCard(poster, slides[idx], idx);
                     highlightScene(idx);
                 }
-                if (!isSlidePlaying) setDeckPlayHint(true, '点击课件继续播放');
             };
 
             // 返回同一课程时恢复到上次的页/讲解句；测评答案由 loadLessonQuiz 同步恢复。
@@ -3263,10 +3256,10 @@
                 }
             }
 
-            // 等待用户点击课件画面后开始，以满足浏览器的有声媒体播放策略。
-            setDeckPlayHint(true, '点击课件播放讲解');
             descEl.textContent = query || '幻灯片教学';
             if (query) rememberCourseTask(query, taskId);
+            // 优先自动开始；若浏览器策略拒绝有声播放，播放器会停在当前句，绝不静默翻页。
+            startPlayback();
             return true;
         }
 
