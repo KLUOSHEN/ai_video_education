@@ -204,37 +204,34 @@
         }
         .deck-fullscreen-btn:hover { background: rgba(79,107,240,.85); transform: scale(1.05); }
 
-        /* 播放控制只保留播放、声音和字幕按钮；不提供可拖动时间轴。 */
-        .player-controls {
+        /* 播放器不显示底部播放、声音、字幕控制，避免遮挡课件底部内容。 */
+        .deck-play-hint {
             position: absolute;
-            left: 16px;
-            right: 72px;
-            bottom: 16px;
-            z-index: 901;
+            left: 50%;
+            top: 50%;
+            z-index: 900;
             display: flex;
             align-items: center;
-            gap: 8px;
-            pointer-events: none;
-        }
-        .player-controls button {
-            pointer-events: auto;
-            border: 1px solid rgba(255,255,255,.25);
-            border-radius: 10px;
-            padding: 9px 12px;
+            gap: 10px;
+            padding: 12px 18px;
+            border: 1px solid rgba(255,255,255,.24);
+            border-radius: 999px;
             color: #fff;
-            background: rgba(15,23,42,.68);
-            backdrop-filter: blur(4px);
-            cursor: pointer;
-            font-family: inherit;
+            background: rgba(15,23,42,.78);
+            box-shadow: 0 8px 28px rgba(0,0,0,.28);
+            backdrop-filter: blur(6px);
+            font-size: 14px;
+            font-weight: 700;
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%,-50%) scale(.96);
+            transition: opacity .18s ease, transform .18s ease;
         }
-        .player-controls button:hover { background: rgba(79,107,240,.88); }
-        .player-controls .player-hint {
-            color: rgba(255,255,255,.86);
-            font-size: 12px;
-            margin-left: 4px;
-            text-shadow: 0 1px 2px rgba(0,0,0,.5);
+        .deck-play-hint.show {
+            opacity: 1;
+            transform: translate(-50%,-50%) scale(1);
         }
-        .player-controls button:disabled { opacity: .55; cursor: default; }
+        .deck-play-hint i { color: #c4b5fd; }
 
         /* ── 视频信息 ── */
         .video-info-section {
@@ -1221,8 +1218,8 @@
         #playerPoster .dk-theme-voltage    { --dk-bg-deep:#0066ff; --dk-bg:#f0f6ff; --dk-text:#101728; --dk-text-sub:#4a5a78; --dk-accent:#0066ff; --dk-accent-soft:#e3f0ff; --dk-card:#ffffff; --dk-card-border:#c9ddff; --dk-subtitle:#4a5a78; --dk-font-display:'Syne',sans-serif; --dk-font-body:'Manrope',sans-serif; }
         /* ── 布局体系(完整引擎,来自 bold-template-pack) ── */
         #playerPoster .dk-area{ flex:1; min-height:0; align-content:start; margin-top:26px; }
-        #playerPoster .dk-panel{ padding:18px 20px; }
-        #playerPoster .dk-pan-txt{ font-size:35px; line-height:1.55; }
+        #playerPoster .dk-panel{ padding:16px 18px; min-height:0; box-sizing:border-box; }
+        #playerPoster .dk-pan-txt{ font-size:28px; line-height:1.45; }
         #playerPoster .dk-pan-label{ font-weight:600; margin-bottom:12px; font-size:26px; letter-spacing:.04em; }
         /* Blue Professional：奶油底 + 电蓝描边圆角卡片(consulting) */
         #playerPoster .dk-layout-blue .dk-panel{ background:transparent; border:none; }
@@ -1241,18 +1238,22 @@
         #playerPoster .dk-layout-neogrid .dk-pan-txt{ background:#F5F4EF; color:#0a0a0a; }
         #playerPoster .dk-layout-neogrid .dk-pan-vis{ background:#ECECE8; color:#0a0a0a; }
         #playerPoster .dk-layout-neogrid .dk-pan-label{ display:inline-block; background:#0a0a0a; color:#F5F4EF; padding:6px 12px; font-weight:700; }
+        #playerPoster .dk-pan-txt,
+        #playerPoster .dk-pan-txt p { font-size:28px !important; line-height:1.45; }
+        #playerPoster .dk-pan-pts { font-size:24px; line-height:1.4; }
+        #playerPoster .dk-pan-vis { font-size:20px; line-height:1.4; }
 
         /* ===========================================
            剧场式排版类 .dk-*（每张 slide 内部）
            =========================================== */
-        .dk-pad-area { position: absolute; left: 40px; top: 40px; right: 40px; bottom: 40px; display: flex; flex-direction: column; }
+        .dk-pad-area { position: absolute; left: 40px; top: 40px; right: 40px; bottom: 24px; display: flex; flex-direction: column; }
         .dk-kicker { font-size: 20px; letter-spacing: .2em; text-transform: uppercase; color: var(--dk-accent); font-weight: 700; }
         .dk-title { font-family: var(--dk-font-display); font-size: var(--dk-title-size); font-weight: 800; line-height: 1.04; color: var(--dk-text); margin: 10px 0 6px; }
         .dk-subtitle { font-size: 30px; color: var(--dk-subtitle); font-family: var(--dk-font-body); line-height: 1.5; }
         .dk-pageno { position: absolute; right: 52px; bottom: -40px; font-family: var(--dk-font-display); font-size: 300px; font-weight: 800; line-height: 1; color: var(--dk-accent); opacity: .09; pointer-events: none; }
         .dk-region { margin-top: 18px; font-size: 17px; color: var(--dk-accent); font-weight: 700; border-left: 4px solid var(--dk-accent); padding-left: 14px; }
         .dk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; margin-top: 26px; flex: 1; min-height: 0; }
-        .dk-col { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; }
+        .dk-col { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: visible; }
         .dk-card { border-radius: 14px; padding: 20px; background: var(--dk-card); border: 1px solid var(--dk-card-border); }
         .dk-chart { margin-top: 6px; border-radius: 14px; overflow: hidden; background: var(--dk-card); border: 1px solid var(--dk-card-border); padding: 12px; }
         .dk-art { max-height: 250px; max-width: 100%; border-radius: 14px; object-fit: contain; margin: 0 auto; box-shadow: 0 8px 26px rgba(0,0,0,.22); }
@@ -1269,19 +1270,34 @@
         #playerPoster .dk-col .chart-box,
         #playerPoster .dk-col .math,
         #playerPoster .dk-col > div { color: var(--dk-text); }
-        /* 放大演示正文与图表字号，铺满画面 */
-        #playerPoster .dk-col { font-size: 35px; line-height: 1.5; color: var(--dk-text); }
-        #playerPoster .dk-col p { font-size: 35px !important; line-height: 1.55; }
-        #playerPoster .dk-col .vcard li { font-size: 40px !important; line-height: 1.55; }
+        /* 统一课件正文尺寸，确保 16:9 舞台内的底部内容完整可见。 */
+        #playerPoster .dk-col { font-size: 28px; line-height: 1.45; color: var(--dk-text); }
+        #playerPoster .dk-col p { font-size: 28px !important; line-height: 1.45; }
+        #playerPoster .dk-col .vcard li { font-size: 30px !important; line-height: 1.45; }
         #playerPoster .dk-col table th,
-        #playerPoster .dk-col table td { font-size: 33px !important; padding: 8px 12px; }
-        #playerPoster .dk-col .chart-box { padding: 14px; }
-        #playerPoster .dk-card { min-height: 120px; }
-        /* 放大「核心要点」区文字（renderContentBlock 生成的列表/纯文本/代码）*/
-        #playerPoster .dk-col .dk-card ul { font-size: 16px !important; line-height: 1.5; padding-left: 22px; }
-        #playerPoster .dk-col .dk-card ul li { font-size: 16px !important; line-height: 1.5; }
-        #playerPoster .dk-col .dk-card > div { font-size: 22px !important; line-height: 1.5; }
+        #playerPoster .dk-col table td { font-size: 26px !important; padding: 6px 10px; }
+        #playerPoster .dk-col .chart-box { padding: 12px; }
+        #playerPoster .dk-card { min-height: 0; }
+        /* 核心要点区使用紧凑字号，避免多行内容把底部面板推出舞台。 */
+        #playerPoster .dk-col .dk-card ul { font-size: 18px !important; line-height: 1.45; padding-left: 22px; }
+        #playerPoster .dk-col .dk-card ul li { font-size: 18px !important; line-height: 1.45; }
+        #playerPoster .dk-col .dk-card > div { font-size: 20px !important; line-height: 1.45; }
         #playerPoster .dk-col .dk-card pre { font-size: 16px !important; line-height: 1.5; }
+        #playerPoster .dk-area { overflow: visible; }
+        /* 极端长内容自动进入紧凑档，避免生成结果超出 16:9 舞台底边。 */
+        #playerPoster .slide.dk-fit-compact { --dk-title-size: 80px; --dk-body-size: 24px; }
+        #playerPoster .slide.dk-fit-compact .dk-pad-area { top: 32px; bottom: 20px; }
+        #playerPoster .slide.dk-fit-compact .dk-area { margin-top: 18px; }
+        #playerPoster .slide.dk-fit-compact .dk-panel { padding: 12px 14px; }
+        #playerPoster .slide.dk-fit-compact .dk-pan-txt,
+        #playerPoster .slide.dk-fit-compact .dk-pan-txt p { font-size: 24px !important; line-height: 1.38; }
+        #playerPoster .slide.dk-fit-compact .dk-col .vcard li { font-size: 25px !important; line-height: 1.38; }
+        #playerPoster .slide.dk-fit-tight { --dk-title-size: 68px; --dk-body-size: 21px; }
+        #playerPoster .slide.dk-fit-tight .dk-subtitle { font-size: 25px; line-height: 1.35; }
+        #playerPoster .slide.dk-fit-tight .dk-area { margin-top: 12px; }
+        #playerPoster .slide.dk-fit-tight .dk-pan-txt,
+        #playerPoster .slide.dk-fit-tight .dk-pan-txt p { font-size: 21px !important; line-height: 1.32; }
+        #playerPoster .slide.dk-fit-tight .dk-col .vcard li { font-size: 22px !important; line-height: 1.32; }
         /* ── 随堂测验（演示舞台最后一页） ── */
         #playerPoster .quiz-slide{position:relative;width:1920px;height:1080px;overflow:hidden;display:flex;flex-direction:column;background:#fff;font-family:'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
         /* ── 讲义笔记抽屉（参考 OpenMAIC lecture-notes） ── */
@@ -1420,12 +1436,7 @@
                 <div class="player-container" id="playerContainer">
                     <div class="player-poster" id="playerPoster">
                     </div>
-                    <div class="player-controls" aria-label="播放控制">
-                        <button id="playPauseBtn" type="button" onclick="togglePlay()" aria-label="播放"><i id="playIcon" class="fas fa-play"></i> 播放</button>
-                        <button id="muteBtn" type="button" onclick="toggleMute()" aria-label="静音"><i class="fas fa-volume-high"></i> 声音</button>
-                        <button id="subtitleBtn" type="button" onclick="toggleSubtitle()" aria-label="字幕"><i class="fas fa-closed-captioning"></i> 字幕</button>
-                        <span class="player-hint" id="playbackHint">课程加载后将自动播放</span>
-                    </div>
+                    <div class="deck-play-hint" id="deckPlayHint" aria-live="polite"><i class="fas fa-volume-high"></i><span>点击课件播放讲解</span></div>
                     <button class="deck-fullscreen-btn" onclick="toggleFullscreen()" title="全屏"><i class="fas fa-expand"></i></button>
                 </div>
 
@@ -1489,6 +1500,20 @@
         }
         function _elOr(id) { var e = document.getElementById(id); return e || _noopEl(); }
         function el_by_sel(sel) { var e = document.querySelector(sel); return e || _noopEl(); }
+        function setDeckPlayHint(visible, text) {
+            const hint = document.getElementById('deckPlayHint');
+            if (!hint) return;
+            const label = hint.querySelector('span');
+            if (label && text) label.textContent = text;
+            hint.classList.toggle('show', !!visible);
+        }
+        // 底部控制条移除后，点击课件空白区域即可播放/暂停；按钮、测验和交互场景不受影响。
+        document.getElementById('playerContainer').addEventListener('click', function (event) {
+            const target = event.target;
+            if (!target || target.closest('button,a,input,textarea,select,[contenteditable="true"],.quiz-slide,.cw-scene-host')) return;
+            if (window._deckEditing) return;
+            if (typeof window.togglePlay === 'function') window.togglePlay();
+        });
         // ===== 视频数据 =====
         const videoDB = {
             '快速排序算法详解与复杂度分析': {
@@ -2794,6 +2819,7 @@
             // 手动翻页（键盘/滚轮/触屏，reason=user）时若正在播放则同步切换语音
             deck.onChange = function (e) {
                 updateLessonProgress(taskId, { slideIndex: e.index });
+                if (e.index >= slides.length) setDeckPlayHint(false);
                 // 真课件模式：讲解推进由 CoursewarePlayer 接管，此处仅同步侧栏高亮
                 if (window._cwPlayer) {
                     currentSlideIdx = e.index;
@@ -2855,8 +2881,7 @@
                         playPauseBtn.innerHTML = playing ? '<i class="fas fa-pause"></i> 暂停' : '<i class="fas fa-play"></i> 播放';
                         const hint = document.getElementById('playbackHint');
                         if (hint) hint.textContent = playing ? '正在自动播放讲解' : '已暂停，点击播放继续';
-                        const pi = poster.querySelector('.player-poster-inner');
-                        if (pi) pi.style.display = playing ? 'none' : 'flex';
+                        setDeckPlayHint(!playing, playing ? '' : '已暂停，点击课件继续');
                     },
                     onSentenceChange: function (pi, sj) {
                         updateLessonProgress(taskId, { slideIndex: pi, sentenceIndex: sj });
@@ -2865,9 +2890,8 @@
                 });
             }
 
-            // 保留"点击播放"按钮，让用户知道需要点击才能开始
-            const posterInner = poster.querySelector('.player-poster-inner');
-            if (posterInner) posterInner.style.display = 'flex';
+            // 浏览器禁止无手势自动播放带声音媒体，改为明确提示用户点击课件后开始。
+            setDeckPlayHint(true, '点击课件播放讲解');
             poster.style.background = '#000';
 
             function currentAudio() {
@@ -2955,9 +2979,7 @@
                 if (window._deckEditing) return;   // 编辑态锁定播放
                 if (isSlidePlaying) return;
                 if (window._cwPlayer) { window._cwPlayer.play(); return; }
-                // 隐藏"点击播放"，显示幻灯片内容
-                const pi = poster.querySelector('.player-poster-inner');
-                if (pi) pi.style.display = 'none';
+                setDeckPlayHint(false);
                 isSlidePlaying = true;
                 playPauseBtn.innerHTML = '<i class="fas fa-pause"></i> 暂停';
                 const hint = document.getElementById('playbackHint');
@@ -3009,6 +3031,7 @@
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i> 播放';
                 const hint = document.getElementById('playbackHint');
                 if (hint) hint.textContent = '已暂停，点击播放继续';
+                setDeckPlayHint(true, '已暂停，点击课件继续');
                 if (window._cwPlayer) { window._cwPlayer.pause(); return; }
                 if (animFrameId) cancelAnimationFrame(animFrameId);
                 if (noAudioTimer) { clearTimeout(noAudioTimer); noAudioTimer = null; }
@@ -3018,7 +3041,7 @@
             }
 
             function stopPlayback() {
-                if (window._cwPlayer) { window._cwPlayer.stop(); isSlidePlaying = false; playPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; const pip = poster.querySelector('.player-poster-inner'); if (pip) pip.style.display = 'flex'; return; }
+                if (window._cwPlayer) { window._cwPlayer.stop(); isSlidePlaying = false; playPauseBtn.innerHTML = '<i class="fas fa-play"></i>'; setDeckPlayHint(true, '点击课件重新播放'); return; }
                 pausePlayback();
                 const a = currentAudio();
                 if (a) { a.pause(); a.currentTime = 0; a.onended = null; }
@@ -3028,11 +3051,10 @@
                 currentTimeEl.textContent = '0:00';
                 renderSlideCard(poster, slides[0], 0);
                 highlightScene(0);
-                const pi = poster.querySelector('.player-poster-inner');
-                if (pi) pi.style.display = 'flex';
+                setDeckPlayHint(true, '点击课件重新播放');
             }
 
-            // 点击 PPT 区域不再触发暂停/播放（由点击左侧当前页导航触发，见 _slideJumpTo）
+            // 播放/暂停由播放器容器的统一点击处理器接管。
 
             // ===== 进度条跳转（支持点击与拖拽） =====
             // 把总时间轴定位到「页 + 页内时间」：逐页音频模式
@@ -3187,7 +3209,20 @@
 
             // 场景导航跳页：点击当前页 → 暂停/继续；点击其它页 → 跳页并播该页语音
             window._slideJumpTo = function(idx) {
-                if (!slides || idx < 0 || idx >= slides.length) return;
+                const lastDeckIdx = window._deck && window._deck.slides
+                    ? window._deck.slides.length - 1
+                    : slides.length - 1;
+                if (!slides || idx < 0 || idx > lastDeckIdx) return;
+                // 最后一项是追加在课件后的随堂测验，不对应 slides 数据；直接驱动演示舞台。
+                if (idx >= slides.length) {
+                    if (isSlidePlaying) pausePlayback();
+                    currentSlideIdx = idx;
+                    window._currentSlideIdx = idx;
+                    if (window._deck) window._deck.goTo(idx, 'user');
+                    highlightScene(idx);
+                    setDeckPlayHint(false);
+                    return;
+                }
                 // 点击当前页对应的导航项：暂停/继续播放（替代原"点击 PPT 暂停"）
                 if (idx === currentSlideIdx) {
                     isSlidePlaying ? pausePlayback() : startPlayback();
@@ -3211,6 +3246,7 @@
                     renderSlideCard(poster, slides[idx], idx);
                     highlightScene(idx);
                 }
+                if (!isSlidePlaying) setDeckPlayHint(true, '点击课件继续播放');
             };
 
             // 返回同一课程时恢复到上次的页/讲解句；测评答案由 loadLessonQuiz 同步恢复。
@@ -3227,8 +3263,8 @@
                 }
             }
 
-            // 自动开始播放
-            startPlayback();
+            // 等待用户点击课件画面后开始，以满足浏览器的有声媒体播放策略。
+            setDeckPlayHint(true, '点击课件播放讲解');
             descEl.textContent = query || '幻灯片教学';
             if (query) rememberCourseTask(query, taskId);
             return true;
@@ -3943,6 +3979,21 @@
                 + '</div>'
                 + '<span class="dk-pageno" aria-hidden="true">' + n + '</span>';
         }
+        function fitDeckSlideContent(sec) {
+            const pad = sec && sec.querySelector('.dk-pad-area');
+            if (!pad) return;
+            sec.classList.remove('dk-fit-compact', 'dk-fit-tight');
+            const overflows = function () {
+                return pad.scrollHeight > pad.clientHeight + 2 || pad.scrollWidth > pad.clientWidth + 2;
+            };
+            if (!overflows()) return;
+            sec.classList.add('dk-fit-compact');
+            if (overflows()) sec.classList.add('dk-fit-tight');
+        }
+        function fitDeckSlides(stage) {
+            if (!stage) return;
+            stage.querySelectorAll('.slide:not(.quiz-slide)').forEach(fitDeckSlideContent);
+        }
         // 构建完整演示舞台（一次性渲染全部胶片）
         function buildDeck(poster, slides) {
             if (window._deck) { window._deck.destroy && window._deck.destroy(); window._deck = null; }
@@ -4066,6 +4117,11 @@
             })();
             vp.appendChild(stage);
             poster.appendChild(vp);
+            requestAnimationFrame(function () { fitDeckSlides(stage); });
+            setTimeout(function () { fitDeckSlides(stage); }, 250);
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(function () { fitDeckSlides(stage); });
+            }
             window._deckViewport = vp;
             window._deck = new SlidePresentation(stage, vp);
             window._deckShow = function (idx, reason) { if (window._deck) window._deck.goTo(idx, reason || 'api'); };
@@ -4590,11 +4646,13 @@
 
         function highlightScene(idx) {
             document.querySelectorAll('[id^="slide-nav-"]').forEach(el => {
+                el.classList.remove('active');
                 el.style.background = '';
                 el.style.borderColor = 'transparent';
             });
             const active = document.getElementById('slide-nav-' + idx);
             if (active) {
+                active.classList.add('active');
                 active.style.background = 'var(--bg-card)';
                 active.style.borderColor = 'var(--primary)';
                 active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
