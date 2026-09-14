@@ -1265,7 +1265,11 @@
         #playerPoster .dk-pan-vis .visual-card li { font-size:20px !important; line-height:1.45; }
         #playerPoster .dk-pan-vis .visual-card svg text { font-size:14px; }
         #playerPoster .dk-pan-chart > div { margin-top:8px !important; }
+        /* 图表使用 600×200 viewBox。全宽展示时不能继续按 3:1 无限放大高度，
+           否则同一面板里的补充卡片会被推到 1080px 舞台之外。 */
+        #playerPoster .dk-pan-chart svg { display:block; width:100% !important; height:320px !important; aspect-ratio:auto !important; }
         #playerPoster .slide[data-layout="chart_top"] .dk-pan-chart svg { height:360px !important; width:100%; aspect-ratio:auto !important; }
+        #playerPoster .slide[data-layout="cards"] .dk-pan-chart svg { height:300px !important; }
         #playerPoster .slide[data-layout="chart_top"] .dk-pan-vis { overflow:hidden; }
         #playerPoster .dk-area { overflow: visible; }
         /* 极端长内容自动进入紧凑档，避免生成结果超出 16:9 舞台底边。 */
@@ -1273,6 +1277,7 @@
         #playerPoster .slide.dk-fit-compact .dk-pad-area { top: 32px; bottom: 20px; }
         #playerPoster .slide.dk-fit-compact .dk-area { margin-top: 18px; }
         #playerPoster .slide.dk-fit-compact .dk-panel { padding: 12px 14px; }
+        #playerPoster .slide.dk-fit-compact .dk-pan-chart svg { height:280px !important; }
         #playerPoster .slide.dk-fit-compact .dk-pan-txt,
         #playerPoster .slide.dk-fit-compact .dk-pan-txt p { font-size: 24px !important; line-height: 1.38; }
         #playerPoster .slide.dk-fit-compact .dk-col .vcard li { font-size: 25px !important; line-height: 1.38; }
@@ -1285,11 +1290,13 @@
         #playerPoster .slide.dk-fit-tight .dk-area,
         #playerPoster .slide.dk-fit-tight .dk-stack { gap:8px !important; }
         #playerPoster .slide.dk-fit-tight .dk-panel { padding:10px 12px; }
+        #playerPoster .slide.dk-fit-tight .dk-pan-chart svg { height:240px !important; }
         #playerPoster .slide.dk-fit-emergency { --dk-title-size: 60px; --dk-body-size: 19px; }
         #playerPoster .slide.dk-fit-emergency .dk-pad-area { top:24px; bottom:18px; }
         #playerPoster .slide.dk-fit-emergency .dk-area { margin-top:8px; gap:6px !important; }
         #playerPoster .slide.dk-fit-emergency .dk-panel { padding:8px 10px; }
         #playerPoster .slide.dk-fit-emergency .dk-pan-label { font-size:20px; margin-bottom:6px; }
+        #playerPoster .slide.dk-fit-emergency .dk-pan-chart svg { height:210px !important; }
         #playerPoster .slide.dk-fit-emergency .dk-pan-txt,
         #playerPoster .slide.dk-fit-emergency .dk-pan-txt p { font-size:19px !important; line-height:1.28; }
         /* ── 随堂测验（演示舞台最后一页） ── */
@@ -3455,12 +3462,12 @@
             const text = String(rawData || '').trim();
             if (!text) return '';
             const o = opt || {};
-            const baseR = o.nodeSize || 26;
+            const baseR = o.nodeSize || 22;
             const fontSize = o.fontSize || 15;
-            const padL = o.padL != null ? o.padL : 60;
-            const padR = o.padR != null ? o.padR : 60;
-            const padT = o.padT != null ? o.padT : 26;
-            const padB = o.padB != null ? o.padB : 32;
+            const padL = o.padL != null ? o.padL : 18;
+            const padR = o.padR != null ? o.padR : 18;
+            const padT = o.padT != null ? o.padT : 10;
+            const padB = o.padB != null ? o.padB : 10;
 
             // ── 1. 解析为 {label, children} 树 ──
             const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
@@ -3504,41 +3511,80 @@
             }
             if (!tree) return '';
 
-            // ── 2. 先测量节点，再布局。坐标必须把圆半径算进去，否则首尾节点会被 SVG 裁切。 ──
+            // 多条互不相连的路径会产生一个内部虚根；不能把它画成截图中的空白圆。
+            if (tree.label == null || String(tree.label).trim() === '') tree.label = '关系';
+
+            // ── 2. 先把长标签折行，再按每棵子树的真实占用宽度布局。 ──
+            // 旧算法只均分“中心点”，没有累计圆半径，因此标签越长、圆越大，重叠越严重。
             const textW = (s) => { let w = 0; const t = String(s || ''); for (let i = 0; i < t.length; i++) w += t.charCodeAt(i) > 255 ? 1 : 0.55; return w; };
-            const nodeR = (label) => Math.max(baseR, Math.round(textW(label) * fontSize * 0.5 + 12));
-            let leafCount = 0, maxDepth = 0, maxNodeR = baseR;
-            (function walk(n, d) {
+            const wrapNodeLabel = (label) => {
+                const chars = Array.from(String(label == null ? '' : label));
+                const lines = [];
+                let line = '', units = 0;
+                chars.forEach(ch => {
+                    const u = ch.charCodeAt(0) > 255 ? 1 : 0.55;
+                    if (line && units + u > 4.2) { lines.push(line); line = ''; units = 0; }
+                    line += ch; units += u;
+                });
+                if (line || !lines.length) lines.push(line || '关系');
+                return lines;
+            };
+            const levelR = [];
+            let maxDepth = 0;
+            const nodeGap = 10;
+            (function measure(n, d) {
+                n._lines = wrapNodeLabel(n.label);
+                const widest = Math.max.apply(null, n._lines.map(textW));
+                n._r = Math.max(baseR, Math.ceil(widest * fontSize * 0.52 + 10), Math.ceil(n._lines.length * fontSize * 0.52 + 9));
                 maxDepth = Math.max(maxDepth, d);
-                maxNodeR = Math.max(maxNodeR, nodeR(n.label));
-                if (!n.children.length) leafCount++;
-                n.children.forEach(c => walk(c, d + 1));
+                levelR[d] = Math.max(levelR[d] || 0, n._r);
+                n.children.forEach(c => measure(c, d + 1));
+                const childrenW = n.children.reduce((sum, c) => sum + c._subtreeW, 0) + Math.max(0, n.children.length - 1) * nodeGap;
+                n._subtreeW = Math.max(n._r * 2, childrenW);
             })(tree, 0);
-            const safePadL = Math.max(padL, maxNodeR + 8);
-            const safePadR = Math.max(padR, maxNodeR + 8);
-            const safePadT = Math.max(padT, maxNodeR + 8);
-            const safePadB = Math.max(padB, maxNodeR + 8);
-            const leafSpacing = (W - safePadL - safePadR) / Math.max(leafCount - 1, 1);
-            const levelGap = (H - safePadT - safePadB) / Math.max(maxDepth, 1);
-            let leafIdx = 0;
+
+            // 为每个子树保留完整宽度；父节点位于首尾子节点中心，而不是挤进相邻圆中。
+            (function placeX(n, left) {
+                if (!n.children.length) { n._ux = left + n._subtreeW / 2; return; }
+                const childrenW = n.children.reduce((sum, c) => sum + c._subtreeW, 0) + Math.max(0, n.children.length - 1) * nodeGap;
+                let childLeft = left + (n._subtreeW - childrenW) / 2;
+                n.children.forEach(c => { placeX(c, childLeft); childLeft += c._subtreeW + nodeGap; });
+                n._ux = (n.children[0]._ux + n.children[n.children.length - 1]._ux) / 2;
+            })(tree, 0);
+
+            // 纵向同样累计相邻两层的圆半径；统一缩放坐标、圆和文字，确保任何层数都不会互盖或越界。
+            const levelGap = 10;
+            const levelY = [];
+            let usedH = 0;
+            for (let d = 0; d <= maxDepth; d++) {
+                const r = levelR[d] || baseR;
+                levelY[d] = usedH + r;
+                usedH += r * 2 + (d < maxDepth ? levelGap : 0);
+            }
+            const availW = Math.max(1, W - padL - padR);
+            const availH = Math.max(1, H - padT - padB);
+            const fitScale = Math.min(1, availW / Math.max(tree._subtreeW, 1), availH / Math.max(usedH, 1));
+            const originX = padL + (availW - tree._subtreeW * fitScale) / 2;
+            const originY = padT + (availH - usedH * fitScale) / 2;
             (function assign(n, d) {
-                n.y = safePadT + d * levelGap;
-                if (!n.children.length) { n.x = safePadL + leafIdx * leafSpacing; leafIdx++; }
-                else {
-                    n.children.forEach(c => assign(c, d + 1));
-                    const xs = n.children.map(c => c.x);
-                    n.x = (Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2;
-                }
+                n.x = originX + n._ux * fitScale;
+                n.y = originY + levelY[d] * fitScale;
+                n.r = n._r * fitScale;
+                n.children.forEach(c => assign(c, d + 1));
             })(tree, 0);
-            // ── 3. 节点半径按标签自适应，完整展示内容不截断 ──
+
+            // ── 3. 绘制：多行标签在圆内垂直居中，连线从圆边缘开始。 ──
             const edges = [], nodes = [];
             (function draw(n) {
-                const r = nodeR(n.label);
-                const x = n.x, y = n.y;
+                const x = n.x, y = n.y, r = n.r;
+                const fs = Math.max(9, fontSize * fitScale);
+                const lineH = fs * 1.08;
+                const firstY = y - ((n._lines.length - 1) * lineH) / 2 + fs * 0.34;
+                const tspans = n._lines.map((line, i) => `<tspan x="${x}" y="${firstY + i * lineH}">${escT(line)}</tspan>`).join('');
                 nodes.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${accentLight}" stroke="${accent}" stroke-width="2.5"/>` +
-                           `<text x="${x}" y="${y + fontSize * 0.35}" text-anchor="middle" fill="${accent}" font-size="${fontSize}" font-weight="700">${escT(n.label)}</text>`);
+                           `<text x="${x}" y="${firstY}" text-anchor="middle" fill="${accent}" font-size="${fs}" font-weight="700">${tspans}</text>`);
                 n.children.forEach(c => {
-                    edges.push(`<line x1="${x}" y1="${y + r}" x2="${c.x}" y2="${c.y - nodeR(c.label)}" stroke="#94a3b8" stroke-width="2"/>`);
+                    edges.push(`<line x1="${x}" y1="${y + r}" x2="${c.x}" y2="${c.y - c.r}" stroke="#94a3b8" stroke-width="2"/>`);
                     draw(c);
                 });
             })(tree);
@@ -4168,19 +4214,52 @@
         function fitDeckSlideContent(sec) {
             const pad = sec && sec.querySelector('.dk-pad-area');
             if (!pad) return;
-            sec.classList.remove('dk-fit-compact', 'dk-fit-tight', 'dk-fit-emergency');
+            sec.classList.remove('dk-fit-compact', 'dk-fit-tight', 'dk-fit-emergency', 'dk-fit-scaled');
+            pad.style.removeProperty('transform');
+            pad.style.removeProperty('transform-origin');
+            pad.style.removeProperty('width');
+            pad.style.removeProperty('right');
+            delete sec.dataset.fitScale;
+            const contentExtent = function () {
+                const bounds = pad.getBoundingClientRect();
+                let bottom = bounds.top, right = bounds.left, left = bounds.left;
+                Array.from(pad.querySelectorAll('*')).forEach(function (el) {
+                    const r = el.getBoundingClientRect();
+                    if (!r.width && !r.height) return;
+                    bottom = Math.max(bottom, r.bottom);
+                    right = Math.max(right, r.right);
+                    left = Math.min(left, r.left);
+                });
+                return { bounds, height: bottom - bounds.top, width: right - left };
+            };
             const overflows = function () {
                 if (pad.scrollHeight > pad.clientHeight + 2 || pad.scrollWidth > pad.clientWidth + 2) return true;
-                const bounds = pad.getBoundingClientRect();
-                return Array.from(pad.querySelectorAll('.dk-panel,.dk-card,.visual-card,svg,canvas,table,pre')).some(function(el){
-                    const r = el.getBoundingClientRect();
-                    return r.bottom > bounds.bottom + 2 || r.right > bounds.right + 2 || r.left < bounds.left - 2;
-                });
+                const ext = contentExtent();
+                return ext.height > ext.bounds.height + 2 || ext.width > ext.bounds.width + 2;
             };
             if (!overflows()) return;
             sec.classList.add('dk-fit-compact');
             if (overflows()) sec.classList.add('dk-fit-tight');
             if (overflows()) sec.classList.add('dk-fit-emergency');
+            if (!overflows()) return;
+
+            // 最终兜底：极端组合（多张卡片 + 全宽图表 + 补充信息）即使进入紧凑档仍可能超高。
+            // 按真实后代边界等比缩放整个内容区，同时反向扩大逻辑宽度，保证视觉宽度仍铺满舞台。
+            const ext = contentExtent();
+            const availableW = Math.max(1, pad.clientWidth);
+            const availableH = Math.max(1, pad.clientHeight);
+            const stageScale = ext.bounds.height > 0 ? availableH / ext.bounds.height : 1;
+            const geometryH = ext.height * stageScale;
+            const geometryW = ext.width * stageScale;
+            const neededH = Math.max(availableH, pad.scrollHeight, geometryH);
+            const neededW = Math.max(availableW, pad.scrollWidth, geometryW);
+            const scale = Math.max(0.5, Math.min(0.99, (availableH - 4) / neededH, (availableW - 4) / neededW));
+            sec.classList.add('dk-fit-scaled');
+            sec.dataset.fitScale = scale.toFixed(3);
+            pad.style.transformOrigin = 'top left';
+            pad.style.right = 'auto';
+            pad.style.width = (availableW / scale) + 'px';
+            pad.style.transform = 'scale(' + scale + ')';
         }
         function fitDeckSlides(stage) {
             if (!stage) return;
